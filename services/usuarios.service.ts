@@ -1,88 +1,8 @@
-export interface User {
-  id: number
-  name: string
-  email: string
-  role: string
-  status: "active" | "inactive"
-  createdAt: string
-  avatar?: string
-}
+import type { User, CreateUserInput, UpdateUserInput } from "@/types/Usuario"
+import usuariosData from "@/data/usuarios.json"
 
-// Dados mockados
-const mockUsers: User[] = [
-  {
-    id: 1,
-    name: "João Silva",
-    email: "joao.silva@fafih.com",
-    role: "Admin",
-    status: "active",
-    createdAt: "2024-01-15",
-    avatar: "/avatars/1.png"
-  },
-  {
-    id: 2,
-    name: "Maria Santos",
-    email: "maria.santos@fafih.com",
-    role: "Editor",
-    status: "active",
-    createdAt: "2024-02-20",
-    avatar: "/avatars/2.png"
-  },
-  {
-    id: 3,
-    name: "Pedro Oliveira",
-    email: "pedro.oliveira@fafih.com",
-    role: "Viewer",
-    status: "inactive",
-    createdAt: "2024-03-10",
-    avatar: "/avatars/3.png"
-  },
-  {
-    id: 4,
-    name: "Ana Costa",
-    email: "ana.costa@fafih.com",
-    role: "Editor",
-    status: "active",
-    createdAt: "2024-01-25",
-    avatar: "/avatars/4.png"
-  },
-  {
-    id: 5,
-    name: "Carlos Ferreira",
-    email: "carlos.ferreira@fafih.com",
-    role: "Admin",
-    status: "active",
-    createdAt: "2024-02-05",
-    avatar: "/avatars/5.png"
-  },
-  {
-    id: 6,
-    name: "Juliana Lima",
-    email: "juliana.lima@fafih.com",
-    role: "Viewer",
-    status: "active",
-    createdAt: "2024-03-15",
-    avatar: "/avatars/6.png"
-  },
-  {
-    id: 7,
-    name: "Roberto Alves",
-    email: "roberto.alves@fafih.com",
-    role: "Editor",
-    status: "inactive",
-    createdAt: "2024-01-30",
-    avatar: "/avatars/7.png"
-  },
-  {
-    id: 8,
-    name: "Fernanda Souza",
-    email: "fernanda.souza@fafih.com",
-    role: "Viewer",
-    status: "active",
-    createdAt: "2024-02-28",
-    avatar: "/avatars/8.png"
-  }
-]
+// Clonar dados para evitar mutação direta do JSON importado
+let mockUsers: User[] = [...usuariosData as User[]]
 
 export const usersService = {
   // Listar todos os usuários
@@ -99,7 +19,7 @@ export const usersService = {
   },
 
   // Criar novo usuário
-  create: async (user: Omit<User, "id" | "createdAt">): Promise<User> => {
+  create: async (user: CreateUserInput): Promise<User> => {
     await new Promise(resolve => setTimeout(resolve, 500))
     const newUser: User = {
       ...user,
@@ -111,7 +31,7 @@ export const usersService = {
   },
 
   // Atualizar usuário
-  update: async (id: number, data: Partial<User>): Promise<User | undefined> => {
+  update: async (id: number, data: UpdateUserInput): Promise<User | undefined> => {
     await new Promise(resolve => setTimeout(resolve, 500))
     const index = mockUsers.findIndex(user => user.id === id)
     if (index === -1) return undefined
@@ -130,3 +50,6 @@ export const usersService = {
     return true
   }
 }
+
+// Re-export do tipo User para manter compatibilidade
+export type { User }

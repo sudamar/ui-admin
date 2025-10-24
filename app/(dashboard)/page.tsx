@@ -11,7 +11,7 @@ import {
   Users,
   Activity,
 } from "lucide-react"
-import data from "@/app/dashboard/data.json"
+import data from "@/data/dashboard.json"
 
 export default function Dashboard() {
   // Calculate statistics from data

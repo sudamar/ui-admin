@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -55,9 +56,11 @@ export function AppHeader({ title }: AppHeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4 text-blue-500" />
-              Perfil
+            <DropdownMenuItem asChild>
+              <Link href="/perfil">
+                <User className="mr-2 h-4 w-4 text-blue-500" />
+                Perfil
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem>
               <Settings className="mr-2 h-4 w-4 text-gray-500" />

@@ -153,9 +153,11 @@ export function AppSidebar() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4 text-blue-500" />
-                  Perfil
+                <DropdownMenuItem asChild>
+                  <Link href="/perfil">
+                    <User className="mr-2 h-4 w-4 text-blue-500" />
+                    Perfil
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4 text-gray-500" />

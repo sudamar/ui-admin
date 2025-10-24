@@ -22,13 +22,14 @@ Este documento contém instruções e diretrizes para modelos de IA (como Claude
 │   │   │   └── page.tsx        # Principal página do dashboard
 │   │   ├── usuario/            # Área front de usuários
 │   │   │   └── page.tsx        # Principal página do Usuário
-│   │   ├── api/                # API Routes do Next.js
-│   │   │   └── health/         # Exemplo: endpoint de health check
-│   │   │   └── usuario/       # Exemplo: endpoint de usuarios
 │   │   ├── layout.tsx          # Layout raiz (global e mínimo)
 │   │   ├── page.tsx            # Página inicial
 │   │   └── globals.css         # Estilos globais (Tailwind v4)
-│   │
+│   ├── services/
+│   │   ├── api/                 # Componentes puros shadcn/ui
+│   ├── data/
+│   │   ├── usuarios/           # Componentes puros shadcn/ui
+│   │   ├── cursos/             # Componentes puros shadcn/ui
 │   ├── components/
 │   │   ├── ui/                 # Componentes puros shadcn/ui
 │   │   │   ├── button.tsx
