@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Bell, Search, User, Settings, LogOut } from "lucide-react"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Bell, User, Settings, LogOut } from "lucide-react"
 
 interface AppHeaderProps {
   title?: string
@@ -29,9 +30,7 @@ export function AppHeader({ title }: AppHeaderProps) {
       )}
 
       <div className="ml-auto flex items-center gap-4">
-        <Button variant="ghost" size="icon">
-          <Search className="h-5 w-5 text-blue-500" />
-        </Button>
+        <ThemeToggle />
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5 text-orange-500" />
           <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-red-500" />
