@@ -33,7 +33,7 @@ export default function Dashboard() {
   const recentTasks = data.slice(0, 8)
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>

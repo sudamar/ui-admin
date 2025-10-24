@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ArrowLeft, Save } from "lucide-react"
-import { User, usersService } from "@/services/users.service"
+import { User, usersService } from "@/services/usuarios.service"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -80,7 +80,7 @@ export default function EditUserPage() {
           status: user.status,
         })
       } else {
-        router.push("/users")
+        router.push("/usuarios")
       }
     } catch (error) {
       console.error("Erro ao carregar usuário:", error)
@@ -93,7 +93,7 @@ export default function EditUserPage() {
     setSaving(true)
     try {
       await usersService.update(userId, data)
-      router.push("/users")
+      router.push("/usuarios")
     } catch (error) {
       console.error("Erro ao salvar usuário:", error)
     } finally {
@@ -116,7 +116,7 @@ export default function EditUserPage() {
     <div className="flex-1 space-y-6 p-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/users">
+          <Link href="/usuarios">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -236,7 +236,7 @@ export default function EditUserPage() {
               </CardContent>
               <CardFooter className="flex justify-between">
                 <Button type="button" variant="outline" asChild>
-                  <Link href="/users">Cancelar</Link>
+                  <Link href="/usuarios">Cancelar</Link>
                 </Button>
                 <Button type="submit" disabled={saving}>
                   {saving ? (

@@ -33,7 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Edit, Trash2, Eye, UserPlus, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
-import { User, usersService } from "@/services/users.service"
+import { User, usersService } from "@/services/usuarios.service"
 
 type SortField = 'name' | 'email' | 'role' | 'status' | 'createdAt'
 type SortOrder = 'asc' | 'desc'
@@ -173,16 +173,16 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="flex-1 space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Usuários</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Usuários</h1>
+          <p className="text-sm text-muted-foreground md:text-base">
             Gerencie os usuários do sistema
           </p>
         </div>
-        <Button asChild>
-          <Link href="/users/new">
+        <Button asChild className="w-full sm:w-auto">
+          <Link href="/usuarios/new">
             <UserPlus className="mr-2 h-4 w-4" />
             Novo Usuário
           </Link>
@@ -198,7 +198,7 @@ export default function UsersPage() {
         </CardHeader>
         <CardContent>
           {/* Filtros */}
-          <div className="mb-6 grid gap-4 md:grid-cols-3">
+          <div className="mb-4 flex flex-col gap-3 md:mb-6 md:grid md:grid-cols-3 md:gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -230,8 +230,8 @@ export default function UsersPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="bg-background border rounded-lg shadow-md">
-            <div className="max-h-[600px] overflow-y-auto">
+          <div className="rounded-lg border bg-background shadow-md">
+            <div className="max-h-[600px] overflow-auto">
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                   <TableRow className="hover:bg-transparent">
@@ -344,8 +344,8 @@ export default function UsersPage() {
                                 variant="outline"
                                 onClick={() => setSelectedUser(user)}
                               >
-                                <Eye className="mr-2 h-4 w-4" />
-                                Ver Detalhes
+                                <Eye className="h-4 w-4 md:mr-2" />
+                                <span className="hidden md:inline">Ver Detalhes</span>
                               </Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-[480px] bg-white">
@@ -387,7 +387,7 @@ export default function UsersPage() {
                                 </div>
                                 <div className="flex gap-3 pt-4">
                                   <Button asChild className="flex-1" size="lg">
-                                    <Link href={`/users/${user.id}/edit`}>
+                                    <Link href={`/usuarios/${user.id}/edit`}>
                                       <Edit className="mr-2 h-4 w-4" />
                                       Editar
                                     </Link>
@@ -418,7 +418,7 @@ export default function UsersPage() {
                               <DropdownMenuLabel>Ações</DropdownMenuLabel>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem asChild>
-                                <Link href={`/users/${user.id}/edit`}>
+                                <Link href={`/usuarios/${user.id}/edit`}>
                                   <Edit className="mr-2 h-4 w-4" />
                                   Editar
                                 </Link>

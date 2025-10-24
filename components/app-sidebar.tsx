@@ -103,8 +103,8 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/users")}>
-                  <Link href="/users" data-sidebar-link>
+                <SidebarMenuButton asChild isActive={isActive("/usuarios")}>
+                  <Link href="/usuarios" data-sidebar-link>
                     <Users className="size-4 text-pink-500" />
                     <span>Usuários</span>
                   </Link>
