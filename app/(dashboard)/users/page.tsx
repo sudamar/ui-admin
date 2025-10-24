@@ -5,8 +5,17 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +30,8 @@ import { User, usersService } from "@/services/users.service"
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedUsers, setSelectedUsers] = useState<number[]>([])
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
   useEffect(() => {
     loadUsers()
@@ -47,6 +58,22 @@ export default function UsersPage() {
     } catch (error) {
       console.error("Erro ao deletar usuário:", error)
     }
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedUsers.length === users.length) {
+      setSelectedUsers([])
+    } else {
+      setSelectedUsers(users.map(u => u.id))
+    }
+  }
+
+  const toggleSelectUser = (id: number) => {
+    setSelectedUsers(prev =>
+      prev.includes(id)
+        ? prev.filter(userId => userId !== id)
+        : [...prev, id]
+    )
   }
 
   const getInitials = (name: string) => {
@@ -105,85 +132,182 @@ export default function UsersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuário</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Perfil</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Cadastrado em</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{user.name}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={getRoleBadgeVariant(user.role) as any}>
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={user.status === "active" ? "default" : "secondary"}
-                    >
-                      {user.status === "active" ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(user.createdAt).toLocaleDateString("pt-BR")}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Abrir menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                          <Link href={`/users/${user.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Visualizar
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/users/${user.id}/edit`}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => handleDelete(user.id)}
+          <div className="bg-background border rounded-lg shadow-md">
+            <div className="max-h-[600px] overflow-y-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>
+                      <Checkbox
+                        checked={selectedUsers.length === users.length && users.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Perfil</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Cadastrado em</TableHead>
+                    <TableHead className="text-center">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id} className="hover:bg-muted/50 transition-colors">
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedUsers.includes(user.id)}
+                          onCheckedChange={() => toggleSelectUser(user.id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={user.avatar} alt={user.name} />
+                            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{user.name}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={getRoleBadgeVariant(user.role) as any}>
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={user.status === "active" ? "default" : "secondary"}
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Remover
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                          {user.status === "active" ? "Ativo" : "Inativo"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(user.createdAt).toLocaleDateString("pt-BR")}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setSelectedUser(user)}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                Ver Detalhes
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[480px] bg-white">
+                              <DialogHeader className="pb-4">
+                                <DialogTitle className="text-xl">Detalhes do Usuário</DialogTitle>
+                                <DialogDescription>
+                                  Informações completas sobre{" "}
+                                  <span className="font-medium text-foreground">{user.name}</span>
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-5 pt-2">
+                                <div className="flex items-center gap-4 p-4 rounded-lg bg-gray-50">
+                                  <Avatar className="h-16 w-16">
+                                    <AvatarImage src={user.avatar} alt={user.name} />
+                                    <AvatarFallback className="text-lg bg-primary/10 text-primary">{getInitials(user.name)}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1">
+                                    <h3 className="font-semibold text-lg">{user.name}</h3>
+                                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                                  </div>
+                                </div>
+                                <div className="grid gap-4 text-sm">
+                                  <div className="flex justify-between items-center py-2">
+                                    <span className="text-muted-foreground">Perfil:</span>
+                                    <Badge variant={getRoleBadgeVariant(user.role) as any}>
+                                      {user.role}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex justify-between items-center py-2">
+                                    <span className="text-muted-foreground">Status:</span>
+                                    <Badge variant={user.status === "active" ? "default" : "secondary"}>
+                                      {user.status === "active" ? "Ativo" : "Inativo"}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex justify-between items-center py-2">
+                                    <span className="text-muted-foreground">Cadastrado em:</span>
+                                    <span className="font-medium">{new Date(user.createdAt).toLocaleDateString("pt-BR")}</span>
+                                  </div>
+                                </div>
+                                <div className="flex gap-3 pt-4">
+                                  <Button asChild className="flex-1" size="lg">
+                                    <Link href={`/users/${user.id}/edit`}>
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      Editar
+                                    </Link>
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    className="flex-1"
+                                    size="lg"
+                                    onClick={() => {
+                                      handleDelete(user.id)
+                                    }}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Remover
+                                  </Button>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Abrir menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem asChild>
+                                <Link href={`/users/${user.id}/edit`}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Editar
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => handleDelete(user.id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Remover
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <TableFooter className="sticky bottom-0 bg-background z-10 shadow-inner">
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={6} className="font-medium">
+                      Total de usuários: {users.length}
+                      {selectedUsers.length > 0 && ` • ${selectedUsers.length} selecionado(s)`}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {selectedUsers.length > 0 && (
+                        <Button variant="destructive" size="sm">
+                          Remover Selecionados
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                </TableFooter>
+              </Table>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

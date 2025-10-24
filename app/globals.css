@@ -83,7 +83,23 @@
 }
 
 * {
-  border-color: var(--border);
+  border-color: oklch(0.97 0.001 286.32);
+}
+
+/* Bordas muito suaves para todos os elementos */
+.border,
+[class*="border-"],
+input,
+textarea,
+select,
+button,
+[role="dialog"],
+[data-radix-dialog-content],
+table,
+tr,
+td,
+th {
+  border-color: oklch(0.97 0.001 286.32) !important;
 }
 
 body {
