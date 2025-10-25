@@ -1,9 +1,10 @@
 'use client'
 
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
-import { AppHeader } from "@/components/app-header"
 import { useEffect, useState } from "react"
+
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { AppHeader } from "@/features/dashboard/components/app-header"
+import { AppSidebar } from "@/features/dashboard/components/app-sidebar"
 
 export default function DashboardLayout({
   children,

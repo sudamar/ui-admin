@@ -4,33 +4,30 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  FileText,
-  CheckCircle2,
-  Clock,
-  Users,
-  Activity,
-} from "lucide-react"
-import data from "@/app/dashboard/data.json"
+import { Activity, CheckCircle2, Clock, FileText, Users } from "lucide-react"
+
+import tasks from "@/data/dashboard/tasks.json"
 
 export default function Dashboard() {
   // Calculate statistics from data
-  const totalTasks = data.length
-  const doneTasks = data.filter(item => item.status === "Done").length
-  const inProgressTasks = data.filter(item => item.status === "In Process").length
+  const totalTasks = tasks.length
+  const doneTasks = tasks.filter(item => item.status === "Done").length
+  const inProgressTasks = tasks.filter(item => item.status === "In Process").length
   const completionRate = ((doneTasks / totalTasks) * 100).toFixed(1)
 
   // Get unique reviewers
-  const uniqueReviewers = [...new Set(data.map(item => item.reviewer))].filter(r => r !== "Assign reviewer")
+  const uniqueReviewers = [...new Set(tasks.map((item) => item.reviewer))].filter(
+    (reviewer) => reviewer !== "Assign reviewer",
+  )
 
   // Get task types distribution
-  const taskTypes = data.reduce((acc, item) => {
+  const taskTypes = tasks.reduce((acc, item) => {
     acc[item.type] = (acc[item.type] || 0) + 1
     return acc
   }, {} as Record<string, number>)
 
   // Recent tasks (last 8)
-  const recentTasks = data.slice(0, 8)
+  const recentTasks = tasks.slice(0, 8)
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -195,7 +192,7 @@ export default function Dashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.map((task) => (
+                  {tasks.map((task) => (
                     <TableRow key={task.id}>
                       <TableCell className="font-medium">#{task.id}</TableCell>
                       <TableCell>{task.header}</TableCell>
@@ -229,7 +226,7 @@ export default function Dashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.filter(task => task.status === "Done").map((task) => (
+                  {tasks.filter((task) => task.status === "Done").map((task) => (
                     <TableRow key={task.id}>
                       <TableCell className="font-medium">#{task.id}</TableCell>
                       <TableCell>{task.header}</TableCell>
@@ -256,7 +253,7 @@ export default function Dashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.filter(task => task.status === "In Process").map((task) => (
+                  {tasks.filter((task) => task.status === "In Process").map((task) => (
                     <TableRow key={task.id}>
                       <TableCell className="font-medium">#{task.id}</TableCell>
                       <TableCell>{task.header}</TableCell>

@@ -16,7 +16,10 @@ export default function NotFound() {
 
   if (!isMounted) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
+      <div
+        className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4"
+        suppressHydrationWarning
+      >
         <div className="w-full max-w-2xl">
           <Card className="border-2 p-8 md:p-12">
             <div className="flex flex-col items-center text-center">
@@ -42,7 +45,7 @@ export default function NotFound() {
                   </Link>
                 </Button>
                 <Button asChild variant="outline" size="lg" className="gap-2">
-                  <Link href="/usuarios">
+                  <Link href="/dashboard/usuarios">
                     <Search className="h-4 w-4" />
                     Ver Usuários
                   </Link>
@@ -56,7 +59,10 @@ export default function NotFound() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
+    <div
+      className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4"
+      suppressHydrationWarning
+    >
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -145,7 +151,7 @@ export default function NotFound() {
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="gap-2">
-                <Link href="/usuarios">
+                <Link href="/dashboard/usuarios">
                   <Search className="h-4 w-4" />
                   Ver Usuários
                 </Link>

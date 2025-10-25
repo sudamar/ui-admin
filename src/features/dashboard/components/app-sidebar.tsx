@@ -21,29 +21,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  LayoutDashboard,
-  FileText,
-  Users,
-  Settings,
-  Home,
-  BarChart3,
-  FolderKanban,
-  User,
-  LogOut,
-  ChevronDown,
-} from "lucide-react"
+import { BarChart3, ChevronDown, FileText, FolderKanban, Home, LogOut, Settings, User, Users } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 
 export function AppSidebar() {
   const pathname = usePathname()
 
-  const isActive = (path: string) => {
-    if (path === "/" && pathname === "/") return true
-    if (path !== "/" && pathname.startsWith(path)) return true
-    return false
-  }
+  const isActive = (path: string) =>
+    pathname === path || pathname.startsWith(`${path}/`)
 
   return (
     <Sidebar>
@@ -51,7 +37,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/" className="flex items-center gap-3">
+              <Link href="/dashboard" className="flex items-center gap-3">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md">
                   <span className="text-sm font-bold">FA</span>
                 </div>
@@ -71,40 +57,40 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/") && pathname === "/"}>
-                  <Link href="/" data-sidebar-link>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard")}>
+                  <Link href="/dashboard" data-sidebar-link>
                     <Home className="size-4 text-blue-500" />
                     <span>Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/tasks")}>
-                  <Link href="/tasks" data-sidebar-link>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/tasks")}>
+                  <Link href="/dashboard/tasks" data-sidebar-link>
                     <FileText className="size-4 text-green-500" />
                     <span>Tasks</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/projects")}>
-                  <Link href="/projects" data-sidebar-link>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/projects")}>
+                  <Link href="/dashboard/projects" data-sidebar-link>
                     <FolderKanban className="size-4 text-purple-500" />
                     <span>Projects</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/analytics")}>
-                  <Link href="/analytics" data-sidebar-link>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/analytics")}>
+                  <Link href="/dashboard/analytics" data-sidebar-link>
                     <BarChart3 className="size-4 text-orange-500" />
                     <span>Analytics</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/usuarios")}>
-                  <Link href="/usuarios" data-sidebar-link>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/usuarios")}>
+                  <Link href="/dashboard/usuarios" data-sidebar-link>
                     <Users className="size-4 text-pink-500" />
                     <span>Usuários</span>
                   </Link>
@@ -119,8 +105,8 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/settings")}>
-                  <Link href="/settings" data-sidebar-link>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/settings")}>
+                  <Link href="/dashboard/settings" data-sidebar-link>
                     <Settings className="size-4 text-gray-500" />
                     <span>Settings</span>
                   </Link>

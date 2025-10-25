@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ArrowLeft, Save, UserPlus } from "lucide-react"
-import { usersService } from "@/services/usuarios.service"
+import { usersService } from "@/services/usuarios/usuario-service"
 
 const userSchema = z.object({
   name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
@@ -53,11 +53,11 @@ export default function NewUserPage() {
       .slice(0, 2)
   }
 
-  const validate = (): boolean => {
+  const validate = (): UserFormData | null => {
     try {
-      userSchema.parse(formData)
+      const parsed = userSchema.parse(formData)
       setErrors({})
-      return true
+      return parsed
     } catch (error) {
       if (error instanceof z.ZodError) {
         const newErrors: Partial<Record<keyof UserFormData, string>> = {}
@@ -68,22 +68,27 @@ export default function NewUserPage() {
         })
         setErrors(newErrors)
       }
-      return false
+      return null
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validate()) {
+    const parsedData = validate()
+    if (!parsedData) {
       return
     }
 
     setLoading(true)
     try {
-      // Simular criação de usuário
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      router.push("/usuarios")
+      await usersService.create({
+        name: parsedData.name,
+        email: parsedData.email,
+        role: parsedData.role,
+        status: parsedData.status,
+      })
+      router.push("/dashboard/usuarios")
     } catch (error) {
       console.error("Erro ao criar usuário:", error)
     } finally {
@@ -105,7 +110,7 @@ export default function NewUserPage() {
         <div>
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
-              <Link href="/usuarios">
+              <Link href="/dashboard/usuarios">
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>
@@ -267,7 +272,7 @@ export default function NewUserPage() {
                   asChild
                   disabled={loading}
                 >
-                  <Link href="/usuarios">Cancelar</Link>
+                  <Link href="/dashboard/usuarios">Cancelar</Link>
                 </Button>
               </div>
             </form>

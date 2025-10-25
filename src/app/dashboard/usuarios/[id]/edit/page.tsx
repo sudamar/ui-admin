@@ -3,10 +3,22 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { ArrowLeft, Save } from "lucide-react"
+import { useForm } from "react-hook-form"
+
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -14,20 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ArrowLeft, Save } from "lucide-react"
-import { User, usersService } from "@/services/usuarios.service"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
+import { usersService, type User } from "@/services/usuarios/usuario-service"
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -80,7 +79,7 @@ export default function EditUserPage() {
           status: user.status,
         })
       } else {
-        router.push("/usuarios")
+        router.push("/dashboard/usuarios")
       }
     } catch (error) {
       console.error("Erro ao carregar usuário:", error)
@@ -93,7 +92,7 @@ export default function EditUserPage() {
     setSaving(true)
     try {
       await usersService.update(userId, data)
-      router.push("/usuarios")
+      router.push("/dashboard/usuarios")
     } catch (error) {
       console.error("Erro ao salvar usuário:", error)
     } finally {
@@ -116,7 +115,7 @@ export default function EditUserPage() {
     <div className="flex-1 space-y-6 p-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/usuarios">
+          <Link href="/dashboard/usuarios">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -236,7 +235,7 @@ export default function EditUserPage() {
               </CardContent>
               <CardFooter className="flex justify-between">
                 <Button type="button" variant="outline" asChild>
-                  <Link href="/usuarios">Cancelar</Link>
+                  <Link href="/dashboard/usuarios">Cancelar</Link>
                 </Button>
                 <Button type="submit" disabled={saving}>
                   {saving ? (

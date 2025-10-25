@@ -9,10 +9,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Bell, LogOut, Settings, User } from "lucide-react"
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { Bell, User, Settings, LogOut } from "lucide-react"
+import { ThemeToggle } from "@/components/shared/theme-toggle"
 
 interface AppHeaderProps {
   title?: string

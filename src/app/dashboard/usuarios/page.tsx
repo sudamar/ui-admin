@@ -32,8 +32,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Edit, Trash2, Eye, UserPlus, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
-import { User, usersService } from "@/services/usuarios.service"
+import { ArrowDown, ArrowUp, ArrowUpDown, Edit, Eye, MoreHorizontal, Search, Trash2, UserPlus } from "lucide-react"
+
+import { usersService, type User } from "@/services/usuarios/usuario-service"
 
 type SortField = 'name' | 'email' | 'role' | 'status' | 'createdAt'
 type SortOrder = 'asc' | 'desc'
@@ -182,7 +183,7 @@ export default function UsersPage() {
           </p>
         </div>
         <Button asChild className="w-full sm:w-auto">
-          <Link href="/usuarios/new">
+          <Link href="/dashboard/usuarios/new">
             <UserPlus className="mr-2 h-4 w-4" />
             Novo Usuário
           </Link>
@@ -387,7 +388,7 @@ export default function UsersPage() {
                                 </div>
                                 <div className="flex gap-3 pt-4">
                                   <Button asChild className="flex-1" size="lg">
-                                    <Link href={`/usuarios/${user.id}/edit`}>
+                                  <Link href={`/dashboard/usuarios/${user.id}/edit`}>
                                       <Edit className="mr-2 h-4 w-4" />
                                       Editar
                                     </Link>
@@ -418,7 +419,7 @@ export default function UsersPage() {
                               <DropdownMenuLabel>Ações</DropdownMenuLabel>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem asChild>
-                                <Link href={`/usuarios/${user.id}/edit`}>
+                                <Link href={`/dashboard/usuarios/${user.id}/edit`}>
                                   <Edit className="mr-2 h-4 w-4" />
                                   Editar
                                 </Link>
