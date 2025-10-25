@@ -1,10 +1,26 @@
 'use client'
 
 import { useEffect, useState } from "react"
+import dynamic from "next/dynamic"
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AppHeader } from "@/features/dashboard/components/app-header"
-import { AppSidebar } from "@/features/dashboard/components/app-sidebar"
+
+const AppSidebar = dynamic(
+  async () => {
+    const mod = await import("@/features/dashboard/components/app-sidebar")
+    return { default: mod.AppSidebar }
+  },
+  {
+    ssr: false,
+    loading: () => (
+      <aside
+        className="hidden w-64 border-r border-border/60 bg-muted/50 md:flex"
+        aria-hidden
+      />
+    ),
+  }
+)
 
 export default function DashboardLayout({
   children,

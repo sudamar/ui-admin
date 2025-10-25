@@ -1,0 +1,57 @@
+
+[
+  {
+    "titulo_evento": "Matrícula para Veteranos",
+    "descricao_evento": "Período de matrícula online para alunos veteranos de todos os cursos de graduação e pós-graduação.",
+    "tipo_evento": "inicio_letivo",
+    "data_evento": "2025-01-20",
+    "local_evento": "Portal do Aluno",
+    "hora_evento": "09:00 - 18:00",
+    "observacao_evento": "A matrícula é obrigatória para garantir a vaga no semestre."
+  },
+  {
+    "titulo_evento": "Vestibular de Verão 2025",
+    "descricao_evento": "Prova do processo seletivo para ingresso no primeiro semestre de 2025.",
+    "tipo_evento": "vestibular",
+    "data_evento": "2025-01-25",
+    "local_evento": "Campus Principal",
+    "hora_evento": "14:00",
+    "observacao_evento": "Os portões fecham às 13:45. Trazer documento com foto."
+  },
+  {
+    "titulo_evento": "Início do Semestre Letivo",
+    "descricao_evento": "Primeiro dia de aula para todos os cursos.",
+    "tipo_evento": "inicio_letivo",
+    "data_evento": "2025-02-03",
+    "local_evento": "Salas de aula",
+    "hora_evento": "08:00",
+    "observacao_evento": ""
+  },
+  {
+    "titulo_evento": "Palestra Magna de Abertura",
+    "descricao_evento": "Palestra com o tema 'O Futuro das Humanidades na Era Digital' com o Prof. Dr. Convidado.",
+    "tipo_evento": "palestras",
+    "data_evento": "2025-02-10",
+    "local_evento": "Auditório Central",
+    "hora_evento": "19:30",
+    "observacao_evento": "Evento aberto à comunidade. Inscrições no site."
+  },
+  {
+    "titulo_evento": "Período de Avaliações Parciais (AP1)",
+    "descricao_evento": "Semana de aplicação das primeiras avaliações parciais do semestre.",
+    "tipo_evento": "avaliacoes",
+    "data_evento": "2025-03-17",
+    "local_evento": "Conforme cronograma de cada disciplina",
+    "hora_evento": "",
+    "observacao_evento": "Consulte o calendário específico de cada matéria."
+  },
+  {
+    "titulo_evento": "Férias de Meio de Ano",
+    "descricao_evento": "Recesso acadêmico.",
+    "tipo_evento": "ferias",
+    "data_evento": "2025-07-01",
+    "local_evento": "",
+    "hora_evento": "",
+    "observacao_evento": "Boas férias!"
+  }
+]

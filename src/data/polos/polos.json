@@ -1,0 +1,64 @@
+{
+  "locations": [
+    {
+      "id": "belo-horizonte",
+      "name": "Belo Horizonte - MG",
+      "address": "Rua Exemplo, 123 - Centro, Belo Horizonte - MG, 30000-000",
+      "phone": "(31) 3333-4444",
+      "email": "bh@fafih.edu.br",
+      "coordinator": "Prof. Dr. João Silva",
+      "mapUrl": "https://maps.google.com/?q=Belo+Horizonte",
+      "courses": [
+        "Filosofia",
+        "História da Arte",
+        "Psicanálise"
+      ]
+    },
+    {
+      "id": "juiz-de-fora",
+      "name": "Juiz de Fora - MG",
+      "address": "Av. Principal, 456 - Bairro Exemplo, Juiz de Fora - MG, 36000-000",
+      "phone": "(32) 3333-5555",
+      "email": "jf@fafih.edu.br",
+      "coordinator": "Profa. Dra. Maria Santos",
+      "mapUrl": "https://maps.google.com/?q=Juiz+de+Fora",
+      "courses": [
+        "Filosofia",
+        "Teologia",
+        "Literatura"
+      ]
+    },
+    {
+      "id": "rio-de-janeiro",
+      "name": "Rio de Janeiro - RJ",
+      "address": "Rua das Flores, 789 - Botafogo, Rio de Janeiro - RJ, 22000-000",
+      "phone": "(21) 3333-6666",
+      "email": "rj@fafih.edu.br",
+      "coordinator": "Prof. Dr. Carlos Oliveira",
+      "mapUrl": "https://maps.google.com/?q=Rio+de+Janeiro",
+      "courses": [
+        "Filosofia",
+        "História da Arte",
+        "Cinema e Audiovisual"
+      ]
+    }
+  ],
+  "highlights": [
+    {
+      "title": "Infraestrutura Completa",
+      "description": "Todos os polos contam com salas de aula equipadas, bibliotecas e espaços de convivência para garantir a melhor experiência acadêmica."
+    },
+    {
+      "title": "Mesmo Padrão de Qualidade",
+      "description": "Os cursos oferecidos nos polos seguem os mesmos critérios de excelência da sede, com professores qualificados e material didático atualizado."
+    },
+    {
+      "title": "Suporte Acadêmico",
+      "description": "Cada polo possui coordenação local dedicada a auxiliar os alunos em suas necessidades acadêmicas e administrativas."
+    },
+    {
+      "title": "Localização Estratégica",
+      "description": "Os polos estão localizados em regiões de fácil acesso, facilitando o deslocamento dos estudantes e promovendo a integração com a comunidade local."
+    }
+  ]
+}
