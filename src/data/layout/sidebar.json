@@ -1,0 +1,27 @@
+{
+  "brand": {
+    "href": "/dashboard",
+    "abbr": "FA",
+    "title": "FAFIH",
+    "subtitle": "Admin Dashboard"
+  },
+  "groups": [
+    {
+      "label": "Menu",
+      "items": [
+        { "label": "Dashboard", "icon": "Home", "iconColor": "text-blue-500", "href": "/dashboard", "show": true },
+        { "label": "Usuários", "icon": "Users", "iconColor": "text-pink-500", "href": "/dashboard/usuarios", "show": true },
+        { "label": "Polos", "icon": "Building", "iconColor": "text-sky-500", "href": "/dashboard/polos", "show": true },
+        { "label": "Cursos", "icon": "BookOpen", "iconColor": "text-indigo-500", "href": "/dashboard/cursos", "show": true },
+        { "label": "Projects", "icon": "FolderKanban", "iconColor": "text-purple-500", "href": "/dashboard/projects", "show": false },
+        { "label": "Analytics", "icon": "BarChart3", "iconColor": "text-orange-500", "href": "/dashboard/analytics", "show": false }
+      ]
+    },
+    {
+      "label": "Configurações",
+      "items": [
+        { "label": "Settings", "icon": "Settings", "iconColor": "text-gray-500", "href": "/dashboard/settings", "show": true }
+      ]
+    }
+  ]
+}

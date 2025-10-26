@@ -18,14 +18,16 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useAuth } from "@/contexts/auth-context"
 
 const loginSchema = z.object({
   email: z
-    .string({ required_error: "Informe o email." })
+    .string()
     .min(1, "Informe o email.")
     .email("Informe um email válido."),
   password: z
-    .string({ required_error: "Informe a senha." })
+    .string()
+    .min(1, "Informe a senha.")
     .min(6, "A senha precisa ter ao menos 6 caracteres."),
 })
 
@@ -36,6 +38,7 @@ export function LoginForm({
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   const router = useRouter()
+  const { refresh } = useAuth()
 
   const {
     register,
@@ -61,13 +64,13 @@ export function LoginForm({
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
           body: JSON.stringify(values),
         })
 
         const result = (await response.json()) as {
           success?: boolean
           message?: string
-          token?: string
         }
 
         if (!response.ok || !result?.success) {
@@ -75,11 +78,8 @@ export function LoginForm({
           return
         }
 
-        if (result.token) {
-          localStorage.setItem("ui-admin-token", result.token)
-        }
-
         toast.success("Login realizado com sucesso!")
+        await refresh()
         router.push("/dashboard")
       } catch (error) {
         console.error("Erro ao realizar login", error)

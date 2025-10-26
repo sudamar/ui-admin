@@ -21,15 +21,45 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { BarChart3, ChevronDown, FileText, FolderKanban, Home, LogOut, Settings, User, Users } from "lucide-react"
+import {
+  BarChart3,
+  BookOpen,
+  Building,
+  ChevronDown,
+  Circle,
+  FileText,
+  FolderKanban,
+  Home,
+  LogOut,
+  Settings,
+  User,
+  Users,
+  type LucideIcon,
+} from "lucide-react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 
+import sidebarData from "@/data/layout/sidebar.json"
+import { useAuth } from "@/contexts/auth-context"
+import { cn } from "@/lib/utils"
+
 export function AppSidebar() {
   const pathname = usePathname()
+  const { user } = useAuth()
 
   const isActive = (path: string) =>
     pathname === path || pathname.startsWith(`${path}/`)
+
+  const iconMap: Record<string, LucideIcon> = {
+    Home,
+    FileText,
+    FolderKanban,
+    BarChart3,
+    BookOpen,
+    Building,
+    Users,
+    Settings,
+  }
 
   return (
     <Sidebar>
@@ -37,13 +67,13 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard" className="flex items-center gap-3">
+              <Link href={sidebarData.brand.href} className="flex items-center gap-3">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md">
-                  <span className="text-sm font-bold">FA</span>
+                  <span className="text-sm font-bold">{sidebarData.brand.abbr}</span>
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">FAFIH</span>
-                  <span className="text-xs">Admin Dashboard</span>
+                  <span className="font-semibold">{sidebarData.brand.title}</span>
+                  <span className="text-xs">{sidebarData.brand.subtitle}</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -52,69 +82,28 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/dashboard")}>
-                  <Link href="/dashboard" data-sidebar-link>
-                    <Home className="size-4 text-blue-500" />
-                    <span>Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/dashboard/tasks")}>
-                  <Link href="/dashboard/tasks" data-sidebar-link>
-                    <FileText className="size-4 text-green-500" />
-                    <span>Tasks</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/dashboard/projects")}>
-                  <Link href="/dashboard/projects" data-sidebar-link>
-                    <FolderKanban className="size-4 text-purple-500" />
-                    <span>Projects</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/dashboard/analytics")}>
-                  <Link href="/dashboard/analytics" data-sidebar-link>
-                    <BarChart3 className="size-4 text-orange-500" />
-                    <span>Analytics</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/dashboard/usuarios")}>
-                  <Link href="/dashboard/usuarios" data-sidebar-link>
-                    <Users className="size-4 text-pink-500" />
-                    <span>Usuários</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Configurações</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/dashboard/settings")}>
-                  <Link href="/dashboard/settings" data-sidebar-link>
-                    <Settings className="size-4 text-gray-500" />
-                    <span>Settings</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {sidebarData.groups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.filter((item) => item.show !== false).map((item) => {
+                  const Icon = iconMap[item.icon] ?? Circle
+                  return (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton asChild isActive={isActive(item.href)}>
+                        <Link href={item.href} data-sidebar-link>
+                          <Icon className={cn("size-4", item.iconColor ?? "text-muted-foreground")} />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter>
@@ -124,14 +113,25 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg">
                   <Avatar className="size-8">
-                    <AvatarImage src="/avatar.png" alt="User" />
+                    {user?.avatarUrl ? (
+                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                    ) : null}
                     <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white">
-                      JD
+                      {user?.name
+                        ?.split(" ")
+                        .map((part) => part[0])
+                        .join("")
+                        .slice(0, 2)
+                        .toUpperCase() ?? "??"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col gap-0.5 leading-none">
-                    <span className="font-semibold">John Doe</span>
-                    <span className="text-xs text-muted-foreground">john@example.com</span>
+                    <span className="font-semibold">
+                      {user?.name ?? "Usuário"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {user?.email ?? "sem email"}
+                    </span>
                   </div>
                   <ChevronDown className="ml-auto size-4" />
                 </SidebarMenuButton>

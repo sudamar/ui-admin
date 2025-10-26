@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script> window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        ::-webkit-scrollbar { display: none;}
+        body { font-family: 'Inter', sans-serif; }
+        .glassmorphism { backdrop-filter: blur(16px); background: rgba(255, 255, 255, 0.1); }
+        .sidebar-item:hover { transform: translateX(8px); transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-4px); transition: all 0.3s ease; }
+        .drag-area { border: 2px dashed #60a5fa; background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(59, 130, 246, 0.05)); }
+        .drag-area:hover { border-color: #3b82f6; background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(59, 130, 246, 0.1)); }
+        .floating-shape { position: absolute; opacity: 0.1; pointer-events: none; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#8b5cf6',
+                        accent: '#06d6a0',
+                        warning: '#fbbf24',
+                        danger: '#ef4444'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+
+<div id="sidebar" class="fixed left-0 top-0 h-screen w-64 glassmorphism border-r border-white/20 z-50">
+    <div class="p-6">
+        <div class="flex items-center gap-3 mb-8">
+            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <i class="fas fa-graduation-cap text-white text-lg"></i>
+            </div>
+            <h1 class="text-xl font-bold text-gray-800">EduAdmin</h1>
+        </div>
+        
+        <nav class="space-y-2">
+            <div class="sidebar-item flex items-center gap-3 p-3 rounded-lg bg-blue-500 text-white shadow-lg">
+                <i class="fas fa-book-open text-lg"></i>
+                <span class="font-medium">Gerenciar Cursos</span>
+            </div>
+            <div class="sidebar-item flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:bg-white/20 cursor-pointer">
+                <i class="fas fa-chart-bar text-lg"></i>
+                <span class="font-medium">Analytics</span>
+            </div>
+            <div class="sidebar-item flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:bg-white/20 cursor-pointer">
+                <i class="fas fa-users text-lg"></i>
+                <span class="font-medium">Estudantes</span>
+            </div>
+            <div class="sidebar-item flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:bg-white/20 cursor-pointer">
+                <i class="fas fa-chalkboard-teacher text-lg"></i>
+                <span class="font-medium">Instrutores</span>
+            </div>
+            <div class="sidebar-item flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:bg-white/20 cursor-pointer">
+                <i class="fas fa-cog text-lg"></i>
+                <span class="font-medium">Configurações</span>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<div id="main-content" class="ml-64 p-8">
+    <div class="floating-shape w-32 h-32 bg-blue-200 rounded-full top-10 right-20"></div>
+    <div class="floating-shape w-20 h-20 bg-purple-200 rounded-lg rotate-45 top-40 right-40"></div>
+    <div class="floating-shape w-16 h-16 bg-green-200 rounded-full bottom-20 left-20"></div>
+
+    <div id="header" class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Criar Novo Curso</h1>
+            <p class="text-gray-600">Configure todos os detalhes do seu curso de forma intuitiva</p>
+        </div>
+        <div class="flex gap-3">
+            <button class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors">
+                <i class="fas fa-save mr-2"></i>Salvar Rascunho
+            </button>
+            <button class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
+                <i class="fas fa-rocket mr-2"></i>Publicar Curso
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-12 gap-6">
+        <div id="media-section" class="col-span-12 lg:col-span-6 card-hover bg-white rounded-2xl p-6 shadow-lg border border-blue-100">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-image text-white text-sm"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-800">Mídia do Curso</h2>
+            </div>
+            <div class="drag-area rounded-xl p-8 text-center cursor-pointer">
+                <i class="fas fa-cloud-upload-alt text-4xl text-blue-400 mb-4"></i>
+                <p class="text-gray-600 mb-2">Arraste e solte seu vídeo ou imagem aqui</p>
+                <p class="text-sm text-gray-400">ou clique para selecionar arquivo</p>
+                <button class="mt-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                    Selecionar Arquivo
+                </button>
+            </div>
+        </div>
+
+        <div id="basic-info" class="col-span-12 lg:col-span-6 card-hover bg-white rounded-2xl p-6 shadow-lg border border-purple-100">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-info-circle text-white text-sm"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-800">Informações Básicas</h2>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Título do Curso</label>
+                    <input type="text" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Ex: Curso Completo de React">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Horas Totais</label>
+                        <input type="number" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="40">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Preço (R$)</label>
+                        <input type="number" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="299,00">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="availability-pricing" class="col-span-12 lg:col-span-6 card-hover bg-white rounded-2xl p-6 shadow-lg border border-green-100">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-tag text-white text-sm"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-800">Disponibilidade & Preços</h2>
+            </div>
+            <div class="space-y-4">
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="hasSpots" class="w-4 h-4 text-green-600 rounded">
+                    <label for="hasSpots" class="text-gray-700">Possui vagas disponíveis</label>
+                </div>
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="lastSpot" class="w-4 h-4 text-orange-600 rounded">
+                    <label for="lastSpot" class="text-gray-700">Última vaga</label>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Preço Promocional (R$)</label>
+                    <input type="number" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="199,00">
+                </div>
+            </div>
+        </div>
+
+        <div id="coordinator-info" class="col-span-12 lg:col-span-6 card-hover bg-white rounded-2xl p-6 shadow-lg border border-orange-100">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-user-tie text-white text-sm"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-800">Coordenador</h2>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Coordenador</label>
+                    <input type="text" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="Dr. João Silva">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Títulos</label>
+                    <input type="text" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="PhD em Ciência da Computação">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Descrição do Currículo</label>
+                    <div class="border border-gray-200 rounded-lg p-3 min-h-[100px] focus-within:ring-2 focus-within:ring-orange-500">
+                        <div contenteditable="true" class="outline-none text-gray-700" data-placeholder="Descreva a experiência e qualificações do coordenador..."></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="objectives-section" class="col-span-12 card-hover bg-white rounded-2xl p-6 shadow-lg border border-blue-100">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-bullseye text-white text-sm"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-800">Objetivos do Curso</h2>
+            </div>
+            <div class="border border-gray-200 rounded-lg p-4 min-h-[150px] focus-within:ring-2 focus-within:ring-blue-500">
+                <div class="flex gap-2 mb-3 border-b pb-2">
+                    <button class="p-1 hover:bg-gray-100 rounded"><i class="fas fa-bold text-gray-600"></i></button>
+                    <button class="p-1 hover:bg-gray-100 rounded"><i class="fas fa-italic text-gray-600"></i></button>
+                    <button class="p-1 hover:bg-gray-100 rounded"><i class="fas fa-list-ul text-gray-600"></i></button>
+                    <button class="p-1 hover:bg-gray-100 rounded"><i class="fas fa-list-ol text-gray-600"></i></button>
+                </div>
+                <div contenteditable="true" class="outline-none text-gray-700 min-h-[100px]" data-placeholder="Descreva os objetivos e metas de aprendizado do curso..."></div>
+            </div>
+        </div>
+
+        <div id="target-audience" class="col-span-12 card-hover bg-white rounded-2xl p-6 shadow-lg border border-purple-100">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-white text-sm"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-800">Público Alvo</h2>
+            </div>
+            <div class="border border-gray-200 rounded-lg p-4 min-h-[150px] focus-within:ring-2 focus-within:ring-purple-500">
+                <div class="flex gap-2 mb-3 border-b pb-2">
+                    <button class="p-1 hover:bg-gray-100 rounded"><i class="fas fa-bold text-gray-600"></i></button>
+                    <button class="p-1 hover:bg-gray-100 rounded"><i class="fas fa-italic text-gray-600"></i></button>
+                    <button class="p-1 hover:bg-gray-100 rounded"><i class="fas fa-list-ul text-gray-600"></i></button>
+                    <button class="p-1 hover:bg-gray-100 rounded"><i class="fas fa-list-ol text-gray-600"></i></button>
+                </div>
+                <div contenteditable="true" class="outline-none text-gray-700 min-h-[100px]" data-placeholder="Descreva o perfil ideal dos estudantes para este curso..."></div>
+            </div>
+        </div>
+
+        <div id="faculty-section" class="col-span-12 card-hover bg-white rounded-2xl p-6 shadow-lg border border-green-100">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-chalkboard-teacher text-white text-sm"></i>
+                    </div>
+                    <h2 class="text-xl font-semibold text-gray-800">Corpo Docente</h2>
+                </div>
+                <button class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Adicionar Instrutor
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-medium text-gray-800">Instrutor 1</h3>
+                        <button class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-3 min-h-[80px] focus-within:ring-2 focus-within:ring-green-500">
+                        <div contenteditable="true" class="outline-none text-gray-700" data-placeholder="Adicione informações sobre o instrutor..."></div>
+                    </div>
+                </div>
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                    <i class="fas fa-plus text-2xl text-gray-400 mb-2"></i>
+                    <p class="text-gray-500">Clique para adicionar mais instrutores</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const editableElements = document.querySelectorAll('[contenteditable="true"]');
+    editableElements.forEach(element => {
+        element.addEventListener('focus', function() {
+            if (this.textContent.trim() === '') {
+                this.innerHTML = '';
+            }
+        });
+        
+        element.addEventListener('blur', function() {
+            if (this.textContent.trim() === '') {
+                this.innerHTML = '';
+            }
+        });
+    });
+
+    const dragArea = document.querySelector('.drag-area');
+    dragArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('border-blue-500');
+    });
+    
+    dragArea.addEventListener('dragleave', function() {
+        this.classList.remove('border-blue-500');
+    });
+    
+    dragArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('border-blue-500');
+    });
+});
+</script>
+
+</body>
+</html>

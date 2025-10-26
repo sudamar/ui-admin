@@ -41,8 +41,19 @@ export async function POST(request: NextRequest) {
 
   const token = Buffer.from(`${email}:${Date.now()}`).toString("base64")
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     success: true,
-    token,
   })
+
+  response.cookies.set({
+    name: "ui-admin-token",
+    value: token,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 4, // 4 hours
+  })
+
+  return response
 }

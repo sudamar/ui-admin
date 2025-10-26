@@ -1,0 +1,76 @@
+{
+  "usuarios": [
+    {
+      "id": 1,
+      "name": "João Silva",
+      "email": "joao.silva@fafih.com",
+      "role": "Admin",
+      "status": "active",
+      "createdAt": "2024-01-15",
+      "avatar": "/assets/avatares/1.png"
+    },
+    {
+      "id": 2,
+      "name": "Maria Santos",
+      "email": "maria.santos@fafih.com",
+      "role": "Editor",
+      "status": "active",
+      "createdAt": "2024-02-20",
+      "avatar": "/assets/avatares/2.png"
+    },
+    {
+      "id": 3,
+      "name": "Pedro Oliveira",
+      "email": "pedro.oliveira@fafih.com",
+      "role": "Viewer",
+      "status": "inactive",
+      "createdAt": "2024-03-10",
+      "avatar": "/assets/avatares/3.png"
+    },
+    {
+      "id": 4,
+      "name": "Ana Costa",
+      "email": "ana.costa@fafih.com",
+      "role": "Editor",
+      "status": "active",
+      "createdAt": "2024-01-25",
+      "avatar": "/assets/avatares/4.png"
+    },
+    {
+      "id": 5,
+      "name": "Carlos Ferreira",
+      "email": "carlos.ferreira@fafih.com",
+      "role": "Admin",
+      "status": "active",
+      "createdAt": "2024-02-05",
+      "avatar": "/assets/avatares/5.png"
+    },
+    {
+      "id": 6,
+      "name": "Juliana Lima",
+      "email": "juliana.lima@fafih.com",
+      "role": "Viewer",
+      "status": "active",
+      "createdAt": "2024-03-15",
+      "avatar": "/assets/avatares/6.png"
+    },
+    {
+      "id": 7,
+      "name": "Roberto Alves",
+      "email": "roberto.alves@fafih.com",
+      "role": "Editor",
+      "status": "inactive",
+      "createdAt": "2024-01-30",
+      "avatar": "/assets/avatares/7.png"
+    },
+    {
+      "id": 8,
+      "name": "Fernanda Souza",
+      "email": "fernanda.souza@fafih.com",
+      "role": "Viewer",
+      "status": "active",
+      "createdAt": "2024-02-28",
+      "avatar": "/assets/avatares/8.png"
+    }
+  ]
+}

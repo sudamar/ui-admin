@@ -35,12 +35,8 @@ const formSchema = z.object({
   email: z.string().email({
     message: "Por favor, insira um e-mail válido.",
   }),
-  role: z.enum(["Admin", "Editor", "Viewer"], {
-    required_error: "Selecione um perfil.",
-  }),
-  status: z.enum(["active", "inactive"], {
-    required_error: "Selecione um status.",
-  }),
+  role: z.enum(["Admin", "Editor", "Viewer"]),
+  status: z.enum(["active", "inactive"]),
 })
 
 type FormData = z.infer<typeof formSchema>

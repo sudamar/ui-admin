@@ -25,12 +25,8 @@ import { usersService } from "@/services/usuarios/usuario-service"
 const userSchema = z.object({
   name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
   email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
-  role: z.enum(["Admin", "Editor", "Viewer"], {
-    required_error: "Por favor, selecione um perfil.",
-  }),
-  status: z.enum(["active", "inactive"], {
-    required_error: "Por favor, selecione um status.",
-  }),
+  role: z.enum(["Admin", "Editor", "Viewer"]),
+  status: z.enum(["active", "inactive"]),
 })
 
 type UserFormData = z.infer<typeof userSchema>
@@ -61,9 +57,10 @@ export default function NewUserPage() {
     } catch (error) {
       if (error instanceof z.ZodError) {
         const newErrors: Partial<Record<keyof UserFormData, string>> = {}
-        error.errors.forEach((err) => {
-          if (err.path[0]) {
-            newErrors[err.path[0] as keyof UserFormData] = err.message
+        error.issues.forEach((issue) => {
+          const field = issue.path[0]
+          if (field) {
+            newErrors[field as keyof UserFormData] = issue.message
           }
         })
         setErrors(newErrors)
