@@ -38,10 +38,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { coursesService, type Course } from "@/services/cursos/cursos-service"
+import { coursesService, type CoursePreview } from "@/services/cursos/cursos-service"
 import { cn } from "@/lib/utils"
 
-const availabilityLabels: Record<Course["availability"], string> = {
+const availabilityLabels: Record<CoursePreview["availability"], string> = {
   promotion: "Promoção",
   open: "Vagas em aberto",
   limited: "Faltam 5 vagas",
@@ -49,10 +49,10 @@ const availabilityLabels: Record<Course["availability"], string> = {
 }
 
 export default function CoursesPage() {
-  const [courses, setCourses] = useState<Course[]>([])
+  const [courses, setCourses] = useState<CoursePreview[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<"all" | Course["availability"]>("all")
+  const [statusFilter, setStatusFilter] = useState<"all" | CoursePreview["availability"]>("all")
 
   useEffect(() => {
     const loadCourses = async () => {

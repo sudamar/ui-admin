@@ -11,14 +11,14 @@ const mockUsers: Record<string, MockUser> = {
     id: 1,
     name: "John Doe",
     email: "admin@example.com",
-    avatarUrl: "/avatares/2.png",
+    avatarUrl: "/assets/avatares/1.png",
     role: "admin",
   },
   "maria@fafih.edu.br": {
     id: 2,  
     name: "Maria Santos",
     email: "maria@fafih.edu.br",
-    avatarUrl: "/avatares/2.png",
+    avatarUrl: "/assets/avatares/2.png",
     role: "admin",
   },
 }

@@ -48,7 +48,7 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider defaultOpen={defaultOpen} key={String(isMounted)}>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full" suppressHydrationWarning>
         <AppSidebar />
         <SidebarInset className="flex flex-1 flex-col">
           <AppHeader />
