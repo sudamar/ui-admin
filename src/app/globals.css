@@ -22,6 +22,8 @@
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.96 0.002 286.32);
   --input: oklch(0.94 0.002 286.32);
+  --form-field: #f5f5f6;
+  --form-field-hover: #f1f1f4;
   --ring: oklch(0.841 0.238 128.85);
   --chart-1: oklch(0.871 0.15 154.449);
   --chart-2: oklch(0.723 0.219 149.579);
@@ -57,6 +59,8 @@
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
+  --form-field: oklch(0.224 0.006 286.033);
+  --form-field-hover: oklch(0.244 0.006 286.033);
   --ring: oklch(0.405 0.101 131.063);
   --chart-1: oklch(0.871 0.15 154.449);
   --chart-2: oklch(0.723 0.219 149.579);

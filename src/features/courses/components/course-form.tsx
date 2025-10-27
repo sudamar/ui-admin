@@ -231,6 +231,8 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseSchema),
     defaultValues,
+    mode: "onSubmit",
+    reValidateMode: "onChange",
   })
 
   const isEdit = mode === "edit"
@@ -303,7 +305,11 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 pb-28">
+      <form
+        noValidate
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className="space-y-6 pb-28"
+      >
         <div className="space-y-6">
           <Card className="shadow-2xl border border-border/60 bg-card">
             <CardHeader className="flex flex-col gap-4">
@@ -682,9 +688,9 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
             <CardContent>
               <ComposerInput
                 value={form.watch("description") ?? ""}
-                onValueChange={(val) => form.setValue("description", val, { shouldDirty: true, shouldTouch: true })}
+                onValueChange={(val) => form.setValue("description", val, { shouldDirty: true })}
                 onSend={(message) =>
-                  form.setValue("description", message, { shouldDirty: true, shouldTouch: true })
+                  form.setValue("description", message, { shouldDirty: true })
                 }
                 clearOnSend={false}
                 placeholder="Resumo do curso..."
@@ -708,12 +714,8 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
             <CardContent>
               <ComposerInput
                 value={form.watch("fullDescription") ?? ""}
-                onValueChange={(val) =>
-                  form.setValue("fullDescription", val, { shouldDirty: true, shouldTouch: true })
-                }
-                onSend={(message) =>
-                  form.setValue("fullDescription", message, { shouldDirty: true, shouldTouch: true })
-                }
+                onValueChange={(val) => form.setValue("fullDescription", val, { shouldDirty: true })}
+                onSend={(message) => form.setValue("fullDescription", message, { shouldDirty: true })}
                 clearOnSend={false}
                 placeholder="Detalhes completos do curso..."
                 sendLabel="Aplicar"
@@ -736,12 +738,8 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
             <CardContent>
               <ComposerInput
                 value={form.watch("justificativa") ?? ""}
-                onValueChange={(val) =>
-                  form.setValue("justificativa", val, { shouldDirty: true, shouldTouch: true })
-                }
-                onSend={(message) =>
-                  form.setValue("justificativa", message, { shouldDirty: true, shouldTouch: true })
-                }
+                onValueChange={(val) => form.setValue("justificativa", val, { shouldDirty: true })}
+                onSend={(message) => form.setValue("justificativa", message, { shouldDirty: true })}
                 clearOnSend={false}
                 placeholder="Por que ofertar este curso?"
                 sendLabel="Aplicar"
@@ -764,12 +762,8 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
             <CardContent>
               <ComposerInput
                 value={form.watch("objetivos") ?? ""}
-                onValueChange={(val) =>
-                  form.setValue("objetivos", val, { shouldDirty: true, shouldTouch: true })
-                }
-                onSend={(message) =>
-                  form.setValue("objetivos", message, { shouldDirty: true, shouldTouch: true })
-                }
+                onValueChange={(val) => form.setValue("objetivos", val, { shouldDirty: true })}
+                onSend={(message) => form.setValue("objetivos", message, { shouldDirty: true })}
                 clearOnSend={false}
                 placeholder="Objetivos do curso..."
                 sendLabel="Aplicar"
@@ -792,10 +786,8 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
             <CardContent>
               <ComposerInput
                 value={form.watch("publico") ?? ""}
-                onValueChange={(val) => form.setValue("publico", val, { shouldDirty: true, shouldTouch: true })}
-                onSend={(message) =>
-                  form.setValue("publico", message, { shouldDirty: true, shouldTouch: true })
-                }
+                onValueChange={(val) => form.setValue("publico", val, { shouldDirty: true })}
+                onSend={(message) => form.setValue("publico", message, { shouldDirty: true })}
                 clearOnSend={false}
                 placeholder="Profissionais indicados..."
                 sendLabel="Aplicar"

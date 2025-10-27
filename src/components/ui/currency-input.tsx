@@ -87,7 +87,6 @@ const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
       <Input
         ref={ref}
         inputMode="numeric"
-        pattern="[0-9]*"
         value={displayValue}
         onChange={handleChange}
         onBlur={handleBlur}
