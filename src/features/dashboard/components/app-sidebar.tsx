@@ -38,6 +38,7 @@ import {
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 
 import sidebarData from "@/data/layout/sidebar.json"
 import { useAuth } from "@/contexts/auth-context"
@@ -68,8 +69,15 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href={sidebarData.brand.href} className="flex items-center gap-3">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md">
-                  <span className="text-sm font-bold">{sidebarData.brand.abbr}</span>
+                <div className="relative h-10 w-10 overflow-hidden rounded-lg border border-border/60 bg-background shadow-sm">
+                  <Image
+                    src="/logo-fafih-quadrado-sem-fundo.png"
+                    alt="Logotipo FAFIH"
+                    fill
+                    sizes="40px"
+                    className="object-contain p-1.5"
+                    priority
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-semibold">{sidebarData.brand.title}</span>

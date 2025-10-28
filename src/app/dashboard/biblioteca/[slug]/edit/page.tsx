@@ -277,13 +277,20 @@ const form = useForm<TrabalhoFormValues>({
                         </div>
                       </FormControl>
                       {field.value ? (
-                        <div className="flex items-center justify-between rounded-md border border-dashed border-primary/40 bg-primary/5 px-3 py-2 text-xs text-primary">
-                          <span>PDF carregado</span>
-                          <Button asChild variant="link" size="sm" className="px-0 text-primary">
-                            <a href={field.value} target="_blank" rel="noreferrer">
-                              Visualizar
-                            </a>
-                          </Button>
+                        <div className="flex flex-col gap-2 rounded-md border border-dashed border-primary/40 bg-primary/5 px-3 py-2 text-xs text-primary">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium">PDF carregado</span>
+                            <Button asChild variant="link" size="sm" className="px-0 text-primary">
+                              <a href={field.value} target="_blank" rel="noreferrer">
+                                Visualizar
+                              </a>
+                            </Button>
+                          </div>
+                          <span className="break-all text-muted-foreground">
+                            {field.value.startsWith("data:application/pdf")
+                              ? "Arquivo em base64"
+                              : field.value}
+                          </span>
                         </div>
                       ) : null}
                       <FormMessage />
