@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -17,9 +17,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ArrowDown, ArrowUp, ArrowUpDown, Edit, Eye, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react"
 
-import trabalhosData from "@/data/trabalhos/trabalhos.json"
 import categoriasData from "@/data/trabalhos/trabalhos_categorias.json"
 import MultipleSelector, { type Option } from "@/components/ui/multiselect"
+import { trabalhosService, type Trabalho } from "@/services/trabalhos/trabalhos-service"
 
 interface Trabalho {
   titulo: string
@@ -40,7 +40,6 @@ interface Categoria {
   className: string
 }
 
-const trabalhos: Trabalho[] = trabalhosData
 const categorias: Categoria[] = categoriasData
 
 const categoryMap = new Map<string, Categoria>(
@@ -61,6 +60,20 @@ export default function BibliotecaPage() {
     "titulo" | "autor" | "visitantes" | "data_publicacao"
   >("data_publicacao")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+  const [trabalhos, setTrabalhos] = useState<Trabalho[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await trabalhosService.getAll()
+        setTrabalhos(data)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
 
   const trabalhosFiltrados = useMemo(() => {
     const termo = searchTerm.trim().toLowerCase()
@@ -70,7 +83,7 @@ export default function BibliotecaPage() {
         const matchesTag =
           tagFilter.length === 0 ||
           trabalho.tags.some((tag) =>
-            tagFilter.some((selected) => selected.value === tag.toLowerCase()),
+            tagFilter.some((selected) => selected.value === tag),
           )
 
         if (!termo) {
@@ -101,7 +114,7 @@ export default function BibliotecaPage() {
           return sortOrder === "asc" ? compare : -compare
         },
       )
-  }, [searchTerm, tagFilter, sortField, sortOrder])
+  }, [searchTerm, tagFilter, sortField, sortOrder, trabalhos])
 
   const handleSort = (field: "titulo" | "autor" | "visitantes" | "data_publicacao") => {
     if (sortField === field) {
@@ -160,18 +173,29 @@ export default function BibliotecaPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por título, autor ou tag..."
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                className="pl-9"
-              />
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div className="w-full md:w-[30%]">
+              <label
+                htmlFor="library-search"
+                className="mb-1 block text-sm font-medium text-muted-foreground"
+              >
+                Buscar
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="library-search"
+                  placeholder="Buscar por título, autor ou tag..."
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-muted-foreground">Filtrar por tags</span>
+            <div className="w-full md:w-[40%]">
+              <label className="mb-1 block text-sm font-medium text-muted-foreground">
+                Filtrar por tags
+              </label>
               <MultipleSelector
                 value={tagFilter}
                 onChange={setTagFilter}
@@ -183,12 +207,18 @@ export default function BibliotecaPage() {
                 }))}
                 hidePlaceholderWhenSelected
                 badgeClassName="bg-primary/10 text-primary border-primary/30"
-                inputProps={{ "aria-label": "Filtrar trabalhos por tags" }}
+                inputProps={{
+                  "aria-label": "Filtrar trabalhos por tags",
+                }}
               />
             </div>
           </div>
 
-          {trabalhosFiltrados.length === 0 ? (
+          {loading ? (
+            <div className="rounded-lg border border-dashed border-border/70 px-6 py-12 text-center">
+              <p className="text-sm text-muted-foreground">Carregando trabalhos...</p>
+            </div>
+          ) : trabalhosFiltrados.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border/70 px-6 py-12 text-center">
               <p className="text-lg font-semibold text-foreground">Nenhum trabalho encontrado</p>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -299,13 +329,11 @@ export default function BibliotecaPage() {
                                 Ver detalhes
                               </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                handlePlaceholderAction("Funcionalidade de edição disponível em breve.")
-                              }
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Editar
+                            <DropdownMenuItem asChild>
+                              <Link href={`/dashboard/biblioteca/${trabalho.slug}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Editar
+                              </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
