@@ -42,14 +42,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -88,6 +82,10 @@ const createPoloSchema = z.object({
     .string()
     .min(1, "Informe pelo menos um curso.")
     .min(3, "Informe pelo menos um curso."),
+  location: z
+    .string()
+    .min(1, "Informe a localização.")
+    .min(3, "Informe uma localização válida."),
 })
 
 type CreatePoloFormValues = z.infer<typeof createPoloSchema>
@@ -101,13 +99,13 @@ export default function PolosPage() {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [poloDetails, setPoloDetails] = useState<Polo | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [courseFilter, setCourseFilter] = useState<string>("all")
   const [selectedPolos, setSelectedPolos] = useState<string[]>([])
 
   const createForm = useForm<CreatePoloFormValues>({
     resolver: zodResolver(createPoloSchema),
     defaultValues: {
       name: "",
+      location: "",
       address: "",
       phone: "",
       email: "",
@@ -136,38 +134,25 @@ export default function PolosPage() {
   useEffect(() => {
     const term = searchTerm.trim().toLowerCase()
     const filtered = polos.filter((polo) => {
-      const matchesSearch =
+      return (
         term.length === 0 ||
         polo.name.toLowerCase().includes(term) ||
+        polo.location.toLowerCase().includes(term) ||
         polo.address.toLowerCase().includes(term) ||
         polo.coordinator.toLowerCase().includes(term) ||
         polo.email.toLowerCase().includes(term) ||
         polo.phone.toLowerCase().includes(term)
-
-      const matchesCourse =
-        courseFilter === "all" ||
-        polo.courses.some(
-          (course) => course.toLowerCase() === courseFilter.toLowerCase()
-        )
-
-      return matchesSearch && matchesCourse
+      )
     })
 
-      setFilteredPolos(filtered)
-    }, [polos, searchTerm, courseFilter])
+    setFilteredPolos(filtered)
+  }, [polos, searchTerm])
 
   useEffect(() => {
     setSelectedPolos((prev) =>
       prev.filter((id) => filteredPolos.some((polo) => polo.id === id))
     )
   }, [filteredPolos])
-
-  const courses = useMemo(() => {
-    const allCourses = polos.flatMap((polo) => polo.courses)
-    return Array.from(new Set(allCourses)).sort((a, b) =>
-      a.localeCompare(b, "pt-BR", { sensitivity: "base" })
-    )
-  }, [polos])
 
   const handleCreate = async (values: CreatePoloFormValues) => {
     setCreating(true)
@@ -187,6 +172,7 @@ export default function PolosPage() {
 
       const newPolo = await polosService.create({
         name: values.name,
+        location: values.location,
         address: values.address,
         phone: values.phone,
         email: values.email,
@@ -330,6 +316,22 @@ export default function PolosPage() {
                 className="grid gap-4"
                 onSubmit={createForm.handleSubmit(handleCreate)}
               >
+              <div className="grid gap-2">
+                <label htmlFor="location" className="text-sm font-medium">
+                  Localização <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  id="location"
+                  placeholder="Região, cidade ou descrição breve"
+                  {...createForm.register("location")}
+                />
+                {createForm.formState.errors.location ? (
+                  <p className="text-sm text-destructive">
+                    {createForm.formState.errors.location.message}
+                  </p>
+                ) : null}
+              </div>
+
               <div className="grid gap-2">
                 <label htmlFor="name" className="text-sm font-medium">
                   Nome do polo <span className="text-destructive">*</span>
@@ -476,34 +478,22 @@ export default function PolosPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="w-full md:max-w-sm">
+          <div className="grid gap-3 md:gap-4 md:grid-cols-2 md:items-end">
+            <div className="flex flex-col gap-1 md:col-span-1">
+              <Label htmlFor="polo-search" className="text-sm font-medium text-foreground">
+                Buscar
+              </Label>
               <Input
+                id="polo-search"
                 placeholder="Buscar por nome, cidade ou contato..."
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
             </div>
-            <div className="flex w-full flex-col gap-2 text-sm text-muted-foreground md:w-auto md:flex-row md:items-center md:gap-4">
-              <span className="font-medium text-foreground">Filtrar por curso:</span>
-              <Select value={courseFilter} onValueChange={setCourseFilter}>
-                <SelectTrigger className="w-full min-w-[200px] md:w-56">
-                  <SelectValue placeholder="Todos os cursos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {courses.map((course) => (
-                    <SelectItem key={course} value={course}>
-                      {course}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           {selectedPolos.length > 0 ? (
-            <div className="flex items-center justify-between rounded-md bg-primary/5 px-4 py-2 text-sm">
+            <div className="hidden items-center justify-between rounded-md bg-primary/5 px-4 py-2 text-sm md:flex">
               <span>
                 <strong>{selectedPolos.length}</strong> polo(s) selecionado(s).
               </span>
@@ -528,33 +518,36 @@ export default function PolosPage() {
                 Ajuste os filtros ou cadastre um novo polo para visualizar a lista.
               </p>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[48px]">
-                      <Checkbox
-                        checked={
-                          isAllSelected ? true : isIndeterminate ? "indeterminate" : false
+          ) : null}
+
+          {filteredPolos.length > 0 ? (
+            <>
+              <div className="hidden overflow-x-auto md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[48px]">
+                        <Checkbox
+                          checked={
+                            isAllSelected ? true : isIndeterminate ? "indeterminate" : false
                         }
                         onCheckedChange={(checked) => handleSelectAll(checked)}
                         aria-label="Selecionar todos os polos"
                       />
                     </TableHead>
                     <TableHead className="min-w-[180px]">Polo</TableHead>
+                    <TableHead className="min-w-[160px]">Localização</TableHead>
                     <TableHead className="min-w-[140px]">Coordenador(a)</TableHead>
                     <TableHead className="min-w-[160px]">Contato</TableHead>
-                    <TableHead className="min-w-[220px]">Cursos</TableHead>
                     <TableHead className="w-[60px]" />
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPolos.map((polo) => (
-                    <TableRow key={polo.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedPolos.includes(polo.id)}
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPolos.map((polo) => (
+                      <TableRow key={polo.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedPolos.includes(polo.id)}
                           onCheckedChange={(checked) => handleSelect(polo.id, checked)}
                           aria-label={`Selecionar polo ${polo.name}`}
                         />
@@ -579,6 +572,9 @@ export default function PolosPage() {
                         </div>
                       </TableCell>
                       <TableCell>
+                        <span className="text-sm text-muted-foreground">{polo.location}</span>
+                      </TableCell>
+                      <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium">{polo.coordinator}</span>
                           <span className="text-xs text-muted-foreground">Coordenação local</span>
@@ -598,15 +594,6 @@ export default function PolosPage() {
                           </Link>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1.5">
-                          {polo.courses.map((course) => (
-                            <Badge key={course} variant="outline" className="text-xs font-medium">
-                              {course}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -618,6 +605,11 @@ export default function PolosPage() {
                             <DropdownMenuLabel>Ações</DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => openDetails(polo)}>
                               Ver detalhes
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/dashboard/polos/${polo.id}/edit`}>
+                                Editar
+                              </Link>
                             </DropdownMenuItem>
                             {polo.mapUrl ? (
                               <DropdownMenuItem asChild>
@@ -636,20 +628,154 @@ export default function PolosPage() {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-right text-sm text-muted-foreground">
+                        Exibindo {filteredPolos.length} de {polos.length} polos cadastrados.
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-                <TableFooter>
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-right text-sm text-muted-foreground">
-                      Exibindo {filteredPolos.length} de {polos.length} polos cadastrados.
-                    </TableCell>
-                  </TableRow>
-                </TableFooter>
-              </Table>
-            </div>
-          )}
+                  </TableFooter>
+                </Table>
+              </div>
+
+              <div className="space-y-3 md:hidden">
+                {filteredPolos.map((polo) => (
+                  <Card key={polo.id} className="border border-border/70 shadow-sm">
+                    <CardContent className="space-y-4 p-4">
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          checked={selectedPolos.includes(polo.id)}
+                          onCheckedChange={(checked) => handleSelect(polo.id, checked)}
+                          aria-label={`Selecionar polo ${polo.name}`}
+                        />
+                        <div className="flex flex-1 flex-col gap-2">
+                          <div>
+                            <h3 className="text-base font-semibold text-foreground">{polo.name}</h3>
+                            <p className="text-sm text-muted-foreground">{polo.location}</p>
+                            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <MapPin className="h-4 w-4" />
+                              {polo.address}
+                            </p>
+                            {polo.mapUrl ? (
+                              <Link
+                                href={polo.mapUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs font-medium text-primary hover:underline"
+                              >
+                                Ver no mapa
+                              </Link>
+                            ) : null}
+                          </div>
+                          <div className="space-y-1 text-sm text-muted-foreground">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-foreground">Coordenação</span>
+                              <span>{polo.coordinator}</span>
+                            </div>
+                            <div className="space-y-1">
+                              <span className="font-medium text-foreground">Contato</span>
+                              <div className="flex flex-col text-sm">
+                                <span className="flex items-center gap-2 text-foreground">
+                                  <Phone className="h-4 w-4 text-primary" />
+                                  {polo.phone}
+                                </span>
+                                <Link
+                                  href={`mailto:${polo.email}`}
+                                  className="text-xs text-primary hover:underline"
+                                >
+                                  {polo.email}
+                                </Link>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-center sm:w-auto"
+                          onClick={() => openDetails(polo)}
+                        >
+                          Ver detalhes
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="w-full justify-center sm:w-auto"
+                            >
+                              Ações
+                              <MoreHorizontal className="ml-2 h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => openDetails(polo)}>
+                              Ver detalhes
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/dashboard/polos/${polo.id}/edit`}>
+                                Editar
+                              </Link>
+                            </DropdownMenuItem>
+                            {polo.mapUrl ? (
+                              <DropdownMenuItem asChild>
+                                <Link href={polo.mapUrl} target="_blank" rel="noreferrer">
+                                  Ver mapa
+                                </Link>
+                              </DropdownMenuItem>
+                            ) : null}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => handleDelete(polo.id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Excluir polo
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                <div className="text-right text-sm text-muted-foreground">
+                  Exibindo {filteredPolos.length} de {polos.length} polos cadastrados.
+                </div>
+                {selectedPolos.length > 0 ? (
+                  <div className="flex flex-col gap-2 rounded-md bg-primary/5 p-3 text-sm">
+                    <span className="text-foreground">
+                      <strong>{selectedPolos.length}</strong> polo(s) selecionado(s)
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => setSelectedPolos([])}
+                      >
+                        Limpar seleção
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="flex-1"
+                        onClick={handleBulkDelete}
+                      >
+                        Remover selecionados
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </>
+          ) : null}
         </CardContent>
       </Card>
       </div>
@@ -675,6 +801,10 @@ export default function PolosPage() {
 
           {poloDetails ? (
             <div className="grid gap-4">
+              <div>
+                <h4 className="text-sm font-semibold text-muted-foreground">Localização</h4>
+                <p className="mt-1 text-sm">{poloDetails.location}</p>
+              </div>
               <div>
                 <h4 className="text-sm font-semibold text-muted-foreground">Endereço</h4>
                 <p className="mt-1 text-sm">{poloDetails.address}</p>

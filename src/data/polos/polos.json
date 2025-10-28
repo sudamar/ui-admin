@@ -3,6 +3,7 @@
     {
       "id": "belo-horizonte",
       "name": "Belo Horizonte - MG",
+      "location": "Belo Horizonte, MG",
       "address": "Rua Exemplo, 123 - Centro, Belo Horizonte - MG, 30000-000",
       "phone": "(31) 3333-4444",
       "email": "bh@fafih.edu.br",
@@ -17,6 +18,7 @@
     {
       "id": "juiz-de-fora",
       "name": "Juiz de Fora - MG",
+      "location": "Juiz de Fora, MG",
       "address": "Av. Principal, 456 - Bairro Exemplo, Juiz de Fora - MG, 36000-000",
       "phone": "(32) 3333-5555",
       "email": "jf@fafih.edu.br",
@@ -31,6 +33,7 @@
     {
       "id": "rio-de-janeiro",
       "name": "Rio de Janeiro - RJ",
+      "location": "Rio de Janeiro, RJ",
       "address": "Rua das Flores, 789 - Botafogo, Rio de Janeiro - RJ, 22000-000",
       "phone": "(21) 3333-6666",
       "email": "rj@fafih.edu.br",
