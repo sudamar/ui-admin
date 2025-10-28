@@ -15,36 +15,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ArrowDown, ArrowUp, ArrowUpDown, Edit, Eye, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, Edit, Eye, MoreHorizontal, Plus, Search, Tag, Trash2, type LucideIcon } from "lucide-react"
+import * as Icons from "lucide-react"
 
-import categoriasData from "@/data/trabalhos/trabalhos_categorias.json"
 import MultipleSelector, { type Option } from "@/components/ui/multiselect"
+import { categoriasService, type Categoria } from "@/services/trabalhos/categorias-service"
 import { trabalhosService, type Trabalho } from "@/services/trabalhos/trabalhos-service"
 
-interface Trabalho {
-  titulo: string
-  autor: string
-  data_publicacao: string
-  link: string
-  tags: string[]
-  slug: string
-  resumo?: string
-  nota?: number
-  visitantes: number
-  baixados?: number
+const getCategoryIcon = (icon?: string): LucideIcon => {
+  if (!icon) return Tag
+  const IconComponent = Icons[icon as keyof typeof Icons] as LucideIcon | undefined
+  return IconComponent ?? Tag
 }
-
-interface Categoria {
-  slug: string
-  label: string
-  className: string
-}
-
-const categorias: Categoria[] = categoriasData
-
-const categoryMap = new Map<string, Categoria>(
-  categorias.map((categoria) => [categoria.slug, categoria]),
-)
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   month: "2-digit",
@@ -61,19 +43,47 @@ export default function BibliotecaPage() {
   >("data_publicacao")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [trabalhos, setTrabalhos] = useState<Trabalho[]>([])
+  const [categorias, setCategorias] = useState<Categoria[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await trabalhosService.getAll()
-        setTrabalhos(data)
+        const [trabalhosData, categoriasData] = await Promise.all([
+          trabalhosService.getAll(),
+          categoriasService.getAll(),
+        ])
+        setTrabalhos(trabalhosData)
+        setCategorias(categoriasData)
+      } catch (error) {
+        console.error("Erro ao carregar dados da biblioteca", error)
       } finally {
         setLoading(false)
       }
     }
     load()
   }, [])
+
+  const categoryMap = useMemo(
+    () =>
+      new Map<string, Categoria>(
+        categorias.map((categoria) => [categoria.slug, categoria]),
+      ),
+    [categorias],
+  )
+
+  const tagOptions = useMemo<Option[]>(
+    () =>
+      categorias.map((categoria) => ({
+        value: categoria.slug,
+        label: categoria.label,
+      })),
+    [categorias],
+  )
+
+  useEffect(() => {
+    setTagFilter((prev) => prev.filter((option) => categoryMap.has(option.value)))
+  }, [categoryMap])
 
   const trabalhosFiltrados = useMemo(() => {
     const termo = searchTerm.trim().toLowerCase()
@@ -201,16 +211,31 @@ export default function BibliotecaPage() {
                 onChange={setTagFilter}
                 placeholder="Selecione tags"
                 className="min-h-[44px]"
-                options={categorias.map((categoria) => ({
-                  value: categoria.slug,
-                  label: categoria.label,
-                }))}
+                options={tagOptions}
                 hidePlaceholderWhenSelected
                 badgeClassName="bg-primary/10 text-primary border-primary/30"
                 inputProps={{
                   "aria-label": "Filtrar trabalhos por tags",
                 }}
               />
+              {tagFilter.length > 0 ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {tagFilter.map((option) => {
+                    const categoria = categoryMap.get(option.value)
+                    const Icon = getCategoryIcon(categoria?.icon)
+                    return (
+                      <Badge
+                        key={`filter-${option.value}`}
+                        variant="outline"
+                        className={categoria?.className ?? "border-border bg-muted text-muted-foreground"}
+                      >
+                        <Icon className="mr-1 h-3.5 w-3.5" />
+                        {categoria?.label ?? option.label}
+                      </Badge>
+                    )
+                  })}
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -295,12 +320,14 @@ export default function BibliotecaPage() {
                         <div className="flex flex-wrap gap-1.5">
                           {trabalho.tags.map((tag) => {
                             const categoria = categoryMap.get(tag)
+                            const Icon = getCategoryIcon(categoria?.icon)
                             return (
                               <Badge
                                 key={`${trabalho.slug}-${tag}`}
                                 variant="outline"
                                 className={categoria?.className ?? "border-border bg-muted text-muted-foreground"}
                               >
+                                <Icon className="mr-1 h-3.5 w-3.5" />
                                 {categoria?.label ?? tag}
                               </Badge>
                             )

@@ -11,6 +11,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import {
   DropdownMenu,
@@ -32,6 +35,7 @@ import {
   Home,
   LogOut,
   Settings,
+  Tag,
   User,
   Users,
   type LucideIcon,
@@ -60,6 +64,7 @@ export function AppSidebar() {
     Building,
     Users,
     Settings,
+    Tag,
   }
 
   return (
@@ -97,14 +102,38 @@ export function AppSidebar() {
               <SidebarMenu>
                 {group.items.filter((item) => item.show !== false).map((item) => {
                   const Icon = iconMap[item.icon] ?? Circle
+                  const childItems = Array.isArray(item.children)
+                    ? item.children.filter((child) => child.show !== false)
+                    : []
+                  const isChildActive = childItems.some((child) => isActive(child.href))
+                  const active = isActive(item.href) || isChildActive
                   return (
                     <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild isActive={isActive(item.href)}>
+                      <SidebarMenuButton asChild isActive={active}>
                         <Link href={item.href} data-sidebar-link>
                           <Icon className={cn("size-4", item.iconColor ?? "text-muted-foreground")} />
                           <span>{item.label}</span>
                         </Link>
                       </SidebarMenuButton>
+                      {childItems.length > 0 ? (
+                        <SidebarMenuSub>
+                          {childItems.map((child) => {
+                            const ChildIcon = iconMap[child.icon] ?? Circle
+                            return (
+                              <SidebarMenuSubItem key={child.href}>
+                                <SidebarMenuSubButton asChild isActive={isActive(child.href)}>
+                                  <Link href={child.href} data-sidebar-link>
+                                    <ChildIcon
+                                      className={cn("size-4", child.iconColor ?? "text-muted-foreground")}
+                                    />
+                                    <span>{child.label}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            )
+                          })}
+                        </SidebarMenuSub>
+                      ) : null}
                     </SidebarMenuItem>
                   )
                 })}

@@ -13,7 +13,29 @@
         { "label": "Usuários", "icon": "Users", "iconColor": "text-pink-500", "href": "/dashboard/usuarios", "show": true },
         { "label": "Polos", "icon": "Building", "iconColor": "text-sky-500", "href": "/dashboard/polos", "show": true },
         { "label": "Cursos", "icon": "BookOpen", "iconColor": "text-indigo-500", "href": "/dashboard/cursos", "show": true },
-        { "label": "Biblioteca", "icon": "FileText", "iconColor": "text-emerald-500", "href": "/dashboard/biblioteca", "show": true },
+        {
+          "label": "Biblioteca",
+          "icon": "FileText",
+          "iconColor": "text-emerald-500",
+          "href": "/dashboard/biblioteca",
+          "show": true,
+          "children": [
+            {
+              "label": "Trabalhos",
+              "icon": "FileText",
+              "iconColor": "text-emerald-500",
+              "href": "/dashboard/biblioteca",
+              "show": true
+            },
+            {
+              "label": "Categorias",
+              "icon": "Tag",
+              "iconColor": "text-amber-500",
+              "href": "/dashboard/biblioteca/categorias",
+              "show": true
+            }
+          ]
+        },
         { "label": "Projects", "icon": "FolderKanban", "iconColor": "text-purple-500", "href": "/dashboard/projects", "show": false },
         { "label": "Analytics", "icon": "BarChart3", "iconColor": "text-orange-500", "href": "/dashboard/analytics", "show": false }
       ]

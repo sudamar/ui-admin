@@ -13,14 +13,36 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import MultipleSelector, { type Option } from "@/components/ui/multiselect"
-import { ArrowLeft, Save } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { ArrowLeft, Save, Tag, type LucideIcon } from "lucide-react"
+import * as Icons from "lucide-react"
 
 import { trabalhosService, type Trabalho } from "@/services/trabalhos/trabalhos-service"
 import categoriasData from "@/data/trabalhos/trabalhos_categorias.json"
 
-const categoryMap = new Map<string, { label: string }>(
-  categoriasData.map((categoria) => [categoria.slug, { label: categoria.label }]),
+const categoryMap = new Map<string, { label: string; className: string; icon?: string }>(
+  categoriasData.map((categoria) => [categoria.slug, { label: categoria.label, className: categoria.className, icon: categoria.icon }]),
 )
+
+const getCategoryIcon = (icon?: string): LucideIcon => {
+  if (!icon) return Tag
+  const IconComponent = Icons[icon as keyof typeof Icons] as LucideIcon | undefined
+  return IconComponent ?? Tag
+}
+
+const extrairNomeArquivo = (valor?: string) => {
+  if (!valor) return ""
+  if (valor.startsWith("data:application/pdf")) {
+    return "PDF incorporado"
+  }
+  const partes = valor.split("/")
+  return partes[partes.length - 1]
+}
+
+const tagOptions: Option[] = categoriasData.map((categoria) => ({
+  value: categoria.slug,
+  label: categoria.label,
+}))
 
 const trabalhoSchema = z.object({
   titulo: z.string().min(3, "Informe um título"),
@@ -65,11 +87,6 @@ const trabalhoSchema = z.object({
 
 type TrabalhoFormValues = z.infer<typeof trabalhoSchema>
 
-const tagOptions: Option[] = categoriasData.map((categoria) => ({
-  value: categoria.slug,
-  label: categoria.label,
-}))
-
 export default function EditTrabalhoPage() {
   const params = useParams()
   const router = useRouter()
@@ -77,22 +94,25 @@ export default function EditTrabalhoPage() {
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [pdfName, setPdfName] = useState<string>("")
 
-const form = useForm<TrabalhoFormValues>({
-  resolver: zodResolver(trabalhoSchema),
-  defaultValues: {
-    titulo: "",
-    autor: "",
-    data_publicacao: "",
-    link: "",
-    tags: [],
-    resumo: "",
-    nota: "",
-    visitantes: "",
-    baixados: "",
-    arquivo: "",
-  },
-})
+  const form = useForm<TrabalhoFormValues>({
+    resolver: zodResolver(trabalhoSchema),
+    defaultValues: {
+      titulo: "",
+      autor: "",
+      data_publicacao: "",
+      link: "",
+      tags: [],
+      resumo: "",
+      nota: "",
+      visitantes: "",
+      baixados: "",
+      arquivo: "",
+    },
+  })
+
+  const selectedTags = form.watch("tags") ?? []
 
   useEffect(() => {
     const load = async () => {
@@ -115,6 +135,7 @@ const form = useForm<TrabalhoFormValues>({
           baixados: trabalho.baixados?.toString() ?? "",
           arquivo: trabalho.arquivo ?? "",
         })
+        setPdfName(trabalho.arquivo ? extrairNomeArquivo(trabalho.arquivo) : "")
       } catch (error) {
         console.error("Erro ao carregar trabalho", error)
       } finally {
@@ -259,6 +280,7 @@ const form = useForm<TrabalhoFormValues>({
                               const file = event.target.files?.[0]
                               if (!file) {
                                 field.onChange("")
+                                setPdfName("")
                                 return
                               }
                               if (file.type !== "application/pdf") {
@@ -269,6 +291,7 @@ const form = useForm<TrabalhoFormValues>({
                               const reader = new FileReader()
                               reader.onload = () => {
                                 field.onChange(reader.result as string)
+                                setPdfName(file.name)
                                 event.target.value = ""
                               }
                               reader.readAsDataURL(file)
@@ -287,9 +310,7 @@ const form = useForm<TrabalhoFormValues>({
                             </Button>
                           </div>
                           <span className="break-all text-muted-foreground">
-                            {field.value.startsWith("data:application/pdf")
-                              ? "Arquivo em base64"
-                              : field.value}
+                            {extrairNomeArquivo(field.value) || pdfName || "Arquivo selecionado"}
                           </span>
                         </div>
                       ) : null}
@@ -319,6 +340,24 @@ const form = useForm<TrabalhoFormValues>({
                           inputProps={{ "aria-label": "Selecionar tags" }}
                         />
                       </FormControl>
+                      {selectedTags.length > 0 ? (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {selectedTags.map((tag) => {
+                            const categoria = categoryMap.get(tag)
+                            const Icon = getCategoryIcon(categoria?.icon)
+                            return (
+                              <Badge
+                                key={`selected-${tag}`}
+                                variant="outline"
+                                className={categoria?.className ?? "border-border bg-muted text-muted-foreground"}
+                              >
+                                <Icon className="mr-1 h-3.5 w-3.5" />
+                                {categoria?.label ?? tag}
+                              </Badge>
+                            )
+                          })}
+                        </div>
+                      ) : null}
                       <FormMessage />
                     </FormItem>
                   )}
