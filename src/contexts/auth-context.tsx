@@ -13,6 +13,7 @@ type AuthContextValue = {
   user: AuthUser | null
   loading: boolean
   refresh: () => Promise<void>
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -55,12 +56,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void loadProfile()
   }, [])
 
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      })
+    } catch (error) {
+      console.error("Erro ao realizar logout:", error)
+    } finally {
+      setUser(null)
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
         user,
         loading,
         refresh: loadProfile,
+        logout,
       }}
     >
       {children}

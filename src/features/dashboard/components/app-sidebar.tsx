@@ -1,5 +1,6 @@
 "use client"
 
+import { useCallback } from "react"
 import {
   Sidebar,
   SidebarContent,
@@ -40,7 +41,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -50,7 +51,13 @@ import { cn } from "@/lib/utils"
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const { user } = useAuth()
+  const router = useRouter()
+  const { user, logout } = useAuth()
+
+  const handleLogout = useCallback(async () => {
+    await logout()
+    router.replace("/login")
+  }, [logout, router])
 
   const isActive = (path: string) =>
     pathname === path || pathname.startsWith(`${path}/`)
@@ -185,7 +192,12 @@ export function AppSidebar() {
                   Configurações
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault()
+                    void handleLogout()
+                  }}
+                >
                   <LogOut className="mr-2 h-4 w-4 text-red-500" />
                   Sair
                 </DropdownMenuItem>

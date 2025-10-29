@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, type Dispatch, type SetStateAction } from "react"
 
 // --- Helper Components ---
 
@@ -29,7 +29,12 @@ const GridBackground = () => (
 
 
 // Theme Toggle Switch
-const ThemeToggle = ({ darkMode, setDarkMode }) => (
+type ThemeToggleProps = {
+  darkMode: boolean
+  setDarkMode: Dispatch<SetStateAction<boolean>>
+}
+
+const ThemeToggle = ({ darkMode, setDarkMode }: ThemeToggleProps) => (
   <button
     onClick={() => setDarkMode(!darkMode)}
     className="absolute top-6 right-6 z-20 p-2 rounded-full text-gray-500 dark:text-gray-400 bg-gray-200/50 dark:bg-gray-700/50 hover:bg-gray-300/70 dark:hover:bg-gray-600/70 transition-all duration-300"
@@ -58,8 +63,10 @@ const ThemeToggle = ({ darkMode, setDarkMode }) => (
 );
 
 // Icon for the file type, now with a universal folded corner
-const FileIcon = ({ type }) => {
-  const typeStyles = {
+type FileType = "PDF" | "XLS" | "DOCX" | string
+
+const FileIcon = ({ type }: { type: FileType }) => {
+  const typeStyles: Record<string, { bg: string; text: string }> = {
     PDF: { bg: 'bg-red-500', text: '.PDF' },
     XLS: { bg: 'bg-green-500', text: '.XLS' },
     DOCX: { bg: 'bg-blue-500', text: '.DOC' },
@@ -81,7 +88,7 @@ const FileIcon = ({ type }) => {
 
 
 // Progress bar for downloading items
-const ProgressBar = ({ progress }) => (
+const ProgressBar = ({ progress }: { progress: number }) => (
   <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mt-1.5">
     <div
       className="bg-blue-500 h-1.5 rounded-full transition-all duration-500 ease-out"
@@ -91,7 +98,15 @@ const ProgressBar = ({ progress }) => (
 );
 
 // Action buttons (Download/Cancel)
-const ActionButton = ({ status, onCancel }) => {
+type DownloadStatus = "downloading" | "complete"
+
+const ActionButton = ({
+  status,
+  onCancel,
+}: {
+  status: DownloadStatus
+  onCancel: () => void
+}) => {
   if (status === 'downloading') {
     return (
       <button onClick={onCancel} className="text-slate-500 dark:text-slate-400 font-semibold text-sm hover:text-slate-800 dark:hover:text-slate-200 transition-colors duration-200">
@@ -107,7 +122,24 @@ const ActionButton = ({ status, onCancel }) => {
 };
 
 // --- Main File Item Component (Now fully responsive) ---
-const FileItem = ({ file, onCancel }) => {
+type DownloadFile = {
+  id: number
+  name: string
+  type: FileType
+  size: number
+  status: DownloadStatus
+  progress: number
+  subtype: string
+  originalSubtype?: string
+}
+
+const FileItem = ({
+  file,
+  onCancel,
+}: {
+  file: DownloadFile
+  onCancel: (id: number) => void
+}) => {
   const { name, type, subtype, size, status, progress } = file;
   const displaySize = size < 1 ? `${(size * 1000).toFixed(0)} KB` : `${size} MB`;
 
@@ -142,27 +174,36 @@ const FileItem = ({ file, onCancel }) => {
 // --- App Component ---
 export default function App() {
   // Respect user's system preference for dark mode
-  const [darkMode, setDarkMode] = useState(
-    () => window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-  );
+  const [darkMode, setDarkMode] = useState(false)
 
-  const initialFiles = [
+  const initialFiles: DownloadFile[] = [
     { id: 1, name: 'ReactJS-for-beginner.pdf', type: 'PDF', size: 4.5, status: 'downloading', progress: 0, originalSubtype: 'Portable Document Format', subtype: 'Downloading...' },
     { id: 2, name: 'Database-MySQL.xls', type: 'XLS', size: 25.7, status: 'complete', progress: 100, subtype: 'Microsoft Excel' },
     { id: 3, name: 'Summary-of-php.docx', type: 'DOCX', size: 0.35, status: 'complete', progress: 100, subtype: 'Microsoft Word' },
   ];
   const [files, setFiles] = useState(initialFiles);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setDarkMode(window.matchMedia("(prefers-color-scheme: dark)").matches)
+    }
+  }, [])
+
   // Effect for download simulation
   useEffect(() => {
     const interval = setInterval(() => {
       setFiles(currentFiles =>
-        currentFiles.map(file => {
+        currentFiles.map<DownloadFile>(file => {
           if (file.status === 'downloading' && file.progress < 100) {
             const increment = Math.random() * 8;
             const newProgress = Math.min(file.progress + increment, 100);
             if (newProgress >= 100) {
-              return { ...file, progress: 100, status: 'complete', subtype: file.originalSubtype };
+              return {
+                ...file,
+                progress: 100,
+                status: 'complete',
+                subtype: file.originalSubtype ?? file.subtype,
+              };
             }
             return { ...file, progress: newProgress };
           }
@@ -175,6 +216,8 @@ export default function App() {
 
   // Effect to update the class on the root <html> element
   useEffect(() => {
+    if (typeof document === "undefined") return
+
     if (darkMode) {
       document.documentElement.classList.add('dark');
     } else {
@@ -182,7 +225,7 @@ export default function App() {
     }
   }, [darkMode]);
 
-  const handleCancel = (fileId) => {
+  const handleCancel = (fileId: number) => {
     setFiles(currentFiles =>
       currentFiles.map(file =>
         file.id === fileId ? { ...file, status: 'complete', progress: 100, subtype: 'Cancelled' } : file

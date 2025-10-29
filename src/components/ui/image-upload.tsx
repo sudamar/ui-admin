@@ -5,7 +5,8 @@ import { ImageIcon, Loader2, UploadCloud, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-interface ImageUploadProps extends React.HTMLAttributes<HTMLDivElement> {
+interface ImageUploadProps
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange"> {
   value?: string
   onChange?: (value?: string) => void
   label?: string

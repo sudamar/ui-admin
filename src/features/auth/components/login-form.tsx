@@ -86,19 +86,14 @@ export function LoginForm({
         toast.error("Ocorreu um erro inesperado. Tente novamente.")
       }
     },
-    [router]
+    [refresh, router]
   )
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader className="text-center">
-          <div className="mb-4 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <span className="text-3xl font-bold">FA</span>
-            </div>
-          </div>
-          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardTitle className="text-2xl">Acesse sua conta</CardTitle>
           <CardDescription>
             Entre com seu email para acessar o painel
           </CardDescription>

@@ -1,5 +1,7 @@
 "use client"
 
+import { useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -21,7 +23,13 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ title }: AppHeaderProps) {
-  const { user, loading } = useAuth()
+  const router = useRouter()
+  const { user, loading, logout } = useAuth()
+
+  const handleLogout = useCallback(async () => {
+    await logout()
+    router.replace("/login")
+  }, [logout, router])
 
   const initials = user?.name
     ? user.name
@@ -83,7 +91,12 @@ export function AppHeader({ title }: AppHeaderProps) {
               Configurações
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault()
+                void handleLogout()
+              }}
+            >
               <LogOut className="mr-2 h-4 w-4 text-red-500" />
               Sair
             </DropdownMenuItem>
