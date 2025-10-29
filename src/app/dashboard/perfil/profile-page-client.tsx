@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { ImageUpload } from "@/components/ui/image-upload"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "sonner"
 
@@ -44,7 +45,6 @@ const profileSchema = z.object({
       z.literal(""),
     ])
     .optional(),
-  avatar: z.string().max(1024, "Máximo de 1024 caracteres").optional(),
   bio: z.string().max(280, "A bio pode ter no máximo 280 caracteres").optional(),
 })
 
@@ -59,7 +59,6 @@ export function ProfilePageClient() {
       name: "",
       displayName: "",
       avatarPublic: "",
-      avatar: "",
       bio: "",
     },
   })
@@ -70,7 +69,6 @@ export function ProfilePageClient() {
         name: user.name ?? "",
         displayName: user.displayName ?? "",
         avatarPublic: user.avatarPublic ?? user.avatarUrl ?? "",
-        avatar: user.avatar ?? "",
         bio: user.bio ?? "",
       })
     }
@@ -88,7 +86,6 @@ export function ProfilePageClient() {
           name: values.name,
           displayName: values.displayName,
           avatarUrl: values.avatarPublic,
-          avatar: values.avatar,
           bio: values.bio,
         }),
       })
@@ -182,7 +179,7 @@ export function ProfilePageClient() {
                 </div>
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <p>A foto pública é exibida no dashboard e em comunicações internas.</p>
-                  <p>Informe também um identificador privado caso utilize armazenamento próprio.</p>
+                  <p>Você pode enviar uma imagem ou informar uma URL pública existente.</p>
                 </div>
               </div>
 
@@ -221,25 +218,13 @@ export function ProfilePageClient() {
                   <FormItem>
                     <FormLabel>Foto pública (URL)</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://..." {...field} />
+                      <ImageUpload
+                        value={field.value ?? ""}
+                        onChange={(value) => field.onChange(value ?? "")}
+                        className="max-w-sm"
+                        previewClassName="h-32 w-full"
+                      />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="avatar"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Avatar privado</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Caminho interno ou identificador" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Opcional. Use para armazenar um identificador privado, como caminho no Storage.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

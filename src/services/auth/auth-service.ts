@@ -164,13 +164,12 @@ type UpdateProfileInput = {
   name?: string
   avatarUrl?: string
   bio?: string
-  avatar?: string
   displayName?: string
 }
 
 export async function updateUserProfile(
   userId: string,
-  { name, avatarUrl, bio, avatar, displayName }: UpdateProfileInput
+  { name, avatarUrl, bio, displayName }: UpdateProfileInput
 ) {
   const adminClient = getSupabaseAdminClient()
   if (!adminClient) {
@@ -206,7 +205,6 @@ export async function updateUserProfile(
     .upsert(
       {
         id: userId,
-        avatar: avatar ?? null,
         avatar_public: avatarUrl ?? null,
         bio: bio ?? null,
         display_name: displayName ?? name ?? null,

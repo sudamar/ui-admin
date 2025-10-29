@@ -77,7 +77,7 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const { name, displayName, avatarUrl, avatar, bio } = parsed.data
+    const { name, displayName, avatarUrl, bio } = parsed.data
 
     const updatedUser = await updateUserProfile(currentUser.id, {
       name,
@@ -87,8 +87,6 @@ export async function PATCH(request: Request) {
           : undefined,
       avatarUrl:
         avatarUrl && avatarUrl.trim().length > 0 ? avatarUrl.trim() : undefined,
-      avatar:
-        avatar && avatar.trim().length > 0 ? avatar.trim() : undefined,
       bio: bio && bio.trim().length > 0 ? bio.trim() : undefined,
     })
     return NextResponse.json({ success: true, user: updatedUser })
