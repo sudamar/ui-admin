@@ -8,7 +8,7 @@ const AUTH_COOKIE = "ui-admin-token"
 export async function GET() {
   const cookieStore = await cookies()
   const token = cookieStore.get(AUTH_COOKIE)?.value
-  const profile = getProfileFromToken(token)
+  const profile = await getProfileFromToken(token)
 
   if (!profile) {
     return NextResponse.json(

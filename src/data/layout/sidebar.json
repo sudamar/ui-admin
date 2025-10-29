@@ -44,6 +44,7 @@
     {
       "label": "Configurações",
       "items": [
+        { "label": "Perfil", "icon": "User", "iconColor": "text-blue-500", "href": "/dashboard/perfil", "show": true },
         { "label": "Settings", "icon": "Settings", "iconColor": "text-gray-500", "href": "/dashboard/settings", "show": true }
       ]
     }

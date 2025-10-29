@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
+import { signInWithEmailAndPassword } from "@/services/auth/auth-service"
+
 const credentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 })
-
-const demoEmail = process.env.NEXT_PUBLIC_DEMO_EMAIL ?? "admin@example.com"
-const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? "admin123"
 
 export async function POST(request: NextRequest) {
   const payload = await request.json().catch(() => null)
@@ -26,34 +25,49 @@ export async function POST(request: NextRequest) {
 
   const { email, password } = parseResult.data
 
-  // Pequena espera para simular requisição externa.
-  await new Promise((resolve) => setTimeout(resolve, 400))
+  const { session, user, error } = await signInWithEmailAndPassword(
+    email,
+    password
+  )
 
-  if (email !== demoEmail || password !== demoPassword) {
+  if (error || !session || !user) {
     return NextResponse.json(
       {
         success: false,
-        message: "Credenciais inválidas. Utilize o acesso demo informado.",
+        message:
+          error?.message ??
+          "Não foi possível realizar o login. Verifique suas credenciais.",
       },
       { status: 401 }
     )
   }
 
-  const token = Buffer.from(`${email}:${Date.now()}`).toString("base64")
-
   const response = NextResponse.json({
     success: true,
+    user,
   })
 
   response.cookies.set({
     name: "ui-admin-token",
-    value: token,
+    value: session.access_token,
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 4, // 4 hours
+    maxAge: session.expires_in ?? 60 * 60,
   })
+
+  if (session.refresh_token) {
+    response.cookies.set({
+      name: "ui-admin-refresh",
+      value: session.refresh_token,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    })
+  }
 
   return response
 }

@@ -2,12 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react"
 
-type AuthUser = {
-  name: string
-  email: string
-  avatarUrl?: string
-  role: "admin" | "viewer"
-}
+import type { AuthUser } from "@/services/auth/auth-service"
 
 type AuthContextValue = {
   user: AuthUser | null
@@ -66,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Erro ao realizar logout:", error)
     } finally {
       setUser(null)
+      setLoading(false)
     }
   }
 
