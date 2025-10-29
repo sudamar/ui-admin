@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect } from "react"
-import { zodResolver } from "@hookform/resolvers/zod"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -18,15 +19,14 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { ImageUpload } from "@/components/ui/image-upload"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { ImageUpload } from "@/components/ui/image-upload"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "sonner"
 
@@ -36,15 +36,7 @@ const profileSchema = z.object({
     .min(1, "Informe seu nome")
     .max(120, "O nome pode ter no máximo 120 caracteres"),
   displayName: z.string().max(80, "Máximo de 80 caracteres").optional(),
-  avatarPublic: z
-    .union([
-      z
-        .string()
-        .url("Informe uma URL válida")
-        .max(1024, "URL muito longa"),
-      z.literal(""),
-    ])
-    .optional(),
+  avatarPublic: z.string().optional(),
   bio: z.string().max(280, "A bio pode ter no máximo 280 caracteres").optional(),
 })
 
@@ -52,6 +44,8 @@ type ProfileFormValues = z.infer<typeof profileSchema>
 
 export function ProfilePageClient() {
   const { user, loading, refresh } = useAuth()
+  const router = useRouter()
+  const [uploading, setUploading] = useState(false)
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -76,23 +70,43 @@ export function ProfilePageClient() {
 
   const handleSubmit = form.handleSubmit(async (values) => {
     try {
+      setUploading(true)
+
+      const payload: Record<string, unknown> = {
+        name: values.name.trim(),
+        displayName: values.displayName?.trim() ?? "",
+        bio: values.bio?.trim() ?? "",
+      }
+
+      const avatarValue = values.avatarPublic?.trim() ?? ""
+      if (avatarValue.length > 0) {
+        if (avatarValue.startsWith("data:image/")) {
+          payload.avatarDataUrl = avatarValue
+        } else {
+          payload.avatarUrl = avatarValue
+        }
+      } else {
+        payload.avatarUrl = ""
+      }
+
       const response = await fetch("/api/profile", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({
-          name: values.name,
-          displayName: values.displayName,
-          avatarUrl: values.avatarPublic,
-          bio: values.bio,
-        }),
+        body: JSON.stringify(payload),
       })
 
       const result = (await response.json()) as {
         success?: boolean
         message?: string
+        user?: {
+          name?: string
+          displayName?: string | null
+          avatarUrl?: string | null
+          bio?: string | null
+        }
       }
 
       if (!response.ok || !result.success) {
@@ -100,7 +114,15 @@ export function ProfilePageClient() {
       }
 
       toast.success("Perfil atualizado com sucesso!")
+
+      if (result.user?.avatarUrl) {
+        form.setValue("avatarPublic", result.user.avatarUrl, {
+          shouldDirty: false,
+        })
+      }
+
       await refresh()
+      router.refresh()
     } catch (error) {
       console.error(error)
       toast.error(
@@ -108,6 +130,8 @@ export function ProfilePageClient() {
           ? error.message
           : "Não foi possível atualizar o perfil."
       )
+    } finally {
+      setUploading(false)
     }
   })
 
@@ -183,6 +207,11 @@ export function ProfilePageClient() {
                 </div>
               </div>
 
+                <div className="text-sm text-muted-foreground">
+                <p>Email</p>
+                <p className="font-medium text-foreground">{user.email}</p>
+              </div>
+
               <FormField
                 control={form.control}
                 name="name"
@@ -216,13 +245,15 @@ export function ProfilePageClient() {
                 name="avatarPublic"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Foto pública (URL)</FormLabel>
+                    <FormLabel>Foto pública</FormLabel>
                     <FormControl>
                       <ImageUpload
                         value={field.value ?? ""}
                         onChange={(value) => field.onChange(value ?? "")}
                         className="max-w-sm"
                         previewClassName="h-32 w-full"
+                        disabled={uploading || form.formState.isSubmitting}
+                        description="Arraste uma imagem ou clique para enviar. Também é possível colar uma URL pública."
                       />
                     </FormControl>
                     <FormMessage />
@@ -248,12 +279,13 @@ export function ProfilePageClient() {
               />
             </CardContent>
             <CardFooter className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                <p>Email</p>
-                <p className="font-medium text-foreground">{user.email}</p>
-              </div>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Salvando..." : "Salvar alterações"}
+              <Button
+                type="submit"
+                disabled={form.formState.isSubmitting || uploading}
+              >
+                {form.formState.isSubmitting || uploading
+                  ? "Salvando..."
+                  : "Salvar alterações"}
               </Button>
             </CardFooter>
           </form>

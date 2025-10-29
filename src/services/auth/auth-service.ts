@@ -1,3 +1,5 @@
+import { Buffer } from "buffer"
+
 import {
   createClient,
   type SupabaseClient,
@@ -164,12 +166,13 @@ type UpdateProfileInput = {
   name?: string
   avatarUrl?: string
   bio?: string
+  avatarStoragePath?: string | null
   displayName?: string
 }
 
 export async function updateUserProfile(
   userId: string,
-  { name, avatarUrl, bio, displayName }: UpdateProfileInput
+  { name, avatarUrl, bio, avatarStoragePath, displayName }: UpdateProfileInput
 ) {
   const adminClient = getSupabaseAdminClient()
   if (!adminClient) {
@@ -200,17 +203,20 @@ export async function updateUserProfile(
     )
   }
 
+  const detailsPayload: Record<string, unknown> = {
+    id: userId,
+    avatar_public: avatarUrl ?? null,
+    bio: bio ?? null,
+    display_name: displayName ?? name ?? null,
+  }
+
+  if (avatarStoragePath !== undefined) {
+    detailsPayload.avatar = avatarStoragePath
+  }
+
   const { error: detailsError } = await adminClient
     .from("usuarios_detalhes")
-    .upsert(
-      {
-        id: userId,
-        avatar_public: avatarUrl ?? null,
-        bio: bio ?? null,
-        display_name: displayName ?? name ?? null,
-      },
-      { onConflict: "id" }
-    )
+    .upsert(detailsPayload, { onConflict: "id" })
 
   if (detailsError) {
     throw new Error(detailsError.message)
@@ -219,4 +225,56 @@ export async function updateUserProfile(
   const details = await getUserDetails(userId)
 
   return mapSupabaseUser(data.user, details)
+}
+
+export async function uploadAvatarFromDataUrl(
+  userId: string,
+  dataUrl: string
+) {
+  const adminClient = getSupabaseAdminClient()
+  if (!adminClient) {
+    throw new Error(
+      "Supabase service role key não configurada. Defina SUPABASE_SERVICE_KEY para permitir upload de avatar."
+    )
+  }
+
+  const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(dataUrl)
+  if (!match) {
+    throw new Error("Formato de imagem inválido. Envie uma imagem base64 válida.")
+  }
+
+  const mimeType = match[1]
+  const base64Data = match[2]
+  const extension = mimeType.split("/")[1]?.split(";")[0] ?? "png"
+  const fileName = `usuarios/usuario_${userId}.${extension}`
+
+  const buffer = Buffer.from(base64Data, "base64")
+
+  const { error: uploadError } = await adminClient.storage
+    .from("avatares")
+    .upload(fileName, buffer, {
+      cacheControl: "3600",
+      contentType: mimeType,
+      upsert: true,
+    })
+
+  if (uploadError) {
+    throw new Error(
+      uploadError.message ?? "Não foi possível enviar a imagem para o Supabase Storage."
+    )
+  }
+
+  const { data } = adminClient.storage
+    .from("avatares")
+    .getPublicUrl(fileName)
+
+  const publicUrl = data?.publicUrl
+  if (!publicUrl) {
+    throw new Error("Não foi possível obter a URL pública do avatar.")
+  }
+
+  return {
+    publicUrl,
+    path: fileName,
+  }
 }

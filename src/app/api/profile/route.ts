@@ -5,6 +5,7 @@ import { z } from "zod"
 import {
   getProfileFromToken,
   updateUserProfile,
+  uploadAvatarFromDataUrl,
 } from "@/services/auth/auth-service"
 
 const AUTH_COOKIE = "ui-admin-token"
@@ -39,8 +40,15 @@ const profileSchema = z.object({
     .max(120, "O nome pode ter no máximo 120 caracteres"),
   displayName: optionalString(80),
   avatarUrl: optionalUrl,
-  avatar: optionalString(1024),
   bio: optionalString(280),
+  avatarDataUrl: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || value.startsWith("data:image/"),
+      "Formato de imagem inválido"
+    )
+    .optional(),
 })
 
 export async function PATCH(request: Request) {
@@ -77,7 +85,23 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const { name, displayName, avatarUrl, bio } = parsed.data
+    const { name, displayName, avatarUrl, bio, avatarDataUrl } = parsed.data
+
+    let finalAvatarUrl =
+      avatarUrl && avatarUrl.trim().length > 0 ? avatarUrl.trim() : undefined
+    let avatarStoragePath: string | null | undefined =
+      currentUser.avatar ?? undefined
+
+    if (avatarDataUrl && avatarDataUrl.trim().length > 0) {
+      const upload = await uploadAvatarFromDataUrl(
+        currentUser.id,
+        avatarDataUrl.trim()
+      )
+      finalAvatarUrl = upload.publicUrl
+      avatarStoragePath = upload.path
+    } else if (!finalAvatarUrl) {
+      avatarStoragePath = null
+    }
 
     const updatedUser = await updateUserProfile(currentUser.id, {
       name,
@@ -85,8 +109,8 @@ export async function PATCH(request: Request) {
         displayName && displayName.trim().length > 0
           ? displayName.trim()
           : undefined,
-      avatarUrl:
-        avatarUrl && avatarUrl.trim().length > 0 ? avatarUrl.trim() : undefined,
+      avatarUrl: finalAvatarUrl,
+      avatarStoragePath,
       bio: bio && bio.trim().length > 0 ? bio.trim() : undefined,
     })
     return NextResponse.json({ success: true, user: updatedUser })
