@@ -48,10 +48,10 @@ import {
 
 import type { Professor } from "../types"
 import {
+  markProfessorDeleted,
   mergeWithOverrides,
   PROFESSORES_STORAGE_KEY,
   readProfessorOverrides,
-  removeProfessorOverride,
 } from "../storage"
 
 type ProfessoresTableProps = {
@@ -124,7 +124,7 @@ export function ProfessoresTable({ data }: ProfessoresTableProps) {
       return
     }
     setRows((prev) => prev.filter((item) => item.id !== professor.id))
-    removeProfessorOverride(professor.id)
+    markProfessorDeleted(professor.id)
     if (detailsProfessor?.id === professor.id) {
       setDetailsProfessor(null)
     }

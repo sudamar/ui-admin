@@ -2,13 +2,13 @@ import type { Professor } from "./types"
 
 export const PROFESSORES_STORAGE_KEY = "ui-admin-professores-overrides"
 
-type ProfessorOverrides = Record<number, Professor>
+type ProfessorOverrides = Record<number, Professor | null>
 
 function isBrowser() {
   return typeof window !== "undefined"
 }
 
-export function readProfessorOverrides(): ProfessorOverrides {
+function readOverridesFromStorage(): ProfessorOverrides {
   if (!isBrowser()) {
     return {}
   }
@@ -24,11 +24,15 @@ export function readProfessorOverrides(): ProfessorOverrides {
   }
 }
 
+export function readProfessorOverrides(): ProfessorOverrides {
+  return readOverridesFromStorage()
+}
+
 export function writeProfessorOverride(professor: Professor) {
   if (!isBrowser()) return
 
   try {
-    const overrides = readProfessorOverrides()
+    const overrides = readOverridesFromStorage()
     overrides[professor.id] = professor
     window.localStorage.setItem(
       PROFESSORES_STORAGE_KEY,
@@ -39,20 +43,18 @@ export function writeProfessorOverride(professor: Professor) {
   }
 }
 
-export function removeProfessorOverride(id: number) {
+export function markProfessorDeleted(id: number) {
   if (!isBrowser()) return
 
   try {
-    const overrides = readProfessorOverrides()
-    if (overrides[id]) {
-      delete overrides[id]
-      window.localStorage.setItem(
-        PROFESSORES_STORAGE_KEY,
-        JSON.stringify(overrides)
-      )
-    }
+    const overrides = readOverridesFromStorage()
+    overrides[id] = null
+    window.localStorage.setItem(
+      PROFESSORES_STORAGE_KEY,
+      JSON.stringify(overrides)
+    )
   } catch (error) {
-    console.error("Erro ao remover professor do storage:", error)
+    console.error("Erro ao marcar professor como removido no storage:", error)
   }
 }
 
@@ -64,7 +66,25 @@ export function mergeWithOverrides(
     return base
   }
 
-  return base.map((professor) =>
-    overrides[professor.id] ? overrides[professor.id] : professor
-  )
+  const baseById = new Map(base.map((professor) => [professor.id, professor]))
+  const result: Professor[] = []
+
+  for (const professor of base) {
+    const override = overrides[professor.id]
+    if (override === null) {
+      continue
+    }
+    result.push(override ?? professor)
+  }
+
+  for (const [idString, override] of Object.entries(overrides)) {
+    const id = Number(idString)
+    if (!Number.isFinite(id)) continue
+    if (baseById.has(id)) continue
+    if (override) {
+      result.push(override)
+    }
+  }
+
+  return result
 }

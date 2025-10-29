@@ -56,9 +56,7 @@ const availabilityOptions: { value: CourseAvailability; label: string }[] = [
 ]
 
 const currencyField = z
-  .number({
-    invalid_type_error: "Informe um valor válido em reais",
-  })
+  .number()
   .min(0, "Informe um valor maior ou igual a zero")
   .optional()
 

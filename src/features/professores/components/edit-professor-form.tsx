@@ -26,8 +26,9 @@ export function EditProfessorForm({ professor }: EditProfessorFormProps) {
 
   useEffect(() => {
     const overrides = readProfessorOverrides()
-    if (overrides[professor.id]) {
-      setFormData(overrides[professor.id])
+    const override = overrides[professor.id]
+    if (override) {
+      setFormData(override)
     }
   }, [professor.id])
 

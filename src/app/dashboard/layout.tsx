@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { AppHeader } from "@/features/dashboard/components/app-header"
 
 const AppSidebar = dynamic(
   async () => {
@@ -20,6 +19,14 @@ const AppSidebar = dynamic(
       />
     ),
   }
+)
+
+const AppHeader = dynamic(
+  async () => {
+    const mod = await import("@/features/dashboard/components/app-header")
+    return { default: mod.AppHeader }
+  },
+  { ssr: false }
 )
 
 export default function DashboardLayout({
