@@ -1,83 +1,135 @@
-import categoriasData from "@/data/trabalhos/trabalhos_categorias.json"
-
 export interface Categoria {
-  slug: string
-  label: string
-  icon?: string
-  className: string
+  id: string
+  nome: string
+  icone?: string | null
+  cor?: string | null
 }
 
-const store: Categoria[] = categoriasData.map((categoria) => ({
-  slug: categoria.slug,
-  label: categoria.label,
-  icon: categoria.icon,
-  className: categoria.className,
-}))
+type CategoriasListResponse =
+  | {
+      success: true
+      categorias: Categoria[]
+    }
+  | {
+      success: true
+      categoria: Categoria
+    }
+  | {
+      success: false
+      message?: string
+    }
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const API_URL = "/api/categorias"
 
-const slugify = (input: string) =>
-  input
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "")
+async function handleResponse(response: Response) {
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as
+      | { message?: string }
+      | null
+    throw new Error(
+      errorBody?.message ?? "Não foi possível processar a solicitação."
+    )
+  }
+
+  const result = (await response.json()) as CategoriasListResponse
+  if (!("success" in result) || !result.success) {
+    throw new Error(
+      "message" in result && result.message
+        ? result.message
+        : "Não foi possível processar a solicitação."
+    )
+  }
+
+  return result
+}
 
 export const categoriasService = {
   async getAll(): Promise<Categoria[]> {
-    await delay(150)
-    return [...store]
+    const response = await fetch(API_URL, {
+      credentials: "include",
+    })
+
+    const result = await handleResponse(response)
+
+    if ("categorias" in result) {
+      return result.categorias
+    }
+
+    return [result.categoria]
   },
 
-  async getBySlug(slug: string): Promise<Categoria | undefined> {
-    await delay(120)
-    return store.find((item) => item.slug === slug)
+  async getById(id: string): Promise<Categoria | null> {
+    const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
+      credentials: "include",
+    })
+
+    if (response.status === 404) {
+      return null
+    }
+
+    const result = await handleResponse(response)
+
+    if ("categoria" in result) {
+      return result.categoria
+    }
+
+    return result.categorias[0] ?? null
   },
 
-  async create(data: Categoria): Promise<Categoria> {
-    await delay(200)
-    const slug = data.slug ? slugify(data.slug) : slugify(data.label)
-    if (store.some((item) => item.slug === slug)) {
-      throw new Error("Já existe uma categoria com esse slug.")
+  async create(data: { nome: string; icone?: string | null; cor?: string | null }): Promise<Categoria> {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(data),
+    })
+
+    const result = await handleResponse(response)
+
+    if ("categoria" in result) {
+      return result.categoria
     }
 
-    const categoria: Categoria = {
-      slug,
-      label: data.label,
-      icon: data.icon,
-      className: data.className,
-    }
-
-    store.unshift(categoria)
-    return categoria
+    return result.categorias[0]
   },
 
-  async update(slug: string, data: Categoria): Promise<Categoria> {
-    await delay(200)
-    const index = store.findIndex((item) => item.slug === slug)
-    if (index === -1) {
-      throw new Error("Categoria não encontrada.")
+  async update(
+    id: string,
+    data: { nome: string; icone?: string | null; cor?: string | null }
+  ): Promise<Categoria> {
+    const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(data),
+    })
+
+    const result = await handleResponse(response)
+
+    if ("categoria" in result) {
+      return result.categoria
     }
 
-    const updated: Categoria = {
-      slug: data.slug ? slugify(data.slug) : slug,
-      label: data.label,
-      icon: data.icon,
-      className: data.className,
-    }
-
-    store[index] = updated
-    return updated
+    return result.categorias[0]
   },
 
-  async delete(slug: string): Promise<void> {
-    await delay(150)
-    const index = store.findIndex((item) => item.slug === slug)
-    if (index === -1) {
-      throw new Error("Categoria não encontrada.")
-    }
+  async delete(id: string): Promise<void> {
+    const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      credentials: "include",
+    })
 
-    store.splice(index, 1)
+    if (!response.ok) {
+      const errorBody = (await response.json().catch(() => null)) as
+        | { message?: string }
+        | null
+      throw new Error(
+        errorBody?.message ?? "Não foi possível remover a categoria."
+      )
+    }
   },
 }

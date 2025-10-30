@@ -47,30 +47,30 @@ export default function CategoriasPage() {
   const filteredCategorias = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
 
-  const filtered = term
-    ? categorias.filter((categoria) =>
-        [categoria.label, categoria.slug, categoria.icon, categoria.className]
-          .join(" ")
-          .toLowerCase()
-          .includes(term),
-      )
-    : categorias
+    const filtered = term
+      ? categorias.filter((categoria) =>
+          [categoria.nome, categoria.icone ?? "", categoria.cor ?? ""]
+            .join(" ")
+            .toLowerCase()
+            .includes(term),
+        )
+      : categorias
 
-  return [...filtered].sort((a, b) =>
-    a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }),
-  )
-}, [categorias, searchTerm])
+    return [...filtered].sort((a, b) =>
+      a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
+    )
+  }, [categorias, searchTerm])
 
-  const handleDelete = async (slug: string) => {
-    const categoria = categorias.find((item) => item.slug === slug)
+  const handleDelete = async (id: string) => {
+    const categoria = categorias.find((item) => item.id === id)
     if (!categoria) return
 
-    const shouldDelete = confirm(`Deseja realmente remover a categoria "${categoria.label}"?`)
+    const shouldDelete = confirm(`Deseja realmente remover a categoria "${categoria.nome}"?`)
     if (!shouldDelete) return
 
     try {
-      await categoriasService.delete(slug)
-      setCategorias((prev) => prev.filter((item) => item.slug !== slug))
+      await categoriasService.delete(id)
+      setCategorias((prev) => prev.filter((item) => item.id !== id))
     } catch (error) {
       console.error("Erro ao remover categoria", error)
       alert("Não foi possível remover a categoria. Tente novamente.")
@@ -111,7 +111,7 @@ export default function CategoriasPage() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="category-search"
-                  placeholder="Busque por nome, slug, ícone ou classe"
+                  placeholder="Busque por nome, ícone ou classes"
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                   className="pl-9"
@@ -137,26 +137,25 @@ export default function CategoriasPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="min-w-[220px]">Categoria</TableHead>
-                    <TableHead className="min-w-[140px]">Slug</TableHead>
-                    <TableHead className="min-w-[220px]">Classes</TableHead>
+                    <TableHead className="min-w-[220px]">Cor (classes)</TableHead>
                     <TableHead className="min-w-[160px]">Exemplo</TableHead>
                     <TableHead className="w-[80px] text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredCategorias.map((categoria) => {
-                    const Icon = getIconComponent(categoria.icon)
+                    const Icon = getIconComponent(categoria.icone ?? undefined)
                     return (
-                      <TableRow key={categoria.slug}>
+                      <TableRow key={categoria.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <span className="inline-flex size-9 items-center justify-center rounded-md border border-border/60 bg-muted/40">
                               <Icon className="h-4 w-4 text-muted-foreground" />
                             </span>
                             <div className="flex flex-col">
-                              <span className="font-medium text-foreground">{categoria.label}</span>
-                              {categoria.icon ? (
-                                <span className="text-xs text-muted-foreground">Ícone: {categoria.icon}</span>
+                              <span className="font-medium text-foreground">{categoria.nome}</span>
+                              {categoria.icone ? (
+                                <span className="text-xs text-muted-foreground">Ícone: {categoria.icone}</span>
                               ) : (
                                 <span className="text-xs text-muted-foreground">Ícone padrão</span>
                               )}
@@ -164,20 +163,17 @@ export default function CategoriasPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <code className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">{categoria.slug}</code>
-                        </TableCell>
-                        <TableCell>
                           <code className="block rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
-                            {categoria.className}
+                            {categoria.cor ?? "sem classes definidas"}
                           </code>
                         </TableCell>
                         <TableCell>
                           <Badge
                             variant="outline"
-                            className={categoria.className + " gap-1"}
+                            className={`${categoria.cor ?? "border-border bg-muted text-muted-foreground"} gap-1`}
                           >
                             <Icon className="h-3.5 w-3.5" />
-                            {categoria.label}
+                            {categoria.nome}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -191,7 +187,7 @@ export default function CategoriasPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Ações</DropdownMenuLabel>
                               <DropdownMenuItem asChild>
-                                <Link href={`/dashboard/biblioteca/categorias/${categoria.slug}/edit`}>
+                                <Link href={`/dashboard/biblioteca/categorias/${categoria.id}/edit`}>
                                   <Edit className="mr-2 h-4 w-4" />
                                   Editar
                                 </Link>
@@ -199,7 +195,7 @@ export default function CategoriasPage() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
-                                onClick={() => handleDelete(categoria.slug)}
+                                onClick={() => handleDelete(categoria.id)}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Remover

@@ -28,6 +28,14 @@ const getCategoryIcon = (icon?: string): LucideIcon => {
   return IconComponent ?? Tag
 }
 
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "")
+
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   month: "2-digit",
   year: "numeric",
@@ -64,19 +72,20 @@ export function BibliotecaPageClient() {
     load()
   }, [])
 
-  const categoryMap = useMemo(
-    () =>
-      new Map<string, Categoria>(
-        categorias.map((categoria) => [categoria.slug, categoria]),
-      ),
-    [categorias],
-  )
+  const categoryMap = useMemo(() => {
+    const entries: Array<[string, Categoria]> = []
+    categorias.forEach((categoria) => {
+      entries.push([categoria.nome, categoria])
+      entries.push([slugify(categoria.nome), categoria])
+    })
+    return new Map(entries)
+  }, [categorias])
 
   const tagOptions = useMemo<Option[]>(
     () =>
       categorias.map((categoria) => ({
-        value: categoria.slug,
-        label: categoria.label,
+        value: slugify(categoria.nome),
+        label: categoria.nome,
       })),
     [categorias],
   )
@@ -222,15 +231,15 @@ export function BibliotecaPageClient() {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {tagFilter.map((option) => {
                     const categoria = categoryMap.get(option.value)
-                    const Icon = getCategoryIcon(categoria?.icon)
+                    const Icon = getCategoryIcon(categoria?.icone ?? undefined)
                     return (
                       <Badge
                         key={`filter-${option.value}`}
                         variant="outline"
-                        className={categoria?.className ?? "border-border bg-muted text-muted-foreground"}
+                        className={categoria?.cor ?? "border-border bg-muted text-muted-foreground"}
                       >
                         <Icon className="mr-1 h-3.5 w-3.5" />
-                        {categoria?.label ?? option.label}
+                        {categoria?.nome ?? option.label}
                       </Badge>
                     )
                   })}
@@ -320,15 +329,15 @@ export function BibliotecaPageClient() {
                         <div className="flex flex-wrap gap-1.5">
                           {trabalho.tags.map((tag) => {
                             const categoria = categoryMap.get(tag)
-                            const Icon = getCategoryIcon(categoria?.icon)
+                            const Icon = getCategoryIcon(categoria?.icone ?? undefined)
                             return (
                               <Badge
                                 key={`${trabalho.slug}-${tag}`}
                                 variant="outline"
-                                className={categoria?.className ?? "border-border bg-muted text-muted-foreground"}
+                                className={categoria?.cor ?? "border-border bg-muted text-muted-foreground"}
                               >
                                 <Icon className="mr-1 h-3.5 w-3.5" />
-                                {categoria?.label ?? tag}
+                                {categoria?.nome ?? tag}
                               </Badge>
                             )
                           })}

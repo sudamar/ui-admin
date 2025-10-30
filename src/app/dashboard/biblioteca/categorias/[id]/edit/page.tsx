@@ -17,10 +17,19 @@ import { ArrowLeft, Loader2, Save, Tag, Palette, type LucideIcon } from "lucide-
 import { categoriasService } from "@/services/trabalhos/categorias-service"
 
 const categoriaSchema = z.object({
-  label: z.string().min(2, "Informe o nome da categoria."),
-  slug: z.string().optional(),
-  icon: z.string().optional(),
-  className: z.string().min(2, "Informe as classes de estilo."),
+  nome: z.string().trim().min(2, "Informe o nome da categoria."),
+  icone: z
+    .string()
+    .trim()
+    .max(100, "Nome do ícone muito longo.")
+    .optional()
+    .or(z.literal("")),
+  cor: z
+    .string()
+    .trim()
+    .max(120, "Valor de cor muito longo.")
+    .optional()
+    .or(z.literal("")),
 })
 
 type CategoriaFormData = z.infer<typeof categoriaSchema>
@@ -34,30 +43,29 @@ const getIconComponent = (icon?: string): LucideIcon => {
 }
 
 export default function EditarCategoriaPage() {
-  const params = useParams<{ slug: string }>()
+  const params = useParams<{ id: string }>()
   const router = useRouter()
-  const slug = params.slug
+  const id = params.id
 
   const [formData, setFormData] = useState<CategoriaFormData | null>(null)
   const [errors, setErrors] = useState<FormErrors>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  const IconPreview = useMemo(() => getIconComponent(formData?.icon), [formData?.icon])
+  const IconPreview = useMemo(() => getIconComponent(formData?.icone), [formData?.icone])
 
   useEffect(() => {
     const loadCategoria = async () => {
       try {
-        const categoria = await categoriasService.getBySlug(slug)
+        const categoria = await categoriasService.getById(id)
         if (!categoria) {
           router.push("/dashboard/biblioteca/categorias")
           return
         }
         setFormData({
-          label: categoria.label,
-          slug: categoria.slug,
-          icon: categoria.icon,
-          className: categoria.className,
+          nome: categoria.nome,
+          icone: categoria.icone ?? "",
+          cor: categoria.cor ?? "",
         })
       } catch (error) {
         console.error("Erro ao carregar categoria", error)
@@ -67,7 +75,7 @@ export default function EditarCategoriaPage() {
     }
 
     void loadCategoria()
-  }, [router, slug])
+  }, [id, router])
 
   const handleChange = (field: keyof CategoriaFormData, value: string) => {
     setFormData((prev) => (prev ? { ...prev, [field]: value } : prev))
@@ -80,10 +88,9 @@ export default function EditarCategoriaPage() {
     if (!formData) return null
     try {
       const parsed = categoriaSchema.parse({
-        label: formData.label.trim(),
-        slug: formData.slug?.trim() || undefined,
-        icon: formData.icon?.trim() || undefined,
-        className: formData.className.trim(),
+        nome: formData.nome.trim(),
+        icone: formData.icone?.trim() ?? undefined,
+        cor: formData.cor?.trim() ?? undefined,
       })
       setErrors({})
       return parsed
@@ -107,11 +114,10 @@ export default function EditarCategoriaPage() {
 
     setSaving(true)
     try {
-      await categoriasService.update(slug, {
-        slug: parsed.slug ?? "",
-        label: parsed.label,
-        icon: parsed.icon,
-        className: parsed.className,
+      await categoriasService.update(id, {
+        nome: parsed.nome,
+        icone: parsed.icone?.length ? parsed.icone : undefined,
+        cor: parsed.cor?.length ? parsed.cor : undefined,
       })
       router.push("/dashboard/biblioteca/categorias")
     } catch (error) {
@@ -154,22 +160,21 @@ export default function EditarCategoriaPage() {
             <CardDescription>Visualização da categoria nos trabalhos.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Badge variant="outline" className={`${formData.className} gap-1 text-base`}>
+            <Badge
+              variant="outline"
+              className={`${formData.cor || "border-slate-200 bg-slate-50 text-slate-700"} gap-1 text-base`}
+            >
               <IconPreview className="h-4 w-4" />
-              {formData.label || "Nome da categoria"}
+              {formData.nome || "Nome da categoria"}
             </Badge>
             <div className="space-y-1 text-sm text-muted-foreground">
               <p>
-                <span className="font-medium text-foreground">Slug atual: </span>
-                {formData.slug?.trim() || slug}
-              </p>
-              <p>
                 <span className="font-medium text-foreground">Ícone: </span>
-                {formData.icon?.trim() || "Tag"}
+                {formData.icone?.trim() || "Tag"}
               </p>
               <p className="flex items-start gap-1">
                 <Palette className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="break-words">{formData.className || "Classes de cor padrão"}</span>
+                <span className="break-words">{formData.cor || "Classes de cor padrão"}</span>
               </p>
             </div>
           </CardContent>
@@ -183,66 +188,48 @@ export default function EditarCategoriaPage() {
             </CardHeader>
             <CardContent className="flex-1 space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="label">
+                <Label htmlFor="nome">
                   Nome da categoria <span className="text-destructive">*</span>
                 </Label>
                 <Input
-                  id="label"
+                  id="nome"
                   placeholder="Ex: Psicologia Analítica"
-                  value={formData.label}
-                  onChange={(event) => handleChange("label", event.target.value)}
-                  className={errors.label ? "border-destructive" : ""}
+                  value={formData.nome}
+                  onChange={(event) => handleChange("nome", event.target.value)}
+                  className={errors.nome ? "border-destructive" : ""}
                 />
-                {errors.label ? <p className="text-sm text-destructive">{errors.label}</p> : null}
-              </div>
-
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="slug">Slug (opcional)</Label>
-                  <Input
-                    id="slug"
-                    placeholder="ex: psicologia-analitica"
-                    value={formData.slug ?? ""}
-                    onChange={(event) => handleChange("slug", event.target.value)}
-                    className={errors.slug ? "border-destructive" : ""}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Se vazio, manteremos o slug atual ou recalcularemos a partir do nome.
-                  </p>
-                  {errors.slug ? <p className="text-sm text-destructive">{errors.slug}</p> : null}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="icon">Ícone (opcional)</Label>
-                  <Input
-                    id="icon"
-                    placeholder="Ex: Sparkles"
-                    value={formData.icon ?? ""}
-                    onChange={(event) => handleChange("icon", event.target.value)}
-                    className={errors.icon ? "border-destructive" : ""}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Utilize o nome do ícone do Lucide (ex: Sparkles, HeartHandshake).
-                  </p>
-                  {errors.icon ? <p className="text-sm text-destructive">{errors.icon}</p> : null}
-                </div>
+                {errors.nome ? <p className="text-sm text-destructive">{errors.nome}</p> : null}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="className">
-                  Classes de estilo <span className="text-destructive">*</span>
-                </Label>
-                <Textarea
-                  id="className"
-                  placeholder="border-slate-200 bg-slate-50 text-slate-700"
-                  value={formData.className}
-                  onChange={(event) => handleChange("className", event.target.value)}
-                  className={`min-h-[90px] ${errors.className ? "border-destructive" : ""}`}
+                <Label htmlFor="icone">Ícone (opcional)</Label>
+                <Input
+                  id="icone"
+                  placeholder="Ex: Sparkles"
+                  value={formData.icone ?? ""}
+                  onChange={(event) => handleChange("icone", event.target.value)}
+                  className={errors.icone ? "border-destructive" : ""}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Combine classes utilitárias do Tailwind para personalizar a cor do selo.
+                  Utilize o nome do ícone do Lucide (ex: Sparkles, HeartHandshake).
                 </p>
-                {errors.className ? <p className="text-sm text-destructive">{errors.className}</p> : null}
+                {errors.icone ? <p className="text-sm text-destructive">{errors.icone}</p> : null}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cor">Classes de estilo</Label>
+                <Textarea
+                  id="cor"
+                  placeholder="Ex: border-blue-200 bg-blue-50 text-blue-700"
+                  value={formData.cor ?? ""}
+                  onChange={(event) => handleChange("cor", event.target.value)}
+                  className={errors.cor ? "border-destructive" : ""}
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Informe as classes utilitárias (Tailwind) que definem as cores do badge.
+                </p>
+                {errors.cor ? <p className="text-sm text-destructive">{errors.cor}</p> : null}
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-3 border-t border-border/60 pt-4 sm:flex-row sm:justify-end">

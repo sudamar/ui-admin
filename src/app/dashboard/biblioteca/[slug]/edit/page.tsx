@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -18,11 +18,7 @@ import { ArrowLeft, Save, Tag, type LucideIcon } from "lucide-react"
 import * as Icons from "lucide-react"
 
 import { trabalhosService, type Trabalho } from "@/services/trabalhos/trabalhos-service"
-import categoriasData from "@/data/trabalhos/trabalhos_categorias.json"
-
-const categoryMap = new Map<string, { label: string; className: string; icon?: string }>(
-  categoriasData.map((categoria) => [categoria.slug, { label: categoria.label, className: categoria.className, icon: categoria.icon }]),
-)
+import { categoriasService, type Categoria } from "@/services/trabalhos/categorias-service"
 
 const getCategoryIcon = (icon?: string): LucideIcon => {
   if (!icon) return Tag
@@ -39,10 +35,23 @@ const extrairNomeArquivo = (valor?: string) => {
   return partes[partes.length - 1]
 }
 
-const tagOptions: Option[] = categoriasData.map((categoria) => ({
-  value: categoria.slug,
-  label: categoria.label,
-}))
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "")
+
+const mapCategorias = (categorias: Categoria[]) => {
+  const entries: Array<[string, Categoria]> = []
+  categorias.forEach((categoria) => {
+    const slug = slugify(categoria.nome)
+    entries.push([categoria.nome, categoria])
+    entries.push([slug, categoria])
+  })
+  return new Map(entries)
+}
 
 const trabalhoSchema = z.object({
   titulo: z.string().min(3, "Informe um título"),
@@ -95,6 +104,8 @@ export default function EditTrabalhoPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [pdfName, setPdfName] = useState<string>("")
+  const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [categoriasLoading, setCategoriasLoading] = useState(true)
 
   const form = useForm<TrabalhoFormValues>({
     resolver: zodResolver(trabalhoSchema),
@@ -114,10 +125,24 @@ export default function EditTrabalhoPage() {
 
   const selectedTags = form.watch("tags") ?? []
 
+  const categoryMap = useMemo(() => mapCategorias(categorias), [categorias])
+
+  const tagOptions = useMemo<Option[]>(
+    () => categorias.map((categoria) => ({ value: slugify(categoria.nome), label: categoria.nome })),
+    [categorias]
+  )
+
   useEffect(() => {
-    const load = async () => {
+    const loadDados = async () => {
       try {
-        const trabalho = await trabalhosService.getBySlug(slug)
+        const [trabalho, categoriasLista] = await Promise.all([
+          trabalhosService.getBySlug(slug),
+          categoriasService.getAll(),
+        ])
+
+        setCategorias(categoriasLista)
+        setCategoriasLoading(false)
+
         if (!trabalho) {
           router.push("/dashboard/biblioteca")
           return
@@ -137,13 +162,14 @@ export default function EditTrabalhoPage() {
         })
         setPdfName(trabalho.arquivo ? extrairNomeArquivo(trabalho.arquivo) : "")
       } catch (error) {
-        console.error("Erro ao carregar trabalho", error)
+        console.error("Erro ao carregar dados", error)
       } finally {
+        setCategoriasLoading(false)
         setLoading(false)
       }
     }
 
-    load()
+    void loadDados()
   }, [form, router, slug])
 
   const onSubmit = async (values: TrabalhoFormValues) => {
@@ -329,13 +355,16 @@ export default function EditTrabalhoPage() {
                         <MultipleSelector
                           value={(field.value ?? []).map((value) => ({
                             value,
-                            label: categoryMap.get(value)?.label ?? value,
+                            label: categoryMap.get(value)?.nome ?? value,
                           }))}
                           onChange={(options) => field.onChange(options.map((option) => option.value))}
                           options={tagOptions}
-                          placeholder="Selecione as tags"
+                          placeholder={
+                            categoriasLoading ? "Carregando categorias..." : "Selecione as tags"
+                          }
                           className="min-h-[44px]"
                           hidePlaceholderWhenSelected
+                          disabled={categoriasLoading}
                           badgeClassName="bg-primary/10 text-primary border-primary/30"
                           inputProps={{ "aria-label": "Selecionar tags" }}
                         />
@@ -344,15 +373,15 @@ export default function EditTrabalhoPage() {
                         <div className="mt-2 flex flex-wrap gap-2">
                           {selectedTags.map((tag) => {
                             const categoria = categoryMap.get(tag)
-                            const Icon = getCategoryIcon(categoria?.icon)
+                            const Icon = getCategoryIcon(categoria?.icone ?? undefined)
                             return (
                               <Badge
                                 key={`selected-${tag}`}
                                 variant="outline"
-                                className={categoria?.className ?? "border-border bg-muted text-muted-foreground"}
+                                className={categoria?.cor ?? "border-border bg-muted text-muted-foreground"}
                               >
                                 <Icon className="mr-1 h-3.5 w-3.5" />
-                                {categoria?.label ?? tag}
+                                {categoria?.nome ?? tag}
                               </Badge>
                             )
                           })}
