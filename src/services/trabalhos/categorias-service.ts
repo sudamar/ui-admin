@@ -1,6 +1,7 @@
 export interface Categoria {
   id: string
   nome: string
+  slug: string
   icone?: string | null
   cor?: string | null
 }
@@ -76,7 +77,7 @@ export const categoriasService = {
     return result.categorias[0] ?? null
   },
 
-  async create(data: { nome: string; icone?: string | null; cor?: string | null }): Promise<Categoria> {
+  async create(data: { nome: string; slug: string; icone?: string | null; cor?: string | null }): Promise<Categoria> {
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -97,7 +98,7 @@ export const categoriasService = {
 
   async update(
     id: string,
-    data: { nome: string; icone?: string | null; cor?: string | null }
+    data: { nome: string; slug: string; icone?: string | null; cor?: string | null }
   ): Promise<Categoria> {
     const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
       method: "PATCH",

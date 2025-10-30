@@ -18,12 +18,26 @@ import { categoriasService } from "@/services/trabalhos/categorias-service"
 import { cn } from "@/lib/utils"
 
 const tailwindPattern = /^[a-z0-9-:\s]+$/i
+const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 const categoriaSchema = z.object({
   nome: z
     .string()
     .trim()
     .min(2, "Informe o nome da categoria."),
+  slug: z
+    .string()
+    .trim()
+    .min(2, "Informe o slug da categoria.")
+    .max(100, "Slug muito longo.")
+    .superRefine((value, ctx) => {
+      if (value && !slugPattern.test(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Use apenas letras minúsculas, números e hífens (ex: psicologia-analitica)",
+        })
+      }
+    }),
   icone: z
     .string()
     .trim()
@@ -126,10 +140,27 @@ const getAppearance = (cor?: string | null): BadgeAppearance => {
   }
 }
 
+const isDuplicateColorError = (error: unknown): boolean => {
+  if (error && typeof error === "object" && "message" in error) {
+    const message = String(error.message)
+    return message.includes("categorias_trabalhos_cor_key") || message.includes("duplicate key value")
+  }
+  return false
+}
+
+const isDuplicateSlugError = (error: unknown): boolean => {
+  if (error && typeof error === "object" && "message" in error) {
+    const message = String(error.message)
+    return message.includes("categorias_trabalhos_slug_key") || (message.includes("duplicate key value") && message.includes("slug"))
+  }
+  return false
+}
+
 export default function NovaCategoriaPage() {
   const router = useRouter()
   const [formData, setFormData] = useState<CategoriaFormData>({
     nome: "",
+    slug: "",
     icone: "Tag",
     cor: "border-slate-200 bg-slate-50 text-slate-700",
   })
@@ -154,6 +185,7 @@ export default function NovaCategoriaPage() {
     try {
       const parsed = categoriaSchema.parse({
         nome: formData.nome.trim(),
+        slug: formData.slug.trim(),
         icone: formData.icone?.trim() ?? undefined,
         cor: formData.cor?.trim() ?? undefined,
       })
@@ -181,13 +213,20 @@ export default function NovaCategoriaPage() {
     try {
       await categoriasService.create({
         nome: parsed.nome,
+        slug: parsed.slug,
         icone: parsed.icone?.length ? parsed.icone : undefined,
         cor: parsed.cor?.length ? parsed.cor : undefined,
       })
       router.push("/dashboard/biblioteca/categorias")
     } catch (error) {
       console.error("Erro ao criar categoria", error)
-      alert("Não foi possível criar a categoria. Tente novamente.")
+      if (isDuplicateSlugError(error)) {
+        setErrors({ slug: "Uma categoria já possui esse slug. Escolha outro." })
+      } else if (isDuplicateColorError(error)) {
+        setErrors({ cor: "Uma categoria já possui essa cor. Escolha outra." })
+      } else {
+        alert("Não foi possível criar a categoria. Tente novamente.")
+      }
     } finally {
       setSubmitting(false)
     }
@@ -258,12 +297,30 @@ export default function NovaCategoriaPage() {
                 <Input
                   id="nome"
                   placeholder="Ex: Psicologia Analítica"
-                  value={formData.nome}
+                  value={formData.nome ?? ""}
                   onChange={(event) => handleChange("nome", event.target.value)}
                   onBlur={() => handleBlur("nome")}
                   className={errors.nome ? "border-destructive" : ""}
                 />
                 {errors.nome ? <p className="text-sm text-destructive">{errors.nome}</p> : null}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="slug">
+                  Slug <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="slug"
+                  placeholder="Ex: psicologia-analitica"
+                  value={formData.slug ?? ""}
+                  onChange={(event) => handleChange("slug", event.target.value)}
+                  onBlur={() => handleBlur("slug")}
+                  className={errors.slug ? "border-destructive" : ""}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Identificador único usado em URLs. Use apenas letras minúsculas, números e hífens.
+                </p>
+                {errors.slug ? <p className="text-sm text-destructive">{errors.slug}</p> : null}
               </div>
 
               <div className="space-y-2">

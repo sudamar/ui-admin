@@ -79,6 +79,7 @@ Este documento contém instruções e diretrizes para modelos de IA (como Claude
 **SEMPRE**** que for criar um services de CRUD, faça um getAllFeture, getByIdFeture, deleteFetature, insertFeature, updateByIdFeature.
 **PREFIRA** trabalhar métoodo de negócio em detrimento a Metaprogramação, reflections ou trechos de códigos muito complexos de manter. Sempre referencie seus códigos às funcionalidades de negócio do site.
 Ao fazer upload de uma foto/avatar seja de professores ou alunos, **use o componente S3 do SUPABASE**. Caso seja documentos, peça-me uma decisão de onde usar. Por enquanto o S3 está disponível apenas para avatares.
+**NUNCAS** use undefined para strings vazias. Quando um campo for string e não retornar valor, preencha o form com "". E quando for número, preencha com 0.
 
 ### 2. Quando Criar uma Nova Feature
 

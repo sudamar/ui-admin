@@ -16,7 +16,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Edit, MoreHorizontal, Plus, Search, Tag, Trash2, type LucideIcon } from "lucide-react"
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Edit,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Tag,
+  Trash2,
+  type LucideIcon,
+} from "lucide-react"
 
 import { categoriasService, type Categoria } from "@/services/trabalhos/categorias-service"
 import { cn } from "@/lib/utils"
@@ -91,10 +102,15 @@ const getAppearance = (cor?: string | null): BadgeAppearance => {
   }
 }
 
+type SortField = "nome" | "slug" | "cor"
+type SortDirection = "asc" | "desc"
+
 export default function CategoriasPage() {
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [loading, setLoading] = useState(true)
+  const [sortField, setSortField] = useState<SortField>("nome")
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
 
   useEffect(() => {
     const load = async () => {
@@ -109,22 +125,43 @@ export default function CategoriasPage() {
     void load()
   }, [])
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+    } else {
+      setSortField(field)
+      setSortDirection("asc")
+    }
+  }
+
   const filteredCategorias = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
 
     const filtered = term
       ? categorias.filter((categoria) =>
-          [categoria.nome, categoria.icone ?? "", categoria.cor ?? ""]
+          [categoria.nome, categoria.slug, categoria.icone ?? "", categoria.cor ?? ""]
             .join(" ")
             .toLowerCase()
             .includes(term),
         )
       : categorias
 
-    return [...filtered].sort((a, b) =>
-      a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
-    )
-  }, [categorias, searchTerm])
+    return [...filtered].sort((a, b) => {
+      let comparison = 0
+
+      if (sortField === "nome") {
+        comparison = a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" })
+      } else if (sortField === "slug") {
+        comparison = a.slug.localeCompare(b.slug, "pt-BR", { sensitivity: "base" })
+      } else if (sortField === "cor") {
+        const corA = a.cor ?? ""
+        const corB = b.cor ?? ""
+        comparison = corA.localeCompare(corB, "pt-BR", { sensitivity: "base" })
+      }
+
+      return sortDirection === "asc" ? comparison : -comparison
+    })
+  }, [categorias, searchTerm, sortField, sortDirection])
 
   const handleDelete = async (id: string) => {
     const categoria = categorias.find((item) => item.id === id)
@@ -176,7 +213,7 @@ export default function CategoriasPage() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="category-search"
-                  placeholder="Busque por nome, ícone ou classes"
+                  placeholder="Busque por nome, slug, ícone ou classes"
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                   className="pl-9"
@@ -201,8 +238,72 @@ export default function CategoriasPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[240px]">Categoria</TableHead>
-                    <TableHead className="min-w-[220px]">Cor (classes)</TableHead>
+                    <TableHead className="min-w-[240px]">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn(
+                          "-ml-3 h-8 data-[state=open]:bg-accent",
+                          sortField === "nome" && "text-foreground font-semibold",
+                        )}
+                        onClick={() => handleSort("nome")}
+                      >
+                        Categoria
+                        {sortField === "nome" ? (
+                          sortDirection === "asc" ? (
+                            <ArrowUp className="ml-2 h-4 w-4" />
+                          ) : (
+                            <ArrowDown className="ml-2 h-4 w-4" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="ml-2 h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="min-w-[180px]">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn(
+                          "-ml-3 h-8 data-[state=open]:bg-accent",
+                          sortField === "slug" && "text-foreground font-semibold",
+                        )}
+                        onClick={() => handleSort("slug")}
+                      >
+                        Slug
+                        {sortField === "slug" ? (
+                          sortDirection === "asc" ? (
+                            <ArrowUp className="ml-2 h-4 w-4" />
+                          ) : (
+                            <ArrowDown className="ml-2 h-4 w-4" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="ml-2 h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="min-w-[220px]">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn(
+                          "-ml-3 h-8 data-[state=open]:bg-accent",
+                          sortField === "cor" && "text-foreground font-semibold",
+                        )}
+                        onClick={() => handleSort("cor")}
+                      >
+                        Cor (classes)
+                        {sortField === "cor" ? (
+                          sortDirection === "asc" ? (
+                            <ArrowUp className="ml-2 h-4 w-4" />
+                          ) : (
+                            <ArrowDown className="ml-2 h-4 w-4" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="ml-2 h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableHead>
                     <TableHead className="min-w-[160px]">Exemplo</TableHead>
                     <TableHead className="w-[80px] text-right">Ações</TableHead>
                   </TableRow>
@@ -215,11 +316,11 @@ export default function CategoriasPage() {
                       <TableRow key={categoria.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <span
+                            {/* <span
                               className={cn("inline-block h-6 w-6 rounded border", appearance.squareClass)}
                               aria-hidden="true"
                               style={appearance.squareStyle}
-                            />
+                            /> */}
                             <span className="inline-flex size-9 items-center justify-center rounded-md border border-border/60 bg-muted/40">
                               <Icon
                                 className={cn("h-4 w-4", appearance.iconClass)}
@@ -235,6 +336,11 @@ export default function CategoriasPage() {
                               )}
                             </div>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <code className="block rounded bg-muted px-2 py-1 text-xs font-mono text-foreground">
+                            {categoria.slug}
+                          </code>
                         </TableCell>
                         <TableCell>
                           <code className="block rounded bg-muted px-2 py-1 text-xs text-muted-foreground">

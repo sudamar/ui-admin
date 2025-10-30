@@ -32,6 +32,12 @@ const categoriaSchema = z.object({
     .string()
     .trim()
     .min(2, "Informe o nome da categoria."),
+  slug: z
+    .string()
+    .trim()
+    .min(2, "Informe o slug da categoria.")
+    .max(100, "Slug muito longo.")
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use apenas letras minúsculas, números e hífens (ex: psicologia-analitica)"),
   icone: z
     .string()
     .trim()
@@ -49,6 +55,7 @@ const categoriaSchema = z.object({
 type CategoriaRow = {
   id: string
   nome: string
+  slug: string
   icone: string | null
   cor: string | null
 }
@@ -56,6 +63,7 @@ type CategoriaRow = {
 type CategoriaDTO = {
   id: string
   nome: string
+  slug: string
   icone?: string | null
   cor?: string | null
 }
@@ -64,6 +72,7 @@ function mapCategoria(row: CategoriaRow): CategoriaDTO {
   return {
     id: row.id,
     nome: row.nome,
+    slug: row.slug,
     icone: row.icone,
     cor: row.cor,
   }
@@ -107,7 +116,7 @@ export async function GET(request: Request) {
 
   const query = supabaseAdmin
     .from(TABLE_NAME)
-    .select("id,nome,icone,cor")
+    .select("id,nome,slug,icone,cor")
     .order("nome", { ascending: true })
 
   if (id) {
@@ -167,10 +176,11 @@ export async function POST(request: Request) {
     .from(TABLE_NAME)
     .insert({
       nome: parsed.data.nome,
+      slug: parsed.data.slug,
       icone: parsed.data.icone ?? null,
       cor: parsed.data.cor ?? null,
     })
-    .select("id,nome,icone,cor")
+    .select("id,nome,slug,icone,cor")
     .maybeSingle()
 
   if (error || !data) {
@@ -228,11 +238,12 @@ export async function PATCH(request: Request) {
     .from(TABLE_NAME)
     .update({
       nome: parsed.data.nome,
+      slug: parsed.data.slug,
       icone: parsed.data.icone ?? null,
       cor: parsed.data.cor ?? null,
     })
     .eq("id", id)
-    .select("id,nome,icone,cor")
+    .select("id,nome,slug,icone,cor")
     .maybeSingle()
 
   if (error) {
