@@ -2,13 +2,11 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
 import * as z from "zod"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -20,12 +18,21 @@ import {
 } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ArrowLeft, Save, UserPlus } from "lucide-react"
-import { usersService } from "@/services/usuarios/usuario-service"
+import { useAuth } from "@/contexts/auth-context"
+import { PerfilUsuario } from "@/services/auth/auth-service"
+import { toast } from "sonner"
+
+const PERFIL_LABEL: Record<PerfilUsuario, string> = {
+  [PerfilUsuario.Admin]: "Administrador",
+  [PerfilUsuario.Secretaria]: "Secretaria",
+  [PerfilUsuario.Professor]: "Professor",
+  [PerfilUsuario.Aluno]: "Aluno",
+}
 
 const userSchema = z.object({
   name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
   email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
-  role: z.enum(["Admin", "Editor", "Viewer"]),
+  perfil: z.nativeEnum(PerfilUsuario),
   status: z.enum(["active", "inactive"]),
 })
 
@@ -33,10 +40,11 @@ type UserFormData = z.infer<typeof userSchema>
 
 export default function NewUserPage() {
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<Partial<UserFormData>>({
     status: "active",
-    role: "Viewer",
+    perfil: PerfilUsuario.Secretaria,
   })
   const [errors, setErrors] = useState<Partial<Record<keyof UserFormData, string>>>({})
 
@@ -79,26 +87,78 @@ export default function NewUserPage() {
 
     setLoading(true)
     try {
-      await usersService.create({
-        name: parsedData.name,
-        email: parsedData.email,
-        role: parsedData.role,
-        status: parsedData.status,
+      const response = await fetch("/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(parsedData),
       })
+
+      const result = (await response.json()) as {
+        success?: boolean
+        message?: string
+      }
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message ?? "Não foi possível criar o usuário.")
+      }
+
+      toast.success("Usuário convidado com sucesso!")
       router.push("/dashboard/usuarios")
     } catch (error) {
       console.error("Erro ao criar usuário:", error)
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível criar o usuário."
+      )
     } finally {
       setLoading(false)
     }
   }
 
   const handleChange = (field: keyof UserFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    setFormData((prev) => ({
+      ...prev,
+      [field]: field === "perfil" ? (value as PerfilUsuario) : value,
+    }))
     // Limpar erro do campo quando o usuário começar a digitar
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
     }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-primary" />
+      </div>
+    )
+  }
+
+  if (!user || user.role !== "admin") {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center p-6">
+        <Card className="max-w-lg">
+          <CardHeader>
+            <CardTitle>Acesso restrito</CardTitle>
+            <CardDescription>
+              Apenas administradores podem criar novos usuários.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Solicite a um administrador que realize esta ação ou ajuste suas permissões.
+            </p>
+          </CardContent>
+          <CardFooter className="pt-0">
+            <Button onClick={() => router.push("/dashboard/usuarios")}>Voltar para lista</Button>
+          </CardFooter>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -144,7 +204,7 @@ export default function NewUserPage() {
                 </p>
                 <div className="mt-2 flex items-center justify-center gap-2">
                   <span className="text-xs px-2 py-1 rounded-full bg-secondary">
-                    {formData.role || "Perfil"}
+                    {formData.perfil ? PERFIL_LABEL[formData.perfil] : "Perfil"}
                   </span>
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
@@ -206,24 +266,25 @@ export default function NewUserPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="role">
+                  <Label htmlFor="perfil">
                     Perfil <span className="text-destructive">*</span>
                   </Label>
                   <Select
-                    value={formData.role}
-                    onValueChange={(value) => handleChange("role", value)}
+                    value={formData.perfil}
+                    onValueChange={(value) => handleChange("perfil", value)}
                   >
-                    <SelectTrigger className={errors.role ? "border-destructive" : ""}>
+                    <SelectTrigger className={errors.perfil ? "border-destructive" : ""}>
                       <SelectValue placeholder="Selecione o perfil" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Admin">Admin</SelectItem>
-                      <SelectItem value="Editor">Editor</SelectItem>
-                      <SelectItem value="Viewer">Viewer</SelectItem>
+                      <SelectItem value={PerfilUsuario.Admin}>{PerfilUsuario.Admin}</SelectItem>
+                      <SelectItem value={PerfilUsuario.Secretaria}>{PerfilUsuario.Secretaria}</SelectItem>
+                      <SelectItem value={PerfilUsuario.Professor}>{PerfilUsuario.Professor}</SelectItem>
+                      <SelectItem value={PerfilUsuario.Aluno}>{PerfilUsuario.Aluno}</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.role && (
-                    <p className="text-sm text-destructive">{errors.role}</p>
+                  {errors.perfil && (
+                    <p className="text-sm text-destructive">{errors.perfil}</p>
                   )}
                 </div>
 

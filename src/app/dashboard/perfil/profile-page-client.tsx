@@ -28,7 +28,22 @@ import { ImageUpload } from "@/components/ui/image-upload"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "@/contexts/auth-context"
+import { PerfilUsuario } from "@/services/auth/auth-service"
 import { toast } from "sonner"
+
+const PERFIL_LABEL: Record<PerfilUsuario, string> = {
+  [PerfilUsuario.Admin]: "Administrador",
+  [PerfilUsuario.Secretaria]: "Secretaria",
+  [PerfilUsuario.Professor]: "Professor",
+  [PerfilUsuario.Aluno]: "Aluno",
+}
+
+const PERFIL_OPTIONS: PerfilUsuario[] = [
+  PerfilUsuario.Admin,
+  PerfilUsuario.Secretaria,
+  PerfilUsuario.Professor,
+  PerfilUsuario.Aluno,
+]
 
 const profileSchema = z.object({
   name: z
@@ -38,6 +53,7 @@ const profileSchema = z.object({
   displayName: z.string().max(80, "Máximo de 80 caracteres").optional(),
   avatarPublic: z.string().optional(),
   bio: z.string().max(280, "A bio pode ter no máximo 280 caracteres").optional(),
+  perfil: z.nativeEnum(PerfilUsuario).optional(),
 })
 
 type ProfileFormValues = z.infer<typeof profileSchema>
@@ -46,6 +62,7 @@ export function ProfilePageClient() {
   const { user, loading, refresh } = useAuth()
   const router = useRouter()
   const [uploading, setUploading] = useState(false)
+  const currentPerfil = user?.perfil ?? PerfilUsuario.Secretaria
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -54,6 +71,7 @@ export function ProfilePageClient() {
       displayName: "",
       avatarPublic: "",
       bio: "",
+      perfil: PerfilUsuario.Secretaria,
     },
   })
 
@@ -64,9 +82,10 @@ export function ProfilePageClient() {
         displayName: user.displayName ?? "",
         avatarPublic: user.avatarPublic ?? user.avatarUrl ?? "",
         bio: user.bio ?? "",
+        perfil: currentPerfil,
       })
     }
-  }, [user, form])
+  }, [user, form, currentPerfil])
 
   const handleSubmit = form.handleSubmit(async (values) => {
     try {
@@ -76,6 +95,7 @@ export function ProfilePageClient() {
         name: values.name.trim(),
         displayName: values.displayName?.trim() ?? "",
         bio: values.bio?.trim() ?? "",
+        perfil: currentPerfil,
       }
 
       const avatarValue = values.avatarPublic?.trim() ?? ""
@@ -160,6 +180,7 @@ export function ProfilePageClient() {
 
   const avatarPreview = form.watch("avatarPublic")
   const namePreview = form.watch("displayName") || form.watch("name")
+  const userPerfilLabel = currentPerfil
 
   return (
     <div className="flex flex-col gap-6">
@@ -207,38 +228,46 @@ export function ProfilePageClient() {
                 </div>
               </div>
 
-                <div className="text-sm text-muted-foreground">
-                <p>Email</p>
-                <p className="font-medium text-foreground">{user.email}</p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <FormLabel>Email</FormLabel>
+                  <Input value={user.email} disabled readOnly />
+                </div>
+                <div className="space-y-2">
+                  <FormLabel>Perfil</FormLabel>
+                  <Input value={PERFIL_LABEL[userPerfilLabel]} disabled readOnly />
+                </div>
               </div>
 
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome completo</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Seu nome" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome completo</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Seu nome" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="displayName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome de exibição</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Como prefere ser chamado" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="displayName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome de exibição</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Como prefere ser chamado" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
@@ -278,7 +307,14 @@ export function ProfilePageClient() {
                 )}
               />
             </CardContent>
-            <CardFooter className="flex items-center justify-between">
+            <CardFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm text-muted-foreground">
+                <p>Email</p>
+                <p className="font-medium text-foreground">{user.email}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Perfil atual: <span className="font-medium text-foreground">{PERFIL_LABEL[userPerfilLabel]}</span>
+                </p>
+              </div>
               <Button
                 type="submit"
                 disabled={form.formState.isSubmitting || uploading}

@@ -35,6 +35,8 @@ import {
 import { ArrowDown, ArrowUp, ArrowUpDown, Edit, Eye, MoreHorizontal, Search, Trash2, UserPlus } from "lucide-react"
 
 import { usersService, type User } from "@/services/usuarios/usuario-service"
+import { useAuth } from "@/contexts/auth-context"
+import { PerfilUsuario } from "@/services/auth/auth-service"
 
 type SortField = "name" | "email" | "role" | "status" | "createdAt"
 type SortOrder = "asc" | "desc"
@@ -130,6 +132,7 @@ function UserDetailsDialog({ user, trigger, onDelete }: UserDetailsDialogProps) 
 }
 
 export function UsersPageClient() {
+  const { user: authUser } = useAuth()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedUsers, setSelectedUsers] = useState<number[]>([])
@@ -249,12 +252,19 @@ export function UsersPageClient() {
             Gerencie os usuários do sistema
           </p>
         </div>
-        <Button asChild className="w-full sm:w-auto">
-          <Link href="/dashboard/usuarios/new">
+        {authUser?.perfil === PerfilUsuario.Admin ? (
+          <Button asChild className="w-full sm:w-auto">
+            <Link href="/dashboard/usuarios/new">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Novo Usuário
+            </Link>
+          </Button>
+        ) : (
+          <Button className="w-full sm:w-auto" disabled title="Apenas administradores podem criar usuários">
             <UserPlus className="mr-2 h-4 w-4" />
             Novo Usuário
-          </Link>
-        </Button>
+          </Button>
+        )}
       </div>
 
       <Card>

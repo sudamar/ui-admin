@@ -6,6 +6,7 @@ import {
   getProfileFromToken,
   updateUserProfile,
   uploadAvatarFromDataUrl,
+  PerfilUsuario,
 } from "@/services/auth/auth-service"
 
 const AUTH_COOKIE = "ui-admin-token"
@@ -49,6 +50,7 @@ const profileSchema = z.object({
       "Formato de imagem inválido"
     )
     .optional(),
+  perfil: z.nativeEnum(PerfilUsuario).optional(),
 })
 
 export async function PATCH(request: Request) {
@@ -86,11 +88,10 @@ export async function PATCH(request: Request) {
 
   try {
     const { name, displayName, avatarUrl, bio, avatarDataUrl } = parsed.data
+    const perfil = parsed.data.perfil ?? currentUser.perfil ?? PerfilUsuario.Secretaria
 
     let finalAvatarUrl =
       avatarUrl && avatarUrl.trim().length > 0 ? avatarUrl.trim() : undefined
-    let avatarStoragePath: string | null | undefined =
-      currentUser.avatar ?? undefined
 
     if (avatarDataUrl && avatarDataUrl.trim().length > 0) {
       const upload = await uploadAvatarFromDataUrl(
@@ -98,9 +99,6 @@ export async function PATCH(request: Request) {
         avatarDataUrl.trim()
       )
       finalAvatarUrl = upload.publicUrl
-      avatarStoragePath = upload.path
-    } else if (!finalAvatarUrl) {
-      avatarStoragePath = null
     }
 
     const updatedUser = await updateUserProfile(currentUser.id, {
@@ -110,8 +108,8 @@ export async function PATCH(request: Request) {
           ? displayName.trim()
           : undefined,
       avatarUrl: finalAvatarUrl,
-      avatarStoragePath,
       bio: bio && bio.trim().length > 0 ? bio.trim() : undefined,
+      perfil,
     })
     return NextResponse.json({ success: true, user: updatedUser })
   } catch (error) {

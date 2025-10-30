@@ -47,10 +47,17 @@ function getSupabaseAdminClient(): SupabaseClient | null {
 
 type UserDetailsRow = {
   id: string
-  avatar: string | null
   avatar_public: string | null
   bio: string | null
   display_name: string | null
+  perfil: PerfilUsuario | null
+}
+
+export enum PerfilUsuario {
+  Admin = "Admin",
+  Secretaria = "Secretaria",
+  Professor = "Professor",
+  Aluno = "Aluno",
 }
 
 export type AuthUser = {
@@ -59,10 +66,10 @@ export type AuthUser = {
   email: string
   role: "admin" | "viewer"
   avatarUrl?: string | null
-  avatar?: string | null
   avatarPublic?: string | null
   bio?: string | null
   displayName?: string | null
+  perfil: PerfilUsuario
 }
 
 async function getUserDetails(userId: string): Promise<UserDetailsRow | null> {
@@ -73,7 +80,7 @@ async function getUserDetails(userId: string): Promise<UserDetailsRow | null> {
 
   const { data, error } = await adminClient
     .from("usuarios_detalhes")
-    .select("id, avatar, avatar_public, bio, display_name")
+    .select("id, avatar_public, bio, display_name, perfil")
     .eq("id", userId)
     .maybeSingle()
 
@@ -109,20 +116,40 @@ function mapSupabaseUser(
     (metadata["avatar"] as string | undefined) ??
     undefined
 
+  const perfil = normalizePerfil(
+    details?.perfil ?? metadata["perfil"]
+  )
+
   const roleMetadata =
     (metadata["role"] as string | undefined) ??
     (user.app_metadata?.role as string | undefined)
+  const mappedRole = perfil === PerfilUsuario.Admin ? "admin" : "viewer"
 
   return {
     id: user.id,
     email,
     name: metadataName ?? displayName ?? email.split("@")[0] ?? "Usuário",
-    role: roleMetadata === "admin" ? "admin" : "viewer",
+    role: roleMetadata === "admin" ? "admin" : mappedRole,
     avatarUrl: avatarPublic ?? null,
-    avatar: details?.avatar ?? null,
     avatarPublic: avatarPublic ?? null,
     bio: details?.bio ?? null,
     displayName: displayName ?? null,
+    perfil,
+  }
+}
+
+function normalizePerfil(value: unknown): PerfilUsuario {
+  switch (value) {
+    case PerfilUsuario.Admin:
+    case PerfilUsuario.Secretaria:
+    case PerfilUsuario.Professor:
+    case PerfilUsuario.Aluno:
+      return value
+    case "admin":
+    case "viewer":
+      return PerfilUsuario.Secretaria
+    default:
+      return PerfilUsuario.Secretaria
   }
 }
 
@@ -166,13 +193,13 @@ type UpdateProfileInput = {
   name?: string
   avatarUrl?: string
   bio?: string
-  avatarStoragePath?: string | null
   displayName?: string
+  perfil?: PerfilUsuario
 }
 
 export async function updateUserProfile(
   userId: string,
-  { name, avatarUrl, bio, avatarStoragePath, displayName }: UpdateProfileInput
+  { name, avatarUrl, bio, displayName, perfil }: UpdateProfileInput
 ) {
   const adminClient = getSupabaseAdminClient()
   if (!adminClient) {
@@ -191,6 +218,9 @@ export async function updateUserProfile(
   if (typeof avatarUrl === "string") {
     metadata.avatar_url = avatarUrl || undefined
   }
+  if (perfil) {
+    metadata.perfil = perfil
+  }
 
   const { data, error } = await adminClient.auth.admin.updateUserById(userId, {
     user_metadata: metadata,
@@ -203,20 +233,18 @@ export async function updateUserProfile(
     )
   }
 
-  const detailsPayload: Record<string, unknown> = {
-    id: userId,
-    avatar_public: avatarUrl ?? null,
-    bio: bio ?? null,
-    display_name: displayName ?? name ?? null,
-  }
-
-  if (avatarStoragePath !== undefined) {
-    detailsPayload.avatar = avatarStoragePath
-  }
-
   const { error: detailsError } = await adminClient
     .from("usuarios_detalhes")
-    .upsert(detailsPayload, { onConflict: "id" })
+    .upsert(
+      {
+        id: userId,
+        avatar_public: avatarUrl ?? null,
+        bio: bio ?? null,
+        display_name: displayName ?? name ?? null,
+        perfil: perfil ?? undefined,
+      },
+      { onConflict: "id" }
+    )
 
   if (detailsError) {
     throw new Error(detailsError.message)
@@ -277,4 +305,81 @@ export async function uploadAvatarFromDataUrl(
     publicUrl,
     path: fileName,
   }
+}
+type CreateUserInput = {
+  email: string
+  name: string
+  perfil: PerfilUsuario
+  status: "active" | "inactive"
+}
+
+export async function createUserAccount({
+  email,
+  name,
+  perfil,
+  status,
+}: CreateUserInput) {
+  const adminClient = getSupabaseAdminClient()
+  if (!adminClient) {
+    throw new Error(
+      "Supabase service role key não configurada. Defina SUPABASE_SERVICE_KEY para permitir criação de usuários."
+    )
+  }
+
+  const invite = await adminClient.auth.admin.inviteUserByEmail(email, {
+    data: {
+      name,
+      perfil,
+      status,
+    },
+  })
+
+  if (invite.error || !invite.data?.user?.id) {
+    const err: AuthError | null = invite.error ?? null
+    throw new Error(
+      err?.message ??
+        "Não foi possível enviar o convite ao usuário. Verifique o email informado."
+    )
+  }
+
+  const newUser = invite.data.user
+  const appRole = perfil === PerfilUsuario.Admin ? "admin" : "viewer"
+
+  const { error: updateError, data } = await adminClient.auth.admin.updateUserById(
+    newUser.id,
+    {
+      app_metadata: { role: appRole },
+      user_metadata: {
+        name,
+        perfil,
+        status,
+      },
+    }
+  )
+
+  if (updateError || !data.user) {
+    const err: AuthError | null = updateError ?? null
+    throw new Error(
+      err?.message ?? "Não foi possível atualizar os metadados do usuário."
+    )
+  }
+
+  const { error: detailsError } = await adminClient
+    .from("usuarios_detalhes")
+    .upsert(
+      {
+        id: data.user.id,
+        display_name: name,
+        perfil,
+      },
+      { onConflict: "id" }
+    )
+
+  if (detailsError) {
+    throw new Error(detailsError.message)
+  }
+
+  const details = await getUserDetails(data.user.id)
+
+  return mapSupabaseUser(data.user, details)
 }

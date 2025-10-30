@@ -75,26 +75,9 @@ Este documento contém instruções e diretrizes para modelos de IA (como Claude
 
 **SEMPRE** organize código por feature (funcionalidade), não por tipo de arquivo.
 
-✅ **CORRETO:**
-```
-src/features/videos/
-  ├── components/
-  │   ├── VideoPlayer.tsx
-  │   └── VideoUploader.tsx
-  ├── hooks/
-  │   └── useVideoUpload.ts
-  ├── lib/
-  │   └── videoService.ts
-  └── types.ts
-```
-
-❌ **ERRADO:**
-```
-src/components/VideoPlayer.tsx
-src/components/VideoUploader.tsx
-src/hooks/useVideoUpload.ts
-src/services/videoService.ts
-```
+**SEMPRE** use a filosofia KISS. Não se atenha a algo que não foi pedido. 
+**Sempre** que for criar um services de CRUD, faça um getAllFeture, getByIdFeture, deleteFetature, insertFeature, updateByIdFeature.
+**PREFIRA** trabalhar métoodo de negócio em detrimento a Metaprogramação, reflections ou trechos de códigos muito complexos de manter. Sempre referencie seus códigos às funcionalidades de negócio do site.
 
 ### 2. Quando Criar uma Nova Feature
 
