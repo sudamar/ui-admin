@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type CSSProperties } from "react"
 import Link from "next/link"
 import * as Icons from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -19,11 +19,76 @@ import {
 import { Edit, MoreHorizontal, Plus, Search, Tag, Trash2, type LucideIcon } from "lucide-react"
 
 import { categoriasService, type Categoria } from "@/services/trabalhos/categorias-service"
+import { cn } from "@/lib/utils"
 
 const getIconComponent = (icon?: string): LucideIcon => {
   if (!icon) return Tag
   const IconComponent = Icons[icon as keyof typeof Icons] as LucideIcon | undefined
   return IconComponent ?? Tag
+}
+
+const normalizeHex = (value: string) => {
+  const hex = value.replace("#", "").trim()
+  if (hex.length === 3) {
+    return hex
+      .split("")
+      .map((char) => char + char)
+      .join("")
+  }
+  return hex.padEnd(6, "0")
+}
+
+const getContrastColor = (hex: string) => {
+  const normalized = normalizeHex(hex)
+  const r = Number.parseInt(normalized.slice(0, 2), 16)
+  const g = Number.parseInt(normalized.slice(2, 4), 16)
+  const b = Number.parseInt(normalized.slice(4, 6), 16)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminance > 0.6 ? "#111827" : "#F8FAFC"
+}
+
+type BadgeAppearance = {
+  badgeClass: string
+  badgeStyle?: CSSProperties
+  iconClass?: string
+  iconStyle?: CSSProperties
+  squareClass?: string
+  squareStyle?: CSSProperties
+}
+
+const getAppearance = (cor?: string | null): BadgeAppearance => {
+  const DEFAULT_BADGE = "border-border bg-muted text-muted-foreground"
+  const DEFAULT_ICON = "text-muted-foreground"
+  const DEFAULT_SQUARE = "border-border bg-muted"
+
+  if (!cor) {
+    return {
+      badgeClass: DEFAULT_BADGE,
+      iconClass: DEFAULT_ICON,
+      squareClass: DEFAULT_SQUARE,
+    }
+  }
+
+  const trimmed = cor.trim()
+  if (trimmed.startsWith("#")) {
+    const textColor = getContrastColor(trimmed)
+    return {
+      badgeClass: "border border-transparent",
+      badgeStyle: { backgroundColor: trimmed, color: textColor },
+      iconStyle: { color: textColor },
+      squareStyle: { backgroundColor: trimmed, borderColor: trimmed },
+    }
+  }
+
+  const textClass = trimmed
+    .split(/\s+/)
+    .find((cls) => cls.startsWith("text-"))
+
+  return {
+    badgeClass: trimmed,
+    iconClass: textClass,
+    squareClass: trimmed,
+  }
 }
 
 export default function CategoriasPage() {
@@ -145,16 +210,21 @@ export default function CategoriasPage() {
                 <TableBody>
                   {filteredCategorias.map((categoria) => {
                     const Icon = getIconComponent(categoria.icone ?? undefined)
+                    const appearance = getAppearance(categoria.cor)
                     return (
                       <TableRow key={categoria.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <span
-                              className={`inline-block h-6 w-6 rounded border ${categoria.cor ?? "border-border bg-muted"}`}
+                              className={cn("inline-block h-6 w-6 rounded border", appearance.squareClass)}
                               aria-hidden="true"
+                              style={appearance.squareStyle}
                             />
                             <span className="inline-flex size-9 items-center justify-center rounded-md border border-border/60 bg-muted/40">
-                              <Icon className="h-4 w-4 text-muted-foreground" />
+                              <Icon
+                                className={cn("h-4 w-4", appearance.iconClass)}
+                                style={appearance.iconStyle}
+                              />
                             </span>
                             <div className="flex flex-col">
                               <span className="font-medium text-foreground">{categoria.nome}</span>
@@ -174,9 +244,13 @@ export default function CategoriasPage() {
                         <TableCell>
                           <Badge
                             variant="outline"
-                            className={`${categoria.cor ?? "border-border bg-muted text-muted-foreground"} gap-1`}
+                            className={cn("gap-1", appearance.badgeClass)}
+                            style={appearance.badgeStyle}
                           >
-                            <Icon className="h-3.5 w-3.5" />
+                            <Icon
+                              className={cn("h-3.5 w-3.5", appearance.iconClass)}
+                              style={appearance.iconStyle}
+                            />
                             {categoria.nome}
                           </Badge>
                         </TableCell>

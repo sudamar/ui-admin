@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, type CSSProperties } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import * as Icons from "lucide-react"
@@ -12,9 +12,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Loader2, Save, Tag, Palette, type LucideIcon } from "lucide-react"
+import { ArrowLeft, Loader2, Save, Tag, Palette, HelpCircle, type LucideIcon } from "lucide-react"
 
 import { categoriasService } from "@/services/trabalhos/categorias-service"
+import { cn } from "@/lib/utils"
 
 const tailwindPattern = /^[a-z0-9-:\s]+$/i
 
@@ -63,6 +64,68 @@ const getIconComponent = (icon?: string): LucideIcon => {
   return IconComponent ?? Tag
 }
 
+const normalizeHex = (value: string) => {
+  const hex = value.replace("#", "").trim()
+  if (hex.length === 3) {
+    return hex
+      .split("")
+      .map((char) => char + char)
+      .join("")
+  }
+  return hex.padEnd(6, "0")
+}
+
+const getContrastColor = (hex: string) => {
+  const normalized = normalizeHex(hex)
+  const r = Number.parseInt(normalized.slice(0, 2), 16)
+  const g = Number.parseInt(normalized.slice(2, 4), 16)
+  const b = Number.parseInt(normalized.slice(4, 6), 16)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminance > 0.6 ? "#111827" : "#F8FAFC"
+}
+
+type BadgeAppearance = {
+  badgeClass: string
+  badgeStyle?: CSSProperties
+  iconClass?: string
+  iconStyle?: CSSProperties
+  squareClass?: string
+  squareStyle?: CSSProperties
+}
+
+const getAppearance = (cor?: string | null): BadgeAppearance => {
+  const DEFAULT_BADGE = "border-slate-200 bg-slate-50 text-slate-700"
+  const DEFAULT_SQUARE = "border-slate-200 bg-slate-50"
+
+  if (!cor) {
+    return {
+      badgeClass: DEFAULT_BADGE,
+      squareClass: DEFAULT_SQUARE,
+    }
+  }
+
+  const trimmed = cor.trim()
+  if (trimmed.startsWith("#")) {
+    const textColor = getContrastColor(trimmed)
+    return {
+      badgeClass: "border border-transparent",
+      badgeStyle: { backgroundColor: trimmed, color: textColor },
+      iconStyle: { color: textColor },
+      squareStyle: { backgroundColor: trimmed, borderColor: trimmed },
+    }
+  }
+
+  const textClass = trimmed
+    .split(/\s+/)
+    .find((cls) => cls.startsWith("text-"))
+
+  return {
+    badgeClass: trimmed,
+    iconClass: textClass,
+    squareClass: trimmed,
+  }
+}
+
 export default function NovaCategoriaPage() {
   const router = useRouter()
   const [formData, setFormData] = useState<CategoriaFormData>({
@@ -74,6 +137,7 @@ export default function NovaCategoriaPage() {
   const [submitting, setSubmitting] = useState(false)
 
   const IconPreview = useMemo(() => getIconComponent(formData.icone), [formData.icone])
+  const previewAppearance = useMemo(() => getAppearance(formData.cor), [formData.cor])
 
   const handleChange = (field: keyof CategoriaFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -152,13 +216,18 @@ export default function NovaCategoriaPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
               <span
-                className={`inline-block h-6 w-6 rounded border ${formData.cor || "border-slate-200 bg-slate-50"}`}
+                className={cn("inline-block h-6 w-6 rounded border", previewAppearance.squareClass)}
+                style={previewAppearance.squareStyle}
               />
               <Badge
                 variant="outline"
-                className={`${formData.cor || "border-slate-200 bg-slate-50 text-slate-700"} gap-1 text-base`}
+                className={cn("gap-1 text-base", previewAppearance.badgeClass)}
+                style={previewAppearance.badgeStyle}
               >
-                <IconPreview className="h-4 w-4" />
+                <IconPreview
+                  className={cn("h-4 w-4", previewAppearance.iconClass)}
+                  style={previewAppearance.iconStyle}
+                />
                 {formData.nome || "Nome da categoria"}
               </Badge>
             </div>
@@ -198,7 +267,18 @@ export default function NovaCategoriaPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="icone">Ícone (opcional)</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="icone">Ícone (opcional)</Label>
+                  <a
+                    href="https://lucide.dev/icons/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <HelpCircle className="h-3.5 w-3.5" />
+                    Ver catálogo
+                  </a>
+                </div>
                 <Input
                   id="icone"
                   placeholder="Ex: Sparkles"
@@ -219,7 +299,13 @@ export default function NovaCategoriaPage() {
                   id="cor"
                   placeholder="Ex: border-blue-200 bg-blue-50 text-blue-700"
                   value={formData.cor ?? ""}
-                  onChange={(event) => handleChange("cor", event.target.value)}
+                  onChange={(event) => {
+                    const value = event.target.value
+                    setFormData((prev) => ({ ...prev, cor: value }))
+                    if (errors.cor) {
+                      setErrors((prev) => ({ ...prev, cor: undefined }))
+                    }
+                  }}
                   onBlur={() => handleBlur("cor")}
                   className={errors.cor ? "border-destructive" : ""}
                   rows={3}
@@ -229,8 +315,9 @@ export default function NovaCategoriaPage() {
                 </p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span
-                    className={`inline-block h-5 w-5 rounded border ${formData.cor || "border-slate-200 bg-slate-50"}`}
+                    className={cn("inline-block h-5 w-5 rounded border", previewAppearance.squareClass)}
                     aria-hidden="true"
+                    style={previewAppearance.squareStyle}
                   />
                   Pré-visualização da cor
                 </div>
