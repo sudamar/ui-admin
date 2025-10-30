@@ -16,20 +16,41 @@ import { ArrowLeft, Loader2, Save, Tag, Palette, type LucideIcon } from "lucide-
 
 import { categoriasService } from "@/services/trabalhos/categorias-service"
 
+const tailwindPattern = /^[a-z0-9-:\s]+$/i
+
 const categoriaSchema = z.object({
-  nome: z.string().trim().min(2, "Informe o nome da categoria."),
+  nome: z
+    .string()
+    .trim()
+    .min(2, "Informe o nome da categoria."),
   icone: z
     .string()
     .trim()
     .max(100, "Nome do ícone muito longo.")
     .optional()
-    .or(z.literal("")),
+    .or(z.literal(""))
+    .superRefine((value, ctx) => {
+      if (value && !tailwindPattern.test(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Use apenas caracteres válidos (a-z, -, :)",
+        })
+      }
+    }),
   cor: z
     .string()
     .trim()
     .max(120, "Valor de cor muito longo.")
     .optional()
-    .or(z.literal("")),
+    .or(z.literal(""))
+    .superRefine((value, ctx) => {
+      if (value && !tailwindPattern.test(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Informe apenas classes utilitárias válidas.",
+        })
+      }
+    }),
 })
 
 type CategoriaFormData = z.infer<typeof categoriaSchema>
@@ -59,6 +80,10 @@ export default function NovaCategoriaPage() {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
     }
+  }
+
+  const handleBlur = (field: keyof CategoriaFormData) => {
+    setFormData((prev) => ({ ...prev, [field]: prev[field]?.trim() ?? "" }))
   }
 
   const validate = () => {
@@ -125,13 +150,18 @@ export default function NovaCategoriaPage() {
             <CardDescription>Como a categoria será exibida nos trabalhos.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Badge
-              variant="outline"
-              className={`${formData.cor || "border-slate-200 bg-slate-50 text-slate-700"} gap-1 text-base`}
-            >
-              <IconPreview className="h-4 w-4" />
-              {formData.nome || "Nome da categoria"}
-            </Badge>
+            <div className="flex items-center gap-3">
+              <span
+                className={`inline-block h-6 w-6 rounded border ${formData.cor || "border-slate-200 bg-slate-50"}`}
+              />
+              <Badge
+                variant="outline"
+                className={`${formData.cor || "border-slate-200 bg-slate-50 text-slate-700"} gap-1 text-base`}
+              >
+                <IconPreview className="h-4 w-4" />
+                {formData.nome || "Nome da categoria"}
+              </Badge>
+            </div>
             <div className="space-y-1 text-sm text-muted-foreground">
               <p>
                 <span className="font-medium text-foreground">Ícone: </span>
@@ -161,6 +191,7 @@ export default function NovaCategoriaPage() {
                   placeholder="Ex: Psicologia Analítica"
                   value={formData.nome}
                   onChange={(event) => handleChange("nome", event.target.value)}
+                  onBlur={() => handleBlur("nome")}
                   className={errors.nome ? "border-destructive" : ""}
                 />
                 {errors.nome ? <p className="text-sm text-destructive">{errors.nome}</p> : null}
@@ -173,6 +204,7 @@ export default function NovaCategoriaPage() {
                   placeholder="Ex: Sparkles"
                   value={formData.icone ?? ""}
                   onChange={(event) => handleChange("icone", event.target.value)}
+                  onBlur={() => handleBlur("icone")}
                   className={errors.icone ? "border-destructive" : ""}
                 />
                 <p className="text-xs text-muted-foreground">
@@ -188,12 +220,20 @@ export default function NovaCategoriaPage() {
                   placeholder="Ex: border-blue-200 bg-blue-50 text-blue-700"
                   value={formData.cor ?? ""}
                   onChange={(event) => handleChange("cor", event.target.value)}
+                  onBlur={() => handleBlur("cor")}
                   className={errors.cor ? "border-destructive" : ""}
                   rows={3}
                 />
                 <p className="text-xs text-muted-foreground">
                   Informe as classes utilitárias (Tailwind) que definem as cores do badge.
                 </p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span
+                    className={`inline-block h-5 w-5 rounded border ${formData.cor || "border-slate-200 bg-slate-50"}`}
+                    aria-hidden="true"
+                  />
+                  Pré-visualização da cor
+                </div>
                 {errors.cor ? <p className="text-sm text-destructive">{errors.cor}</p> : null}
               </div>
             </CardContent>

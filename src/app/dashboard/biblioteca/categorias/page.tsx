@@ -136,7 +136,7 @@ export default function CategoriasPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[220px]">Categoria</TableHead>
+                    <TableHead className="min-w-[240px]">Categoria</TableHead>
                     <TableHead className="min-w-[220px]">Cor (classes)</TableHead>
                     <TableHead className="min-w-[160px]">Exemplo</TableHead>
                     <TableHead className="w-[80px] text-right">Ações</TableHead>
@@ -149,6 +149,10 @@ export default function CategoriasPage() {
                       <TableRow key={categoria.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
+                            <span
+                              className={`inline-block h-6 w-6 rounded border ${categoria.cor ?? "border-border bg-muted"}`}
+                              aria-hidden="true"
+                            />
                             <span className="inline-flex size-9 items-center justify-center rounded-md border border-border/60 bg-muted/40">
                               <Icon className="h-4 w-4 text-muted-foreground" />
                             </span>
