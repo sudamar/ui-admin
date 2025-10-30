@@ -6,6 +6,7 @@ import {
   createUserAccount,
   getProfileFromToken,
   listSupabaseUsers,
+  updateUserAccount,
   PerfilUsuario,
 } from "@/services/auth/auth-service"
 
@@ -23,6 +24,28 @@ const createUserSchema = z.object({
     .max(72, "A senha pode ter no máximo 72 caracteres."),
   perfil: z.nativeEnum(PerfilUsuario),
   status: z.enum(["active", "inactive"]).default("active"),
+  avatarDataUrl: z
+    .union([
+      z
+        .string()
+        .trim()
+        .refine(
+          (value) => value.length === 0 || value.startsWith("data:image/"),
+          "Formato de imagem inválido"
+        ),
+      z.literal(""),
+    ])
+    .optional(),
+})
+
+const updateUserSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Informe um nome com pelo menos 2 caracteres"),
+  email: z.string().trim().email("Informe um e-mail válido"),
+  perfil: z.nativeEnum(PerfilUsuario),
+  status: z.enum(["active", "inactive"]),
   avatarDataUrl: z
     .union([
       z
@@ -133,5 +156,76 @@ export async function POST(request: Request) {
         ? error.message
         : "Não foi possível criar o usuário."
     return NextResponse.json({ success: false, message }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: Request) {
+  const url = new URL(request.url)
+  const userId = url.searchParams.get("id")
+
+  if (!userId) {
+    return NextResponse.json(
+      { success: false, message: "ID do usuário inválido." },
+      { status: 400 }
+    )
+  }
+
+  const cookieStore = await cookies()
+  const token = cookieStore.get(AUTH_COOKIE)?.value
+
+  if (!token) {
+    return NextResponse.json(
+      { success: false, message: "Não autenticado." },
+      { status: 401 }
+    )
+  }
+
+  const currentUser = await getProfileFromToken(token)
+  if (!currentUser || currentUser.perfil !== PerfilUsuario.Admin) {
+    return NextResponse.json(
+      { success: false, message: "Apenas administradores podem atualizar usuários." },
+      { status: 403 }
+    )
+  }
+
+  const payload = await request.json().catch(() => null)
+  const parsed = updateUserSchema.safeParse(payload)
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Dados inválidos.",
+        issues: parsed.error.issues,
+      },
+      { status: 400 }
+    )
+  }
+
+  try {
+    const { avatarDataUrl, ...data } = parsed.data
+    const updatedUser = await updateUserAccount({
+      id: userId,
+      ...data,
+      avatarDataUrl:
+        avatarDataUrl && avatarDataUrl.trim().length > 0
+          ? avatarDataUrl.trim()
+          : undefined,
+    })
+
+    return NextResponse.json({ success: true, user: updatedUser })
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Não foi possível atualizar o usuário."
+
+    return NextResponse.json(
+      {
+        success: false,
+        message,
+      },
+      { status: 500 }
+    )
   }
 }

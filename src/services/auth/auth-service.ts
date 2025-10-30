@@ -72,6 +72,16 @@ export type AuthUser = {
   perfil: PerfilUsuario
 }
 
+export type SupabaseListedUser = {
+  id: string
+  name: string
+  email: string
+  role: PerfilUsuario
+  status: "active" | "inactive"
+  createdAt: string
+  avatarUrl: string | null
+}
+
 async function getUserDetails(userId: string): Promise<UserDetailsRow | null> {
   const adminClient = getSupabaseAdminClient()
   if (!adminClient) {
@@ -164,6 +174,29 @@ function mapSupabaseUser(
     bio: details?.bio ?? null,
     displayName: displayName ?? null,
     perfil,
+  }
+}
+
+function mapSupabaseUserToListedUser(
+  user: SupabaseUser,
+  details?: UserDetailsRow | null
+): SupabaseListedUser {
+  const mapped = mapSupabaseUser(user, details)
+  const metadata = (user.user_metadata ?? {}) as Record<string, unknown>
+  const metaStatus =
+    typeof metadata.status === "string"
+      ? metadata.status.toLowerCase()
+      : undefined
+  const status = metaStatus === "inactive" ? "inactive" : "active"
+
+  return {
+    id: mapped.id,
+    name: mapped.name,
+    email: mapped.email,
+    role: mapped.perfil,
+    status,
+    createdAt: user.created_at ?? new Date().toISOString(),
+    avatarUrl: mapped.avatarUrl ?? null,
   }
 }
 
@@ -437,16 +470,6 @@ export async function createUserAccount({
   return mapSupabaseUser(finalUser, details)
 }
 
-export type SupabaseListedUser = {
-  id: string
-  name: string
-  email: string
-  role: PerfilUsuario
-  status: "active" | "inactive"
-  createdAt: string
-  avatarUrl: string | null
-}
-
 export async function listSupabaseUsers(): Promise<SupabaseListedUser[]> {
   const adminClient = getSupabaseAdminClient()
   if (!adminClient) {
@@ -487,22 +510,98 @@ export async function listSupabaseUsers(): Promise<SupabaseListedUser[]> {
 
   const detailsMap = await getUserDetailsMap(collectedUsers.map((user) => user.id))
 
-  return collectedUsers.map((user) => {
-    const details = detailsMap[user.id] ?? null
-    const mapped = mapSupabaseUser(user, details)
-    const metadata = (user.user_metadata ?? {}) as Record<string, unknown>
-    const metaStatus =
-      typeof metadata.status === "string" ? metadata.status.toLowerCase() : undefined
-    const status = metaStatus === "inactive" ? "inactive" : "active"
+  return collectedUsers.map((user) =>
+    mapSupabaseUserToListedUser(user, detailsMap[user.id] ?? null)
+  )
+}
 
-    return {
-      id: mapped.id,
-      name: mapped.name,
-      email: mapped.email,
-      role: mapped.perfil,
-      status,
-      createdAt: user.created_at ?? new Date().toISOString(),
-      avatarUrl: mapped.avatarUrl ?? null,
-    }
-  })
+type UpdateUserInput = {
+  id: string
+  email: string
+  name: string
+  perfil: PerfilUsuario
+  status: "active" | "inactive"
+  avatarDataUrl?: string
+}
+
+export async function updateUserAccount({
+  id,
+  email,
+  name,
+  perfil,
+  status,
+  avatarDataUrl,
+}: UpdateUserInput) {
+  const adminClient = getSupabaseAdminClient()
+  if (!adminClient) {
+    throw new Error(
+      "Supabase service role key não configurada. Defina SUPABASE_SERVICE_KEY para permitir atualização de usuários."
+    )
+  }
+
+  const { data: currentData, error: fetchError } = await adminClient.auth.admin.getUserById(id)
+
+  if (fetchError || !currentData?.user) {
+    const err: AuthError | null = fetchError ?? null
+    throw new Error(
+      err?.message ?? "Usuário não encontrado no Supabase."
+    )
+  }
+
+  const existingUser = currentData.user
+  const existingMetadata =
+    (existingUser.user_metadata ?? {}) as Record<string, unknown>
+
+  const currentDetails = await getUserDetails(id)
+  let avatarPublic = currentDetails?.avatar_public ?? null
+
+  const metadata: Record<string, unknown> = {
+    ...existingMetadata,
+    name,
+    perfil,
+    status,
+  }
+
+  const normalizedAvatarDataUrl = avatarDataUrl?.trim()
+  if (normalizedAvatarDataUrl && normalizedAvatarDataUrl.length > 0) {
+    const upload = await uploadAvatarFromDataUrl(id, normalizedAvatarDataUrl)
+    metadata.avatar_url = upload.publicUrl
+    avatarPublic = upload.publicUrl
+  }
+
+  const appRole = perfil === PerfilUsuario.Admin ? "admin" : "viewer"
+
+  const { data: updatedData, error: updateError } =
+    await adminClient.auth.admin.updateUserById(id, {
+      email,
+      user_metadata: metadata,
+      app_metadata: { role: appRole },
+    })
+
+  if (updateError || !updatedData?.user) {
+    const err: AuthError | null = updateError ?? null
+    throw new Error(
+      err?.message ?? "Não foi possível atualizar os dados do usuário."
+    )
+  }
+
+  const { error: detailsError } = await adminClient
+    .from("usuarios_detalhes")
+    .upsert(
+      {
+        id,
+        display_name: name,
+        perfil,
+        avatar_public: avatarPublic,
+      },
+      { onConflict: "id" }
+    )
+
+  if (detailsError) {
+    throw new Error(detailsError.message)
+  }
+
+  const details = await getUserDetails(id)
+
+  return mapSupabaseUserToListedUser(updatedData.user, details)
 }

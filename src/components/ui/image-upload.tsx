@@ -1,9 +1,13 @@
+"use client"
+
 import * as React from "react"
 import Image from "next/image"
 import { ImageIcon, Loader2, UploadCloud, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { compressImageFile } from "@/lib/image"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface ImageUploadProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange"> {
@@ -14,15 +18,6 @@ interface ImageUploadProps
   accept?: string
   disabled?: boolean
   previewClassName?: string
-}
-
-async function fileToDataUrl(file: File) {
-  const reader = new FileReader()
-  return new Promise<string>((resolve, reject) => {
-    reader.onerror = () => reject(reader.error)
-    reader.onload = () => resolve(reader.result as string)
-    reader.readAsDataURL(file)
-  })
 }
 
 export function ImageUpload({
@@ -55,12 +50,20 @@ export function ImageUpload({
 
     setIsLoading(true)
     try {
-      const dataUrl = await fileToDataUrl(file)
+      const dataUrl = await compressImageFile(file, {
+        maxSizeBytes: 1024 * 1024,
+      })
       setPreview(dataUrl)
       onChange?.(dataUrl)
     } catch (error) {
-      console.error("Failed to read image file", error)
+      console.error("Failed to process image file", error)
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível processar a imagem selecionada."
+      toast.error(message)
     } finally {
+      event.target.value = ""
       setIsLoading(false)
     }
   }
@@ -136,7 +139,7 @@ export function ImageUpload({
             ) : null}
           </div>
           <p className="text-[11px] leading-relaxed">
-            Suporta upload local de arquivos. A imagem selecionada é salva em base64 para facilitar o envio via API.
+            Suporta upload local de arquivos (máx. 1MB). A imagem selecionada é compactada e salva em base64 para facilitar o envio via API.
           </p>
         </div>
       </div>

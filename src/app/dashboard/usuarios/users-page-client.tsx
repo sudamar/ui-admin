@@ -92,7 +92,11 @@ function UserDetailsDialog({ user, trigger, onDelete }: UserDetailsDialogProps) 
         <div className="space-y-5 pt-2">
           <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4">
             <Avatar className="h-16 w-16">
-              <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
+              <AvatarImage
+                src={user.avatar ?? undefined}
+                alt={user.name}
+                className="h-full w-full object-cover"
+              />
               <AvatarFallback className="bg-primary/10 text-lg text-primary">
                 {getInitials(user.name)}
               </AvatarFallback>
@@ -413,7 +417,11 @@ export function UsersPageClient() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar>
-                                <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
+                                <AvatarImage
+                                  src={user.avatar ?? undefined}
+                                  alt={user.name}
+                                  className="h-full w-full object-cover"
+                                />
                                 <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                               </Avatar>
                               <div>
@@ -508,7 +516,11 @@ export function UsersPageClient() {
                           />
                           <div className="flex flex-1 items-center gap-3">
                             <Avatar className="h-12 w-12">
-                              <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
+                              <AvatarImage
+                                src={user.avatar ?? undefined}
+                                alt={user.name}
+                                className="h-full w-full object-cover"
+                              />
                               <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
                                 {getInitials(user.name)}
                               </AvatarFallback>

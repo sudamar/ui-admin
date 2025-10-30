@@ -22,6 +22,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ArrowLeft, Camera, Save } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { PerfilUsuario } from "@/services/auth/auth-service"
+import { compressImageFile } from "@/lib/image"
 import { toast } from "sonner"
 
 const PERFIL_LABEL: Record<PerfilUsuario, string> = {
@@ -147,44 +148,29 @@ export default function NewUserPage() {
     fileInputRef.current?.click()
   }
 
-  const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
 
     if (!file) {
       return
     }
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Selecione um arquivo de imagem válido.")
+    try {
+      const compressed = await compressImageFile(file, {
+        maxSizeBytes: 1024 * 1024,
+      })
+      setAvatarPreview(compressed)
+      setAvatarDataUrl(compressed)
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível processar a imagem selecionada."
+      toast.error(message)
+    } finally {
+      // Permite selecionar o mesmo arquivo novamente, se necessário
       event.target.value = ""
-      return
     }
-
-    const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error("A imagem deve ter no máximo 5MB.")
-      event.target.value = ""
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result
-      if (typeof result === "string") {
-        setAvatarPreview(result)
-        setAvatarDataUrl(result)
-      } else {
-        toast.error("Não foi possível ler o arquivo selecionado.")
-      }
-    }
-    reader.onerror = () => {
-      toast.error("Não foi possível carregar a imagem. Tente novamente.")
-    }
-
-    reader.readAsDataURL(file)
-
-    // Permite selecionar o mesmo arquivo novamente, se necessário
-    event.target.value = ""
   }
 
   const isAdmin = Boolean(
@@ -266,7 +252,11 @@ export default function NewUserPage() {
               >
                 <Avatar className="h-full w-full border-2 border-dashed border-primary/40 transition-colors group-hover:border-primary">
                   {avatarPreview ? (
-                    <AvatarImage src={avatarPreview} alt="Pré-visualização do avatar" />
+                    <AvatarImage
+                      src={avatarPreview}
+                      alt="Pré-visualização do avatar"
+                      className="h-full w-full object-cover"
+                    />
                   ) : null}
                   <AvatarFallback className="bg-primary/10 text-2xl text-primary">
                     {formData.name ? getInitials(formData.name) : "?"}
@@ -285,7 +275,7 @@ export default function NewUserPage() {
                 className="hidden"
               />
               <p className="text-center text-xs text-muted-foreground">
-                Clique na foto para fazer upload (máx. 5MB).
+                Clique na foto para fazer upload (máx. 1MB).
               </p>
               <div className="text-center">
                 <h3 className="font-semibold text-lg">

@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import type { ChangeEvent } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { ArrowLeft, Save } from "lucide-react"
+import { ArrowLeft, Camera, Save } from "lucide-react"
 import { useForm } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/card"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Select,
   SelectContent,
@@ -27,13 +29,25 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { PerfilUsuario } from "@/services/auth/auth-service"
+import { compressImageFile } from "@/lib/image"
 import { usersService } from "@/services/usuarios/usuario-service"
+import { toast } from "sonner"
 
 const PERFIL_LABEL: Record<PerfilUsuario, string> = {
   [PerfilUsuario.Admin]: "Administrador",
   [PerfilUsuario.Secretaria]: "Secretaria",
   [PerfilUsuario.Professor]: "Professor",
   [PerfilUsuario.Aluno]: "Aluno",
+}
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
 }
 
 const formSchema = z.object({
@@ -43,7 +57,7 @@ const formSchema = z.object({
   email: z.string().email({
     message: "Por favor, insira um e-mail válido.",
   }),
-  role: z.nativeEnum(PerfilUsuario),
+  perfil: z.nativeEnum(PerfilUsuario),
   status: z.enum(["active", "inactive"]),
 })
 
@@ -53,19 +67,22 @@ export default function EditUserPage() {
   const params = useParams()
   const router = useRouter()
   const userId = params.id as string
-
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null)
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       email: "",
-      role: PerfilUsuario.Secretaria,
+      perfil: PerfilUsuario.Secretaria,
       status: "active",
     },
   })
+  const watchedName = form.watch("name")
 
   useEffect(() => {
     loadUser()
@@ -79,9 +96,11 @@ export default function EditUserPage() {
         form.reset({
           name: user.name,
           email: user.email,
-          role: user.role,
+          perfil: user.role,
           status: user.status,
         })
+        setAvatarPreview(user.avatar ?? null)
+        setAvatarDataUrl(null)
       } else {
         router.push("/dashboard/usuarios")
       }
@@ -92,13 +111,51 @@ export default function EditUserPage() {
     }
   }
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    try {
+      const compressed = await compressImageFile(file, {
+        maxSizeBytes: 1024 * 1024,
+      })
+      setAvatarPreview(compressed)
+      setAvatarDataUrl(compressed)
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível processar a imagem selecionada."
+      toast.error(message)
+    } finally {
+      event.target.value = ""
+    }
+  }
+
   const onSubmit = async (data: FormData) => {
     setSaving(true)
     try {
-      await usersService.update(userId, data)
+      await usersService.update(userId, {
+        ...data,
+        perfil: data.perfil,
+        avatarDataUrl: avatarDataUrl ?? undefined,
+      })
+      toast.success("Usuário atualizado com sucesso.")
       router.push("/dashboard/usuarios")
     } catch (error) {
       console.error("Erro ao salvar usuário:", error)
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível atualizar o usuário."
+      )
     } finally {
       setSaving(false)
     }
@@ -142,6 +199,41 @@ export default function EditUserPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <div className="flex flex-col items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={handleAvatarClick}
+                    className="group relative h-24 w-24"
+                  >
+                    <Avatar className="h-full w-full border-2 border-dashed border-primary/40 transition-colors group-hover:border-primary">
+                      {avatarPreview ? (
+                        <AvatarImage
+                          src={avatarPreview}
+                          alt="Pré-visualização do avatar"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : null}
+                      <AvatarFallback className="bg-primary/10 text-2xl font-semibold text-primary">
+                        {getInitials(watchedName || "") || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 rounded-full bg-background/70 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
+                      <Camera className="h-4 w-4" />
+                      Trocar foto
+                    </span>
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
+                  <p className="text-center text-xs text-muted-foreground">
+                    Clique na foto para enviar uma nova imagem (máx. 1MB).
+                  </p>
+                </div>
+
                 <FormField
                   control={form.control}
                   name="name"
@@ -182,7 +274,7 @@ export default function EditUserPage() {
 
                 <FormField
                   control={form.control}
-                  name="role"
+                  name="perfil"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Perfil</FormLabel>

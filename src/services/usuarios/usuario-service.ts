@@ -10,6 +10,14 @@ export interface User {
   avatar?: string | null
 }
 
+export interface UpdateUserInput {
+  name: string
+  email: string
+  perfil: PerfilUsuario
+  status: "active" | "inactive"
+  avatarDataUrl?: string
+}
+
 type ApiUserResponse =
   | {
       success: true
@@ -118,8 +126,36 @@ export const usersService = {
     throw new Error("Criação de usuários via usersService não está disponível.")
   },
 
-  async update(_id: string, _data: Partial<User>): Promise<User> {
-    throw new Error("Atualização de usuários via usersService não está disponível.")
+  async update(id: string, data: UpdateUserInput): Promise<User> {
+    const response = await fetch(`/api/users?id=${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(data),
+    })
+
+    if (!response.ok) {
+      const errorBody = (await response.json().catch(() => null)) as
+        | { message?: string }
+        | null
+      throw new Error(
+        errorBody?.message ?? "Não foi possível atualizar o usuário."
+      )
+    }
+
+    const result = (await response.json()) as ApiUserResponse
+
+    if (!("success" in result) || !result.success || !("user" in result)) {
+      throw new Error(
+        "message" in result && result.message
+          ? result.message
+          : "Não foi possível atualizar o usuário."
+      )
+    }
+
+    return mapApiUser(result.user)
   },
 
   async delete(_id: string): Promise<boolean> {
