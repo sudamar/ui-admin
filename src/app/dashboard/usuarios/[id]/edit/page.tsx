@@ -26,7 +26,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { usersService, type User } from "@/services/usuarios/usuario-service"
+import { PerfilUsuario } from "@/services/auth/auth-service"
+import { usersService } from "@/services/usuarios/usuario-service"
+
+const PERFIL_LABEL: Record<PerfilUsuario, string> = {
+  [PerfilUsuario.Admin]: "Administrador",
+  [PerfilUsuario.Secretaria]: "Secretaria",
+  [PerfilUsuario.Professor]: "Professor",
+  [PerfilUsuario.Aluno]: "Aluno",
+}
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -35,7 +43,7 @@ const formSchema = z.object({
   email: z.string().email({
     message: "Por favor, insira um e-mail válido.",
   }),
-  role: z.enum(["Admin", "Editor", "Viewer"]),
+  role: z.nativeEnum(PerfilUsuario),
   status: z.enum(["active", "inactive"]),
 })
 
@@ -44,7 +52,7 @@ type FormData = z.infer<typeof formSchema>
 export default function EditUserPage() {
   const params = useParams()
   const router = useRouter()
-  const userId = parseInt(params.id as string)
+  const userId = params.id as string
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -54,7 +62,7 @@ export default function EditUserPage() {
     defaultValues: {
       name: "",
       email: "",
-      role: "Viewer",
+      role: PerfilUsuario.Secretaria,
       status: "active",
     },
   })
@@ -66,12 +74,12 @@ export default function EditUserPage() {
   const loadUser = async () => {
     setLoading(true)
     try {
-      const user = await usersService.getById(userId)
+      const user = userId ? await usersService.getById(userId) : null
       if (user) {
         form.reset({
           name: user.name,
           email: user.email,
-          role: user.role as "Admin" | "Editor" | "Viewer",
+          role: user.role,
           status: user.status,
         })
       } else {
@@ -188,9 +196,11 @@ export default function EditUserPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Admin">Admin</SelectItem>
-                          <SelectItem value="Editor">Editor</SelectItem>
-                          <SelectItem value="Viewer">Viewer</SelectItem>
+                          {Object.values(PerfilUsuario).map((perfil) => (
+                            <SelectItem key={perfil} value={perfil}>
+                              {PERFIL_LABEL[perfil]}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormDescription>

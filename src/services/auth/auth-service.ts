@@ -92,6 +92,35 @@ async function getUserDetails(userId: string): Promise<UserDetailsRow | null> {
   return (data as UserDetailsRow | null) ?? null
 }
 
+async function getUserDetailsMap(
+  userIds: string[]
+): Promise<Record<string, UserDetailsRow>> {
+  const adminClient = getSupabaseAdminClient()
+  if (!adminClient || userIds.length === 0) {
+    return {}
+  }
+
+  const { data, error } = await adminClient
+    .from("usuarios_detalhes")
+    .select("id, avatar_public, bio, display_name, perfil")
+    .in("id", userIds)
+
+  if (error || !data) {
+    console.error("Erro ao buscar detalhes dos usuários:", error?.message)
+    return {}
+  }
+
+  return (data as UserDetailsRow[]).reduce<Record<string, UserDetailsRow>>(
+    (acc, row) => {
+      if (row?.id) {
+        acc[row.id] = row
+      }
+      return acc
+    },
+    {}
+  )
+}
+
 function mapSupabaseUser(
   user: SupabaseUser,
   details?: UserDetailsRow | null
@@ -311,6 +340,8 @@ type CreateUserInput = {
   name: string
   perfil: PerfilUsuario
   status: "active" | "inactive"
+  password: string
+  avatarDataUrl?: string
 }
 
 export async function createUserAccount({
@@ -318,6 +349,8 @@ export async function createUserAccount({
   name,
   perfil,
   status,
+  password,
+  avatarDataUrl,
 }: CreateUserInput) {
   const adminClient = getSupabaseAdminClient()
   if (!adminClient) {
@@ -326,51 +359,71 @@ export async function createUserAccount({
     )
   }
 
-  const invite = await adminClient.auth.admin.inviteUserByEmail(email, {
-    data: {
-      name,
-      perfil,
-      status,
-    },
+  const metadata: Record<string, unknown> = {
+    name,
+    perfil,
+    status,
+  }
+
+  const appRole = perfil === PerfilUsuario.Admin ? "admin" : "viewer"
+
+  const created = await adminClient.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: metadata,
+    app_metadata: { role: appRole },
   })
 
-  if (invite.error || !invite.data?.user?.id) {
-    const err: AuthError | null = invite.error ?? null
+  if (created.error || !created.data?.user) {
+    const err: AuthError | null = created.error ?? null
     throw new Error(
-      err?.message ??
-        "Não foi possível enviar o convite ao usuário. Verifique o email informado."
+      err?.message ?? "Não foi possível criar o usuário no Supabase."
     )
   }
 
-  const newUser = invite.data.user
-  const appRole = perfil === PerfilUsuario.Admin ? "admin" : "viewer"
+  const newUser = created.data.user
+  let finalUser = newUser
+  let uploadedAvatarUrl: string | null = null
+  const normalizedAvatarDataUrl = avatarDataUrl?.trim()
 
-  const { error: updateError, data } = await adminClient.auth.admin.updateUserById(
-    newUser.id,
-    {
-      app_metadata: { role: appRole },
-      user_metadata: {
-        name,
-        perfil,
-        status,
-      },
-    }
-  )
-
-  if (updateError || !data.user) {
-    const err: AuthError | null = updateError ?? null
-    throw new Error(
-      err?.message ?? "Não foi possível atualizar os metadados do usuário."
+  if (normalizedAvatarDataUrl && normalizedAvatarDataUrl.length > 0) {
+    const upload = await uploadAvatarFromDataUrl(
+      newUser.id,
+      normalizedAvatarDataUrl
     )
+    uploadedAvatarUrl = upload.publicUrl
+
+    const metadataWithAvatar: Record<string, unknown> = {
+      ...((newUser.user_metadata ?? {}) as Record<string, unknown>),
+      ...metadata,
+      avatar_url: uploadedAvatarUrl,
+    }
+
+    const { data: updatedData, error: metadataUpdateError } =
+      await adminClient.auth.admin.updateUserById(newUser.id, {
+        user_metadata: metadataWithAvatar,
+        app_metadata: { role: appRole },
+      })
+
+    if (metadataUpdateError || !updatedData?.user) {
+      const err: AuthError | null = metadataUpdateError ?? null
+      throw new Error(
+        err?.message ?? "Não foi possível atualizar o avatar do usuário."
+      )
+    }
+
+    finalUser = updatedData.user
   }
 
   const { error: detailsError } = await adminClient
     .from("usuarios_detalhes")
     .upsert(
       {
-        id: data.user.id,
+        id: finalUser.id,
         display_name: name,
         perfil,
+        avatar_public: uploadedAvatarUrl ?? null,
       },
       { onConflict: "id" }
     )
@@ -379,7 +432,77 @@ export async function createUserAccount({
     throw new Error(detailsError.message)
   }
 
-  const details = await getUserDetails(data.user.id)
+  const details = await getUserDetails(finalUser.id)
 
-  return mapSupabaseUser(data.user, details)
+  return mapSupabaseUser(finalUser, details)
+}
+
+export type SupabaseListedUser = {
+  id: string
+  name: string
+  email: string
+  role: PerfilUsuario
+  status: "active" | "inactive"
+  createdAt: string
+  avatarUrl: string | null
+}
+
+export async function listSupabaseUsers(): Promise<SupabaseListedUser[]> {
+  const adminClient = getSupabaseAdminClient()
+  if (!adminClient) {
+    throw new Error(
+      "Supabase service role key não configurada. Defina SUPABASE_SERVICE_KEY para permitir listagem de usuários."
+    )
+  }
+
+  const perPage = 200
+  let page = 1
+  const collectedUsers: SupabaseUser[] = []
+
+  while (true) {
+    const { data, error } = await adminClient.auth.admin.listUsers({
+      page,
+      perPage,
+    })
+
+    if (error) {
+      throw new Error(error.message ?? "Não foi possível listar os usuários.")
+    }
+
+    const batch = data.users ?? []
+    collectedUsers.push(
+      ...batch.filter((user) => !user.deleted_at && user.aud === "authenticated")
+    )
+
+    if (batch.length < perPage) {
+      break
+    }
+
+    page += 1
+  }
+
+  if (collectedUsers.length === 0) {
+    return []
+  }
+
+  const detailsMap = await getUserDetailsMap(collectedUsers.map((user) => user.id))
+
+  return collectedUsers.map((user) => {
+    const details = detailsMap[user.id] ?? null
+    const mapped = mapSupabaseUser(user, details)
+    const metadata = (user.user_metadata ?? {}) as Record<string, unknown>
+    const metaStatus =
+      typeof metadata.status === "string" ? metadata.status.toLowerCase() : undefined
+    const status = metaStatus === "inactive" ? "inactive" : "active"
+
+    return {
+      id: mapped.id,
+      name: mapped.name,
+      email: mapped.email,
+      role: mapped.perfil,
+      status,
+      createdAt: user.created_at ?? new Date().toISOString(),
+      avatarUrl: mapped.avatarUrl ?? null,
+    }
+  })
 }

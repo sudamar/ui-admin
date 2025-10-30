@@ -50,12 +50,22 @@ function getInitials(name: string) {
     .slice(0, 2)
 }
 
-function getRoleBadgeVariant(role: string) {
+const PERFIL_LABEL: Record<PerfilUsuario, string> = {
+  [PerfilUsuario.Admin]: "Administrador",
+  [PerfilUsuario.Secretaria]: "Secretaria",
+  [PerfilUsuario.Professor]: "Professor",
+  [PerfilUsuario.Aluno]: "Aluno",
+}
+
+function getRoleBadgeVariant(role: PerfilUsuario) {
   switch (role) {
-    case "Admin":
+    case PerfilUsuario.Admin:
       return "default"
-    case "Editor":
+    case PerfilUsuario.Secretaria:
       return "secondary"
+    case PerfilUsuario.Professor:
+      return "outline"
+    case PerfilUsuario.Aluno:
     default:
       return "outline"
   }
@@ -64,7 +74,7 @@ function getRoleBadgeVariant(role: string) {
 interface UserDetailsDialogProps {
   user: User
   trigger: ReactNode
-  onDelete: (id: number) => void
+  onDelete: (id: string) => void
 }
 
 function UserDetailsDialog({ user, trigger, onDelete }: UserDetailsDialogProps) {
@@ -82,7 +92,7 @@ function UserDetailsDialog({ user, trigger, onDelete }: UserDetailsDialogProps) 
         <div className="space-y-5 pt-2">
           <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4">
             <Avatar className="h-16 w-16">
-              <AvatarImage src={user.avatar} alt={user.name} />
+              <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
               <AvatarFallback className="bg-primary/10 text-lg text-primary">
                 {getInitials(user.name)}
               </AvatarFallback>
@@ -95,7 +105,7 @@ function UserDetailsDialog({ user, trigger, onDelete }: UserDetailsDialogProps) 
           <div className="grid gap-4 text-sm">
             <div className="flex items-center justify-between py-2">
               <span className="text-muted-foreground">Perfil:</span>
-              <Badge variant={getRoleBadgeVariant(user.role) as any}>{user.role}</Badge>
+              <Badge variant={getRoleBadgeVariant(user.role) as any}>{PERFIL_LABEL[user.role]}</Badge>
             </div>
             <div className="flex items-center justify-between py-2">
               <span className="text-muted-foreground">Status:</span>
@@ -135,9 +145,9 @@ export function UsersPageClient() {
   const { user: authUser } = useAuth()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedUsers, setSelectedUsers] = useState<number[]>([])
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [roleFilter, setRoleFilter] = useState<string>("all")
+  const [roleFilter, setRoleFilter] = useState<"all" | PerfilUsuario>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortField, setSortField] = useState<SortField>("name")
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc")
@@ -158,7 +168,7 @@ export function UsersPageClient() {
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja remover este usuário?")) return
 
     try {
@@ -170,14 +180,14 @@ export function UsersPageClient() {
   }
 
   const toggleSelectAll = () => {
-    if (selectedUsers.length === users.length) {
+    if (selectedUsers.length === filteredAndSortedUsers.length) {
       setSelectedUsers([])
     } else {
-      setSelectedUsers(users.map((u) => u.id))
+      setSelectedUsers(filteredAndSortedUsers.map((u) => u.id))
     }
   }
 
-  const toggleSelectUser = (id: number) => {
+  const toggleSelectUser = (id: string) => {
     setSelectedUsers((prev) =>
       prev.includes(id) ? prev.filter((userId) => userId !== id) : [...prev, id]
     )
@@ -285,15 +295,21 @@ export function UsersPageClient() {
                 className="pl-9"
               />
             </div>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <Select
+              value={roleFilter}
+              onValueChange={(value) =>
+                setRoleFilter(value === "all" ? "all" : (value as PerfilUsuario))
+              }
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Filtrar por perfil" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os perfis</SelectItem>
-                <SelectItem value="Admin">Admin</SelectItem>
-                <SelectItem value="Editor">Editor</SelectItem>
-                <SelectItem value="Viewer">Viewer</SelectItem>
+                <SelectItem value={PerfilUsuario.Admin}>{PERFIL_LABEL[PerfilUsuario.Admin]}</SelectItem>
+                <SelectItem value={PerfilUsuario.Secretaria}>{PERFIL_LABEL[PerfilUsuario.Secretaria]}</SelectItem>
+                <SelectItem value={PerfilUsuario.Professor}>{PERFIL_LABEL[PerfilUsuario.Professor]}</SelectItem>
+                <SelectItem value={PerfilUsuario.Aluno}>{PERFIL_LABEL[PerfilUsuario.Aluno]}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -397,7 +413,7 @@ export function UsersPageClient() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar>
-                                <AvatarImage src={user.avatar} alt={user.name} />
+                                <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
                                 <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                               </Avatar>
                               <div>
@@ -408,7 +424,7 @@ export function UsersPageClient() {
                           <TableCell>{user.email}</TableCell>
                           <TableCell>
                             <Badge variant={getRoleBadgeVariant(user.role) as any}>
-                              {user.role}
+                              {PERFIL_LABEL[user.role]}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -492,7 +508,7 @@ export function UsersPageClient() {
                           />
                           <div className="flex flex-1 items-center gap-3">
                             <Avatar className="h-12 w-12">
-                              <AvatarImage src={user.avatar} alt={user.name} />
+                              <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
                               <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
                                 {getInitials(user.name)}
                               </AvatarFallback>
@@ -504,7 +520,7 @@ export function UsersPageClient() {
                           </div>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant={getRoleBadgeVariant(user.role) as any}>{user.role}</Badge>
+                        <Badge variant={getRoleBadgeVariant(user.role) as any}>{PERFIL_LABEL[user.role]}</Badge>
                           <Badge variant={user.status === "active" ? "default" : "secondary"}>
                             {user.status === "active" ? "Ativo" : "Inativo"}
                           </Badge>

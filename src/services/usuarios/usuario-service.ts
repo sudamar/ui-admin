@@ -1,70 +1,128 @@
-import usuariosData from "@/data/usuarios/usuarios.json"
+import { PerfilUsuario } from "@/services/auth/auth-service"
 
 export interface User {
-  id: number
+  id: string
   name: string
   email: string
-  role: string
+  role: PerfilUsuario
   status: "active" | "inactive"
   createdAt: string
-  avatar?: string
+  avatar?: string | null
 }
 
-type CreateUserInput = Omit<User, "id" | "createdAt">
+type ApiUserResponse =
+  | {
+      success: true
+      users: Array<{
+        id: string
+        name: string
+        email: string
+        role: PerfilUsuario
+        status: "active" | "inactive"
+        createdAt: string
+        avatarUrl: string | null
+      }>
+    }
+  | {
+      success: true
+      user: {
+        id: string
+        name: string
+        email: string
+        role: PerfilUsuario
+        status: "active" | "inactive"
+        createdAt: string
+        avatarUrl: string | null
+      }
+    }
+  | {
+      success: false
+      message?: string
+    }
 
-const store: User[] = usuariosData.usuarios.map((usuario) => ({
-  id: usuario.id,
-  name: usuario.name,
-  email: usuario.email,
-  role: usuario.role,
-  status: usuario.status as "active" | "inactive",
-  createdAt: usuario.createdAt,
-  avatar: usuario.avatar,
-}))
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+function mapApiUser(user: {
+  id: string
+  name: string
+  email: string
+  role: PerfilUsuario
+  status: "active" | "inactive"
+  createdAt: string
+  avatarUrl: string | null
+}): User {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+    createdAt: user.createdAt,
+    avatar: user.avatarUrl,
+  }
 }
 
 export const usersService = {
   async getAll(): Promise<User[]> {
-    await delay(300)
-    return [...store]
-  },
+    const response = await fetch("/api/users", {
+      credentials: "include",
+    })
 
-  async getById(id: number): Promise<User | undefined> {
-    await delay(200)
-    return store.find((user) => user.id === id)
-  },
-
-  async create(input: CreateUserInput): Promise<User> {
-    await delay(500)
-    const nextId = store.length > 0 ? Math.max(...store.map((u) => u.id)) + 1 : 1
-    const newUser: User = {
-      ...input,
-      id: nextId,
-      createdAt: new Date().toISOString().split("T")[0],
-      avatar: input.avatar ?? `/assets/avatares/${nextId}.png`,
+    if (!response.ok) {
+      throw new Error("Não foi possível carregar a lista de usuários.")
     }
-    store.push(newUser)
-    return newUser
+
+    const result = (await response.json()) as ApiUserResponse
+
+    if (!("success" in result) || !result.success) {
+      throw new Error(
+        "message" in result && result.message
+          ? result.message
+          : "Não foi possível carregar a lista de usuários."
+      )
+    }
+
+    if ("users" in result) {
+      return result.users.map(mapApiUser)
+    }
+
+    return [mapApiUser(result.user)]
   },
 
-  async update(id: number, data: Partial<User>): Promise<User | undefined> {
-    await delay(500)
-    const index = store.findIndex((user) => user.id === id)
-    if (index === -1) return undefined
+  async getById(id: string): Promise<User | null> {
+    const url = `/api/users?id=${encodeURIComponent(id)}`
+    const response = await fetch(url, {
+      credentials: "include",
+    })
 
-    store[index] = { ...store[index], ...data }
-    return store[index]
+    if (response.status === 404) {
+      return null
+    }
+
+    if (!response.ok) {
+      throw new Error("Não foi possível carregar o usuário solicitado.")
+    }
+
+    const result = (await response.json()) as ApiUserResponse
+
+    if (!("success" in result) || !result.success || !("user" in result)) {
+      throw new Error(
+        "message" in result && result.message
+          ? result.message
+          : "Não foi possível carregar o usuário solicitado."
+      )
+    }
+
+    return mapApiUser(result.user)
   },
 
-  async delete(id: number): Promise<boolean> {
-    await delay(300)
-    const index = store.findIndex((user) => user.id === id)
-    if (index === -1) return false
+  async create(_input: unknown): Promise<User> {
+    throw new Error("Criação de usuários via usersService não está disponível.")
+  },
 
-    store.splice(index, 1)
-    return true
+  async update(_id: string, _data: Partial<User>): Promise<User> {
+    throw new Error("Atualização de usuários via usersService não está disponível.")
+  },
+
+  async delete(_id: string): Promise<boolean> {
+    throw new Error("Remoção de usuários via usersService não está disponível.")
   },
 }

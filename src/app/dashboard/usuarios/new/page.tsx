@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
+import type { ChangeEvent } from "react"
 import { useRouter } from "next/navigation"
 import * as z from "zod"
 import Link from "next/link"
@@ -16,8 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ArrowLeft, Save, UserPlus } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ArrowLeft, Camera, Save } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { PerfilUsuario } from "@/services/auth/auth-service"
 import { toast } from "sonner"
@@ -32,6 +34,10 @@ const PERFIL_LABEL: Record<PerfilUsuario, string> = {
 const userSchema = z.object({
   name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
   email: z.string().email({ message: "Por favor, insira um e-mail válido." }),
+  password: z
+    .string()
+    .min(8, { message: "A senha deve ter pelo menos 8 caracteres." })
+    .max(72, { message: "A senha pode ter no máximo 72 caracteres." }),
   perfil: z.nativeEnum(PerfilUsuario),
   status: z.enum(["active", "inactive"]),
 })
@@ -41,12 +47,16 @@ type UserFormData = z.infer<typeof userSchema>
 export default function NewUserPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<Partial<UserFormData>>({
     status: "active",
     perfil: PerfilUsuario.Secretaria,
+    password: "",
   })
   const [errors, setErrors] = useState<Partial<Record<keyof UserFormData, string>>>({})
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null)
 
   const getInitials = (name: string) => {
     return name
@@ -93,7 +103,10 @@ export default function NewUserPage() {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify(parsedData),
+        body: JSON.stringify({
+          ...parsedData,
+          avatarDataUrl: avatarDataUrl ?? undefined,
+        }),
       })
 
       const result = (await response.json()) as {
@@ -130,6 +143,55 @@ export default function NewUserPage() {
     }
   }
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem válido.")
+      event.target.value = ""
+      return
+    }
+
+    const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("A imagem deve ter no máximo 5MB.")
+      event.target.value = ""
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result
+      if (typeof result === "string") {
+        setAvatarPreview(result)
+        setAvatarDataUrl(result)
+      } else {
+        toast.error("Não foi possível ler o arquivo selecionado.")
+      }
+    }
+    reader.onerror = () => {
+      toast.error("Não foi possível carregar a imagem. Tente novamente.")
+    }
+
+    reader.readAsDataURL(file)
+
+    // Permite selecionar o mesmo arquivo novamente, se necessário
+    event.target.value = ""
+  }
+
+  const isAdmin = Boolean(
+    user &&
+      (user.perfil === PerfilUsuario.Admin || user.role === "admin")
+  )
+
   if (authLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -138,7 +200,7 @@ export default function NewUserPage() {
     )
   }
 
-  if (!user || user.role !== "admin") {
+  if (!isAdmin) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center p-6">
         <Card className="max-w-lg">
@@ -181,6 +243,13 @@ export default function NewUserPage() {
         </div>
       </div>
 
+      <Alert className="border-primary/20 bg-primary/5">
+        <AlertTitle>Regra de acesso</AlertTitle>
+        <AlertDescription>
+          Só administradores podem convidar ou criar usuários neste painel.
+        </AlertDescription>
+      </Alert>
+
       <div className="grid gap-6 md:grid-cols-3">
         {/* Preview Card */}
         <Card>
@@ -190,11 +259,34 @@ export default function NewUserPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center gap-4">
-              <Avatar className="h-24 w-24">
-                <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                  {formData.name ? getInitials(formData.name) : "?"}
-                </AvatarFallback>
-              </Avatar>
+              <button
+                type="button"
+                onClick={handleAvatarClick}
+                className="group relative h-24 w-24"
+              >
+                <Avatar className="h-full w-full border-2 border-dashed border-primary/40 transition-colors group-hover:border-primary">
+                  {avatarPreview ? (
+                    <AvatarImage src={avatarPreview} alt="Pré-visualização do avatar" />
+                  ) : null}
+                  <AvatarFallback className="bg-primary/10 text-2xl text-primary">
+                    {formData.name ? getInitials(formData.name) : "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 rounded-full bg-background/70 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
+                  <Camera className="h-4 w-4" />
+                  Trocar foto
+                </span>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+              <p className="text-center text-xs text-muted-foreground">
+                Clique na foto para fazer upload (máx. 5MB).
+              </p>
               <div className="text-center">
                 <h3 className="font-semibold text-lg">
                   {formData.name || "Nome do usuário"}
@@ -262,6 +354,27 @@ export default function NewUserPage() {
                   />
                   {errors.email && (
                     <p className="text-sm text-destructive">{errors.email}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="password">
+                    Senha temporária <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Defina uma senha inicial"
+                    value={formData.password || ""}
+                    onChange={(e) => handleChange("password", e.target.value)}
+                    className={errors.password ? "border-destructive" : ""}
+                    autoComplete="new-password"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Informe uma senha provisória com no mínimo 8 caracteres. O usuário poderá alterá-la depois.
+                  </p>
+                  {errors.password && (
+                    <p className="text-sm text-destructive">{errors.password}</p>
                   )}
                 </div>
 
