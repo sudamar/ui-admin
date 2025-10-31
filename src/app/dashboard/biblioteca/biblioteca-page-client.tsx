@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type CSSProperties } from "react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,8 @@ const getCategoryIcon = (icon?: string): LucideIcon => {
   return IconComponent ?? Tag
 }
 
+const HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{3}){1,2}$/
+
 const slugify = (value: string) =>
   value
     .toLowerCase()
@@ -42,6 +44,48 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 })
 
 const numberFormatter = new Intl.NumberFormat("pt-BR")
+
+const normalizeHexColor = (input?: string | null): string | null => {
+  if (!input) return null
+  const trimmed = input.trim()
+  if (!HEX_COLOR_REGEX.test(trimmed)) {
+    return null
+  }
+  if (trimmed.length === 4) {
+    // #RGB -> #RRGGBB
+    const r = trimmed.charAt(1)
+    const g = trimmed.charAt(2)
+    const b = trimmed.charAt(3)
+    return `#${r}${r}${g}${g}${b}${b}`.toUpperCase()
+  }
+  return trimmed.toUpperCase()
+}
+
+const getTextColorForBackground = (hexColor: string): string => {
+  const r = Number.parseInt(hexColor.slice(1, 3), 16)
+  const g = Number.parseInt(hexColor.slice(3, 5), 16)
+  const b = Number.parseInt(hexColor.slice(5, 7), 16)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminance > 0.6 ? "#111827" : "#F9FAFB"
+}
+
+const getBadgeAppearance = (categoria?: Categoria) => {
+  const normalizedColor = normalizeHexColor(categoria?.cor ?? null)
+  if (!normalizedColor) {
+    return {
+      className: "border-border bg-muted text-muted-foreground",
+      style: undefined as CSSProperties | undefined,
+    }
+  }
+  return {
+    className: "border-transparent text-inherit shadow-sm",
+    style: {
+      backgroundColor: normalizedColor,
+      borderColor: normalizedColor,
+      color: getTextColorForBackground(normalizedColor),
+    } satisfies CSSProperties,
+  }
+}
 
 export function BibliotecaPageClient() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -61,7 +105,12 @@ export function BibliotecaPageClient() {
           trabalhosService.getAll(),
           categoriasService.getAll(),
         ])
-        setTrabalhos(trabalhosData)
+        setTrabalhos(
+          trabalhosData.map((item) => ({
+            ...item,
+            tags: Array.isArray(item.tags) ? item.tags : [],
+          })),
+        )
         setCategorias(categoriasData)
       } catch (error) {
         console.error("Erro ao carregar dados da biblioteca", error)
@@ -75,7 +124,11 @@ export function BibliotecaPageClient() {
   const categoryMap = useMemo(() => {
     const entries: Array<[string, Categoria]> = []
     categorias.forEach((categoria) => {
-      entries.push([categoria.slug, categoria])
+      entries.push([categoria.id, categoria])
+      entries.push([categoria.nome, categoria])
+      if (categoria.slug) {
+        entries.push([categoria.slug, categoria])
+      }
       entries.push([slugify(categoria.nome), categoria])
     })
     return new Map(entries)
@@ -84,7 +137,7 @@ export function BibliotecaPageClient() {
   const tagOptions = useMemo<Option[]>(
     () =>
       categorias.map((categoria) => ({
-        value: categoria.slug,
+        value: categoria.nome,
         label: categoria.nome,
       })),
     [categorias],
@@ -99,9 +152,11 @@ export function BibliotecaPageClient() {
 
     return trabalhos
       .filter((trabalho) => {
+        const trabalhoTags = Array.isArray(trabalho.tags) ? trabalho.tags : []
+
         const matchesTag =
           tagFilter.length === 0 ||
-          trabalho.tags.some((tag) =>
+          trabalhoTags.some((tag) =>
             tagFilter.some((selected) => selected.value === tag),
           )
 
@@ -112,7 +167,7 @@ export function BibliotecaPageClient() {
         const matchesSearch =
           trabalho.titulo.toLowerCase().includes(termo) ||
           trabalho.autor.toLowerCase().includes(termo) ||
-          trabalho.tags.some((tag) => tag.toLowerCase().includes(termo))
+          trabalhoTags.some((tag) => tag.toLowerCase().includes(termo))
         return matchesTag && matchesSearch
       })
       .sort(
@@ -245,11 +300,13 @@ export function BibliotecaPageClient() {
                   {tagFilter.map((option) => {
                     const categoria = categoryMap.get(option.value)
                     const Icon = getCategoryIcon(categoria?.icone ?? undefined)
+                    const appearance = getBadgeAppearance(categoria)
                     return (
                       <Badge
                         key={`filter-${option.value}`}
                         variant="outline"
-                        className={categoria?.cor ?? "border-border bg-muted text-muted-foreground"}
+                        className={appearance.className}
+                        style={appearance.style}
                       >
                         <Icon className="mr-1 h-3.5 w-3.5" />
                         {categoria?.nome ?? option.label}
@@ -340,14 +397,16 @@ export function BibliotecaPageClient() {
                       <TableCell className="text-sm text-muted-foreground">{trabalho.autor}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1.5">
-                          {trabalho.tags.map((tag) => {
+                          {(Array.isArray(trabalho.tags) ? trabalho.tags : []).map((tag) => {
                             const categoria = categoryMap.get(tag)
                             const Icon = getCategoryIcon(categoria?.icone ?? undefined)
+                            const appearance = getBadgeAppearance(categoria)
                             return (
                               <Badge
                                 key={`${trabalho.slug}-${tag}`}
                                 variant="outline"
-                                className={categoria?.cor ?? "border-border bg-muted text-muted-foreground"}
+                                className={appearance.className}
+                                style={appearance.style}
                               >
                                 <Icon className="mr-1 h-3.5 w-3.5" />
                                 {categoria?.nome ?? tag}

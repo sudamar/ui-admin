@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type CSSProperties } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -22,6 +22,8 @@ import { trabalhosService, type Trabalho } from "@/services/trabalhos/trabalhos-
 import { categoriasService, type Categoria } from "@/services/trabalhos/categorias-service"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+
+const HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{3}){1,2}$/
 
 const getCategoryIcon = (icon?: string): LucideIcon => {
   if (!icon) return Tag
@@ -51,11 +53,53 @@ const mapCategorias = (categorias: Categoria[]) => {
   categorias.forEach((categoria) => {
     const slugFromName = slugify(categoria.nome)
     const slugOriginal = categoria.slug?.trim() || slugFromName
+    entries.push([categoria.id, categoria])
     entries.push([categoria.nome, categoria])
     entries.push([slugOriginal, categoria])
     entries.push([slugFromName, categoria])
   })
   return new Map(entries)
+}
+
+const normalizeHexColor = (input?: string | null): string | null => {
+  if (!input) return null
+  const trimmed = input.trim()
+  if (!HEX_COLOR_REGEX.test(trimmed)) {
+    return null
+  }
+  if (trimmed.length === 4) {
+    const r = trimmed.charAt(1)
+    const g = trimmed.charAt(2)
+    const b = trimmed.charAt(3)
+    return `#${r}${r}${g}${g}${b}${b}`.toUpperCase()
+  }
+  return trimmed.toUpperCase()
+}
+
+const getTextColorForBackground = (hexColor: string): string => {
+  const r = Number.parseInt(hexColor.slice(1, 3), 16)
+  const g = Number.parseInt(hexColor.slice(3, 5), 16)
+  const b = Number.parseInt(hexColor.slice(5, 7), 16)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return luminance > 0.6 ? "#111827" : "#F9FAFB"
+}
+
+const getBadgeAppearance = (categoria?: Categoria) => {
+  const normalizedColor = normalizeHexColor(categoria?.cor ?? null)
+  if (!normalizedColor) {
+    return {
+      className: "border-border bg-muted text-muted-foreground",
+      style: undefined as CSSProperties | undefined,
+    }
+  }
+  return {
+    className: "border-transparent text-inherit shadow-sm",
+    style: {
+      backgroundColor: normalizedColor,
+      borderColor: normalizedColor,
+      color: getTextColorForBackground(normalizedColor),
+    } satisfies CSSProperties,
+  }
 }
 
 const trabalhoSchema = z.object({
@@ -176,12 +220,14 @@ const medalInfo = useMemo(() => getMedal(metrics.baixados ?? 0), [metrics.baixad
           return
         }
 
+        const safeTags = Array.isArray(trabalho.tags) ? trabalho.tags : []
+
         form.reset({
           titulo: trabalho.titulo,
           autor: trabalho.autor,
           data_publicacao: trabalho.data_publicacao,
           link: trabalho.link,
-          tags: trabalho.tags,
+          tags: safeTags,
           resumo: trabalho.resumo ?? "",
           nota: trabalho.nota?.toString() ?? "",
           visitantes: trabalho.visitantes.toString(),
@@ -459,19 +505,21 @@ const medalInfo = useMemo(() => getMedal(metrics.baixados ?? 0), [metrics.baixad
                       </FormControl>
                       {selectedTags.length > 0 ? (
                         <div className="mt-2 flex flex-wrap gap-2">
-                          {selectedTags.map((tag) => {
-                            const categoria = categoryMap.get(tag)
-                            const Icon = getCategoryIcon(categoria?.icone ?? undefined)
-                            return (
-                              <Badge
-                                key={`selected-${tag}`}
-                                variant="outline"
-                                className={categoria?.cor ?? "border-border bg-muted text-muted-foreground"}
-                              >
-                                <Icon className="mr-1 h-3.5 w-3.5" />
-                                {categoria?.nome ?? tag}
-                              </Badge>
-                            )
+                      {selectedTags.map((tag) => {
+                        const categoria = categoryMap.get(tag)
+                        const Icon = getCategoryIcon(categoria?.icone ?? undefined)
+                        const appearance = getBadgeAppearance(categoria)
+                        return (
+                          <Badge
+                            key={`selected-${tag}`}
+                            variant="outline"
+                            className={appearance.className}
+                            style={appearance.style}
+                          >
+                            <Icon className="mr-1 h-3.5 w-3.5" />
+                            {categoria?.nome ?? tag}
+                          </Badge>
+                        )
                           })}
                         </div>
                       ) : null}

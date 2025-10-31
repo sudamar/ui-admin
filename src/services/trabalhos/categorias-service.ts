@@ -22,6 +22,17 @@ type CategoriasListResponse =
 
 const API_URL = "/api/categorias"
 
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "")
+
+let categoriasCache: Categoria[] | null = null
+let categoriasPromise: Promise<Categoria[]> | null = null
+
 async function handleResponse(response: Response) {
   if (!response.ok) {
     const errorBody = (await response.json().catch(() => null)) as
@@ -44,22 +55,63 @@ async function handleResponse(response: Response) {
   return result
 }
 
+const normalizeCategoria = (categoria: Categoria): Categoria => {
+  const normalizedSlug =
+    categoria.slug && categoria.slug.trim().length > 0
+      ? categoria.slug.trim()
+      : slugify(categoria.nome)
+
+  return {
+    ...categoria,
+    slug: normalizedSlug,
+    icone: categoria.icone ?? null,
+    cor: categoria.cor ?? null,
+  }
+}
+
+function cacheCategorias(categorias: Categoria[]) {
+  categoriasCache = categorias.map(normalizeCategoria)
+  categoriasPromise = null
+  return categoriasCache
+}
+
+async function fetchCategorias(): Promise<Categoria[]> {
+  const response = await fetch(API_URL, {
+    credentials: "include",
+  })
+
+  const result = await handleResponse(response)
+
+  if ("categorias" in result) {
+    return cacheCategorias(result.categorias)
+  }
+
+  return cacheCategorias([result.categoria])
+}
+
 export const categoriasService = {
-  async getAll(): Promise<Categoria[]> {
-    const response = await fetch(API_URL, {
-      credentials: "include",
-    })
-
-    const result = await handleResponse(response)
-
-    if ("categorias" in result) {
-      return result.categorias
+  async getAll(options?: { force?: boolean }): Promise<Categoria[]> {
+    if (!options?.force) {
+      if (categoriasCache) {
+        return categoriasCache
+      }
+      if (categoriasPromise) {
+        return categoriasPromise
+      }
     }
 
-    return [result.categoria]
+    categoriasPromise = fetchCategorias()
+    return categoriasPromise
   },
 
   async getById(id: string): Promise<Categoria | null> {
+    if (categoriasCache && !categoriasPromise) {
+      const categoriaFromCache = categoriasCache.find((categoria) => categoria.id === id)
+      if (categoriaFromCache) {
+        return categoriaFromCache
+      }
+    }
+
     const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
       credentials: "include",
     })
@@ -74,7 +126,11 @@ export const categoriasService = {
       return result.categoria
     }
 
-    return result.categorias[0] ?? null
+    const categoria = result.categorias[0] ?? null
+    if (categoria) {
+      cacheCategorias(result.categorias)
+    }
+    return categoria
   },
 
   async create(data: { nome: string; slug: string; icone?: string | null; cor?: string | null }): Promise<Categoria> {
@@ -89,11 +145,14 @@ export const categoriasService = {
 
     const result = await handleResponse(response)
 
+    categoriasCache = null
+    categoriasPromise = null
+
     if ("categoria" in result) {
-      return result.categoria
+      return normalizeCategoria(result.categoria)
     }
 
-    return result.categorias[0]
+    return normalizeCategoria(result.categorias[0])
   },
 
   async update(
@@ -111,11 +170,14 @@ export const categoriasService = {
 
     const result = await handleResponse(response)
 
+    categoriasCache = null
+    categoriasPromise = null
+
     if ("categoria" in result) {
-      return result.categoria
+      return normalizeCategoria(result.categoria)
     }
 
-    return result.categorias[0]
+    return normalizeCategoria(result.categorias[0])
   },
 
   async delete(id: string): Promise<void> {
@@ -132,5 +194,12 @@ export const categoriasService = {
         errorBody?.message ?? "Não foi possível remover a categoria."
       )
     }
+    categoriasCache = null
+    categoriasPromise = null
+  },
+
+  invalidateCache() {
+    categoriasCache = null
+    categoriasPromise = null
   },
 }
