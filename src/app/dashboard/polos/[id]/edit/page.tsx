@@ -30,14 +30,45 @@ import { Textarea } from "@/components/ui/textarea"
 import { polosService } from "@/services/polos/polos-service"
 
 const editPoloSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .min(2, { message: "Informe um slug com pelo menos 2 caracteres." })
+    .max(100, { message: "O slug pode ter no máximo 100 caracteres." })
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+      message: "Use apenas letras minúsculas, números e hífens (ex: belo-horizonte).",
+    }),
   name: z.string().min(3, { message: "Informe um nome válido." }),
-  location: z.string().min(3, { message: "Informe a localização." }),
-  address: z.string().min(5, { message: "Informe um endereço válido." }),
-  phone: z.string().min(8, { message: "Informe um telefone válido." }),
-  email: z.string().email({ message: "Informe um e-mail válido." }),
-  coordinator: z.string().min(3, { message: "Informe o(a) coordenador(a)." }),
-  mapUrl: z.string().url({ message: "Informe uma URL válida." }).optional().or(z.literal("")),
-  courses: z.string().min(1, { message: "Informe ao menos um curso." }),
+  address: z
+    .union([
+      z.string().trim().min(5, { message: "Informe um endereço válido." }),
+      z.literal(""),
+    ])
+    .transform((value) => (value === "" ? undefined : value)),
+  phone: z
+    .union([
+      z.string().trim().min(8, { message: "Informe um telefone válido." }),
+      z.literal(""),
+    ])
+    .transform((value) => (value === "" ? undefined : value)),
+  email: z
+    .union([
+      z.string().trim().email({ message: "Informe um e-mail válido." }),
+      z.literal(""),
+    ])
+    .transform((value) => (value === "" ? undefined : value)),
+  coordinator: z
+    .union([
+      z.string().trim().min(3, { message: "Informe um nome válido." }),
+      z.literal(""),
+    ])
+    .transform((value) => (value === "" ? undefined : value)),
+  mapUrl: z
+    .union([
+      z.string().trim().url({ message: "Informe uma URL válida." }),
+      z.literal(""),
+    ])
+    .transform((value) => (value === "" ? undefined : value)),
 })
 
 type EditPoloFormValues = z.infer<typeof editPoloSchema>
@@ -53,14 +84,13 @@ export default function EditPoloPage() {
   const form = useForm<EditPoloFormValues>({
     resolver: zodResolver(editPoloSchema),
     defaultValues: {
+      slug: "",
       name: "",
-      location: "",
       address: "",
       phone: "",
       email: "",
       coordinator: "",
       mapUrl: "",
-      courses: "",
     },
   })
 
@@ -75,14 +105,13 @@ export default function EditPoloPage() {
         }
 
         form.reset({
+          slug: polo.slug,
           name: polo.name,
-          location: polo.location,
-          address: polo.address,
-          phone: polo.phone,
-          email: polo.email,
-          coordinator: polo.coordinator,
+          address: polo.address ?? "",
+          phone: polo.phone ?? "",
+          email: polo.email ?? "",
+          coordinator: polo.coordinator ?? "",
           mapUrl: polo.mapUrl ?? "",
-          courses: polo.courses.join("\n"),
         })
       } finally {
         setLoading(false)
@@ -95,20 +124,14 @@ export default function EditPoloPage() {
   const handleSubmit = async (values: EditPoloFormValues) => {
     setSaving(true)
     try {
-      const coursesList = values.courses
-        .split(/[\n,]/)
-        .map((course) => course.trim())
-        .filter(Boolean)
-
       await polosService.update(poloId, {
+        slug: values.slug,
         name: values.name,
-        location: values.location,
         address: values.address,
         phone: values.phone,
         email: values.email,
         coordinator: values.coordinator,
-        mapUrl: values.mapUrl?.trim() ? values.mapUrl.trim() : undefined,
-        courses: coursesList,
+        mapUrl: values.mapUrl,
       })
 
       router.push("/dashboard/polos")
@@ -159,12 +182,12 @@ export default function EditPoloPage() {
               <CardContent className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="slug"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nome do polo</FormLabel>
+                      <FormLabel>Slug (identificador)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Belo Horizonte - MG" {...field} />
+                        <Input placeholder="belo-horizonte" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -173,12 +196,12 @@ export default function EditPoloPage() {
 
                 <FormField
                   control={form.control}
-                  name="location"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Localização</FormLabel>
+                      <FormLabel>Nome do polo</FormLabel>
                       <FormControl>
-                        <Input placeholder="Belo Horizonte, MG" {...field} />
+                        <Input placeholder="Polo Belo Horizonte" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -256,23 +279,6 @@ export default function EditPoloPage() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="courses"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cursos oferecidos</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          rows={3}
-                          placeholder="Informe os cursos separados por linha"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </CardContent>
               <CardFooter className="flex items-center justify-end gap-3">
                 <Button

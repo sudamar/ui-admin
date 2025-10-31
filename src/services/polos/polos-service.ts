@@ -1,93 +1,132 @@
-import polosData from "@/data/polos/polos.json"
-
 export interface Polo {
   id: string
+  slug: string
   name: string
-  location: string
-  address: string
-  phone: string
-  email: string
-  coordinator: string
+  address?: string
+  phone?: string
+  email?: string
+  coordinator?: string
   mapUrl?: string
-  courses: string[]
 }
 
-type CreatePoloInput = Omit<Polo, "id">
+type PoloApiResponse =
+  | { success: true; polos: Polo[] }
+  | { success: true; polo: Polo }
+  | { success: false; message?: string }
 
-const store: Polo[] = polosData.locations.map((location) => ({
-  id: location.id,
-  name: location.name,
-  location: location.location ?? location.name,
-  address: location.address,
-  phone: location.phone,
-  email: location.email,
-  coordinator: location.coordinator,
-  mapUrl: location.mapUrl,
-  courses: location.courses,
-}))
+type CreateOrUpdateInput = Omit<Polo, "id">
 
-function slugify(input: string) {
-  return input
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "")
-}
+const API_URL = "/api/polos"
 
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+const serializePayload = (input: CreateOrUpdateInput) => ({
+  slug: input.slug,
+  name: input.name,
+  address: input.address ?? null,
+  phone: input.phone ?? null,
+  email: input.email ?? null,
+  coordinator: input.coordinator ?? null,
+  mapUrl: input.mapUrl ?? null,
+})
+
+async function handleResponse(response: Response): Promise<PoloApiResponse> {
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as
+      | { message?: string }
+      | null
+    throw new Error(
+      errorBody?.message ?? "Não foi possível processar a solicitação.",
+    )
+  }
+
+  return (await response.json()) as PoloApiResponse
 }
 
 export const polosService = {
   async getAll(): Promise<Polo[]> {
-    await delay(200)
-    return [...store]
-  },
+    const response = await fetch(API_URL, {
+      credentials: "include",
+    })
 
-  async getById(id: string): Promise<Polo | undefined> {
-    await delay(150)
-    return store.find((item) => item.id === id)
-  },
-
-  async create(input: CreatePoloInput): Promise<Polo> {
-    await delay(250)
-    const baseId = slugify(input.name)
-    const uniqueId = baseId || `polo-${Date.now()}`
-
-    if (store.some((polo) => polo.id === uniqueId)) {
-      throw new Error("Já existe um polo com esse identificador.")
+    const result = await handleResponse(response)
+    if ("polos" in result) {
+      return result.polos
     }
 
-    const newPolo: Polo = {
-      ...input,
-      id: uniqueId,
-    }
-
-    store.push(newPolo)
-    return newPolo
+    return [result.polo]
   },
 
-  async update(id: string, input: CreatePoloInput): Promise<Polo> {
-    await delay(250)
-    const index = store.findIndex((polo) => polo.id === id)
-    if (index === -1) {
-      throw new Error("Polo não encontrado.")
+  async getById(id: string): Promise<Polo | null> {
+    const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
+      credentials: "include",
+    })
+
+    if (response.status === 404) {
+      return null
     }
 
-    const updated: Polo = { ...store[index], ...input, id }
-    store[index] = updated
-    return updated
+    const result = await handleResponse(response)
+    if ("polo" in result) {
+      return result.polo
+    }
+
+    return result.polos[0] ?? null
+  },
+
+  async create(input: CreateOrUpdateInput): Promise<Polo> {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(serializePayload(input)),
+    })
+
+    const result = await handleResponse(response)
+    if ("polo" in result) {
+      return result.polo
+    }
+
+    return result.polos[0]
+  },
+
+  async update(id: string, input: CreateOrUpdateInput): Promise<Polo> {
+    const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(serializePayload(input)),
+    })
+
+    const result = await handleResponse(response)
+    if ("polo" in result) {
+      return result.polo
+    }
+
+    return result.polos[0]
   },
 
   async delete(id: string): Promise<boolean> {
-    await delay(200)
-    const index = store.findIndex((polo) => polo.id === id)
-    if (index === -1) {
+    const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      credentials: "include",
+    })
+
+    if (response.status === 404) {
       return false
     }
 
-    store.splice(index, 1)
+    if (!response.ok) {
+      const errorBody = (await response.json().catch(() => null)) as
+        | { message?: string }
+        | null
+      throw new Error(
+        errorBody?.message ?? "Não foi possível remover o polo.",
+      )
+    }
+
     return true
   },
 }

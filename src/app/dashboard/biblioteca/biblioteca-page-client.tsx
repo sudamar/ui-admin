@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -15,12 +15,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ArrowDown, ArrowUp, ArrowUpDown, Edit, Eye, MoreHorizontal, Plus, Search, Tag, Trash2, type LucideIcon } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Edit, Eye, MoreHorizontal, Plus, Search, Tag, Trash2, type LucideIcon } from "lucide-react"
 import * as Icons from "lucide-react"
 
 import MultipleSelector, { type Option } from "@/components/ui/multiselect"
 import { categoriasService, type Categoria } from "@/services/trabalhos/categorias-service"
 import { trabalhosService, type Trabalho } from "@/services/trabalhos/trabalhos-service"
+import { Progress } from "@/components/ui/progress"
+import { cn } from "@/lib/utils"
 
 const getCategoryIcon = (icon?: string): LucideIcon => {
   if (!icon) return Tag
@@ -44,6 +46,9 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 })
 
 const numberFormatter = new Intl.NumberFormat("pt-BR")
+
+type ProgressPhase = "idle" | "loading" | "fading"
+const PAGE_SIZE = 10
 
 const normalizeHexColor = (input?: string | null): string | null => {
   if (!input) return null
@@ -97,6 +102,87 @@ export function BibliotecaPageClient() {
   const [trabalhos, setTrabalhos] = useState<Trabalho[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [progress, setProgress] = useState(0)
+  const [progressPhase, setProgressPhase] = useState<ProgressPhase>("idle")
+
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const finishTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const phaseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const clearTimers = useCallback(() => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current)
+      progressIntervalRef.current = null
+    }
+    if (finishTimeoutRef.current) {
+      clearTimeout(finishTimeoutRef.current)
+      finishTimeoutRef.current = null
+    }
+    if (phaseTimeoutRef.current) {
+      clearTimeout(phaseTimeoutRef.current)
+      phaseTimeoutRef.current = null
+    }
+  }, [])
+
+  const startProgress = useCallback(() => {
+    clearTimers()
+    setProgress(0)
+    setProgressPhase("loading")
+
+    progressIntervalRef.current = setInterval(() => {
+      setProgress((previous) => {
+        if (previous >= 92) {
+          return previous
+        }
+        const increment = Math.random() * 18 + 6
+        return Math.min(previous + increment, 92)
+      })
+    }, 120)
+  }, [clearTimers])
+
+  const finishProgress = useCallback((delay = 420) => {
+    if (finishTimeoutRef.current) {
+      clearTimeout(finishTimeoutRef.current)
+    }
+
+    finishTimeoutRef.current = setTimeout(() => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
+      }
+
+      setProgress(100)
+      setProgressPhase("fading")
+
+      if (phaseTimeoutRef.current) {
+        clearTimeout(phaseTimeoutRef.current)
+      }
+
+      phaseTimeoutRef.current = setTimeout(() => {
+        setProgressPhase("idle")
+        phaseTimeoutRef.current = null
+      }, 350)
+
+      finishTimeoutRef.current = null
+    }, delay)
+  }, [])
+
+  const triggerProgressCycle = useCallback(
+    (delay = 420) => {
+      if (loading) return
+      startProgress()
+      finishProgress(delay)
+    },
+    [finishProgress, loading, startProgress],
+  )
+
+  useEffect(
+    () => () => {
+      clearTimers()
+    },
+    [clearTimers],
+  )
 
   useEffect(() => {
     const load = async () => {
@@ -119,7 +205,7 @@ export function BibliotecaPageClient() {
       }
     }
     load()
-  }, [])
+  }, [triggerProgressCycle])
 
   const categoryMap = useMemo(() => {
     const entries: Array<[string, Categoria]> = []
@@ -147,6 +233,12 @@ export function BibliotecaPageClient() {
     setTagFilter((prev) => prev.filter((option) => categoryMap.has(option.value)))
   }, [categoryMap])
 
+  useEffect(() => {
+    if (!loading && trabalhos.length > 0) {
+      triggerProgressCycle(600)
+    }
+  }, [loading, trabalhos.length, triggerProgressCycle])
+
   const trabalhosFiltrados = useMemo(() => {
     const termo = searchTerm.trim().toLowerCase()
 
@@ -160,15 +252,16 @@ export function BibliotecaPageClient() {
             tagFilter.some((selected) => selected.value === tag),
           )
 
-        if (!termo) {
-          return matchesTag
+        if (!matchesTag) {
+          return false
         }
 
-        const matchesSearch =
-          trabalho.titulo.toLowerCase().includes(termo) ||
-          trabalho.autor.toLowerCase().includes(termo) ||
-          trabalhoTags.some((tag) => tag.toLowerCase().includes(termo))
-        return matchesTag && matchesSearch
+        if (!termo) {
+          return true
+        }
+
+        const matchesSearch = trabalho.titulo.toLowerCase().includes(termo)
+        return matchesSearch
       })
       .sort(
         (a, b) => {
@@ -190,6 +283,28 @@ export function BibliotecaPageClient() {
       )
   }, [searchTerm, tagFilter, sortField, sortOrder, trabalhos])
 
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchTerm(value)
+      if (currentPage !== 1) {
+        setCurrentPage(1)
+      }
+      triggerProgressCycle()
+    },
+    [currentPage, triggerProgressCycle],
+  )
+
+  const handleTagFilterChange = useCallback(
+    (options: Option[]) => {
+      setTagFilter(options)
+      if (currentPage !== 1) {
+        setCurrentPage(1)
+      }
+      triggerProgressCycle()
+    },
+    [currentPage, triggerProgressCycle],
+  )
+
   const handleSort = (field: "titulo" | "autor" | "visitantes" | "data_publicacao") => {
     if (sortField === field) {
       setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
@@ -197,7 +312,55 @@ export function BibliotecaPageClient() {
       setSortField(field)
       setSortOrder(field === "visitantes" ? "desc" : "asc")
     }
+    triggerProgressCycle()
   }
+
+  const totalPages = Math.max(1, Math.ceil(trabalhosFiltrados.length / PAGE_SIZE))
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+      triggerProgressCycle()
+    }
+  }, [currentPage, totalPages, triggerProgressCycle])
+
+  const paginatedTrabalhos = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE
+    return trabalhosFiltrados.slice(start, start + PAGE_SIZE)
+  }, [currentPage, trabalhosFiltrados])
+
+  const visiblePages = useMemo(() => {
+    const pages: number[] = []
+    const maxVisible = 5
+    const halfWindow = Math.floor(maxVisible / 2)
+
+    let start = Math.max(1, currentPage - halfWindow)
+    let end = Math.min(totalPages, start + maxVisible - 1)
+
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1)
+    }
+
+    for (let page = start; page <= end; page += 1) {
+      pages.push(page)
+    }
+
+    return pages
+  }, [currentPage, totalPages])
+
+  const summaryText = `Total de ${trabalhos.length} trabalhos cadastrados • ${trabalhosFiltrados.length} exibido(s)`
+  const isProgressVisible = progressPhase !== "idle"
+
+  const handlePageChange = useCallback(
+    (page: number) => {
+      if (page < 1 || page > totalPages || page === currentPage) {
+        return
+      }
+      setCurrentPage(page)
+      triggerProgressCycle()
+    },
+    [currentPage, totalPages, triggerProgressCycle],
+  )
 
   const getSortIcon = (field: "titulo" | "autor" | "visitantes" | "data_publicacao") => {
     if (sortField !== field) {
@@ -255,8 +418,28 @@ export function BibliotecaPageClient() {
       <Card>
         <CardHeader>
           <CardTitle>Últimos trabalhos publicados</CardTitle>
-          <CardDescription>
-            Total de {trabalhos.length} trabalhos cadastrados • {trabalhosFiltrados.length} exibido(s)
+          <CardDescription className="relative min-h-[24px]">
+            <div
+              className={cn(
+                "absolute inset-0 flex items-center gap-3 transition-opacity duration-300",
+                isProgressVisible ? "opacity-100" : "opacity-0 pointer-events-none",
+              )}
+            >
+              <Progress
+                value={progress}
+                className="h-1.5 w-full max-w-[280px] flex-1"
+                indicatorClassName="bg-primary"
+              />
+              <span className="text-xs text-muted-foreground">Atualizando registros…</span>
+            </div>
+            <span
+              className={cn(
+                "block transition-opacity duration-300",
+                isProgressVisible ? "opacity-0" : "opacity-100",
+              )}
+            >
+              {summaryText}
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -272,9 +455,9 @@ export function BibliotecaPageClient() {
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="library-search"
-                  placeholder="Buscar por título, autor ou tag..."
+                  placeholder="Buscar por título do trabalho..."
                   value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
+                  onChange={(event) => handleSearchChange(event.target.value)}
                   className="pl-9"
                 />
               </div>
@@ -285,7 +468,7 @@ export function BibliotecaPageClient() {
               </label>
               <MultipleSelector
                 value={tagFilter}
-                onChange={setTagFilter}
+                onChange={handleTagFilterChange}
                 placeholder="Selecione tags"
                 className="min-h-[44px]"
                 options={tagOptions}
@@ -379,7 +562,7 @@ export function BibliotecaPageClient() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {trabalhosFiltrados.map((trabalho) => (
+                  {paginatedTrabalhos.map((trabalho) => (
                     <TableRow key={trabalho.slug}>
                       <TableCell>
                         <div className="flex flex-col">
@@ -461,6 +644,49 @@ export function BibliotecaPageClient() {
             </div>
           )}
         </CardContent>
+        {!loading && trabalhosFiltrados.length > 0 ? (
+          <CardFooter className="flex flex-col gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-sm text-muted-foreground">
+              Página {currentPage} de {totalPages}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">Página anterior</span>
+              </Button>
+              {visiblePages.map((page) => (
+                <Button
+                  key={`page-${page}`}
+                  type="button"
+                  variant={page === currentPage ? "default" : "outline"}
+                  size="sm"
+                  className={cn("h-8 min-w-[2.25rem] px-2 text-xs", page === currentPage && "shadow-sm")}
+                  onClick={() => handlePageChange(page)}
+                >
+                  {page}
+                </Button>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+                <span className="sr-only">Próxima página</span>
+              </Button>
+            </div>
+          </CardFooter>
+        ) : null}
       </Card>
     </div>
   )

@@ -7,14 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
-import {
-  Building,
-  MapPin,
-  MoreHorizontal,
-  Phone,
-  Plus,
-  Trash2,
-} from "lucide-react"
+import { Building, MapPin, MoreHorizontal, Phone, Plus, Trash2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -57,35 +50,64 @@ import { Textarea } from "@/components/ui/textarea"
 import { polosService, type Polo } from "@/services/polos/polos-service"
 
 const createPoloSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .min(2, "Informe um identificador (slug) com pelo menos 2 caracteres.")
+    .max(100, "O slug pode ter no máximo 100 caracteres.")
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Use apenas letras minúsculas, números e hífens (ex: belo-horizonte)",
+    ),
   name: z
     .string()
     .min(1, "Informe o nome do polo.")
     .min(3, "O nome precisa ter ao menos 3 caracteres."),
   address: z
-    .string()
-    .min(1, "Informe o endereço.")
-    .min(5, "Informe um endereço válido."),
+    .union([
+      z
+        .string()
+        .trim()
+        .min(5, "Informe um endereço válido."),
+      z.literal(""),
+    ])
+    .transform((value) => (value === "" ? undefined : value)),
   phone: z
-    .string()
-    .min(1, "Informe o telefone.")
-    .min(8, "Informe um telefone válido."),
+    .union([
+      z
+        .string()
+        .trim()
+        .min(8, "Informe um telefone válido."),
+      z.literal(""),
+    ])
+    .transform((value) => (value === "" ? undefined : value)),
   email: z
-    .string()
-    .min(1, "Informe o e-mail.")
-    .email("Informe um e-mail válido."),
+    .union([
+      z
+        .string()
+        .trim()
+        .email("Informe um e-mail válido."),
+      z.literal(""),
+    ])
+    .transform((value) => (value === "" ? undefined : value)),
   coordinator: z
-    .string()
-    .min(1, "Informe o(a) coordenador(a).")
-    .min(3, "Informe um nome válido."),
-  mapUrl: z.string().url("Informe uma URL válida para o mapa.").optional().or(z.literal("")),
-  courses: z
-    .string()
-    .min(1, "Informe pelo menos um curso.")
-    .min(3, "Informe pelo menos um curso."),
-  location: z
-    .string()
-    .min(1, "Informe a localização.")
-    .min(3, "Informe uma localização válida."),
+    .union([
+      z
+        .string()
+        .trim()
+        .min(3, "Informe um nome válido."),
+      z.literal(""),
+    ])
+    .transform((value) => (value === "" ? undefined : value)),
+  mapUrl: z
+    .union([
+      z
+        .string()
+        .trim()
+        .url("Informe uma URL válida para o mapa."),
+      z.literal(""),
+    ])
+    .transform((value) => (value === "" ? undefined : value)),
 })
 
 type CreatePoloFormValues = z.infer<typeof createPoloSchema>
@@ -104,14 +126,13 @@ export function PolosPageClient() {
   const createForm = useForm<CreatePoloFormValues>({
     resolver: zodResolver(createPoloSchema),
     defaultValues: {
+      slug: "",
       name: "",
-      location: "",
       address: "",
       phone: "",
       email: "",
       coordinator: "",
       mapUrl: "",
-      courses: "",
     },
   })
 
@@ -134,14 +155,18 @@ export function PolosPageClient() {
   useEffect(() => {
     const term = searchTerm.trim().toLowerCase()
     const filtered = polos.filter((polo) => {
+      const haystack = [
+        polo.slug,
+        polo.name,
+        polo.address ?? "",
+        polo.coordinator ?? "",
+        polo.email ?? "",
+        polo.phone ?? "",
+      ]
+
       return (
         term.length === 0 ||
-        polo.name.toLowerCase().includes(term) ||
-        polo.location.toLowerCase().includes(term) ||
-        polo.address.toLowerCase().includes(term) ||
-        polo.coordinator.toLowerCase().includes(term) ||
-        polo.email.toLowerCase().includes(term) ||
-        polo.phone.toLowerCase().includes(term)
+        haystack.some((value) => value.toLowerCase().includes(term))
       )
     })
 
@@ -157,34 +182,28 @@ export function PolosPageClient() {
   const handleCreate = async (values: CreatePoloFormValues) => {
     setCreating(true)
     try {
-      const coursesList = values.courses
-        .split(/[\n,]/)
-        .map((course) => course.trim())
-        .filter(Boolean)
-
-      if (coursesList.length === 0) {
-        createForm.setError("courses", {
-          message: "Informe pelo menos um curso.",
-        })
-        setCreating(false)
-        return
-      }
-
       const newPolo = await polosService.create({
+        slug: values.slug,
         name: values.name,
-        location: values.location,
         address: values.address,
         phone: values.phone,
         email: values.email,
         coordinator: values.coordinator,
-        mapUrl: values.mapUrl?.trim() ? values.mapUrl.trim() : undefined,
-        courses: coursesList,
+        mapUrl: values.mapUrl,
       })
 
       setPolos((prev) => [newPolo, ...prev])
       toast.success("Polo cadastrado com sucesso!")
       setCreateDialogOpen(false)
-      createForm.reset()
+      createForm.reset({
+        slug: "",
+        name: "",
+        address: "",
+        phone: "",
+        email: "",
+        coordinator: "",
+        mapUrl: "",
+      })
     } catch (error) {
       console.error("Erro ao criar polo:", error)
       toast.error(
@@ -316,158 +335,149 @@ export function PolosPageClient() {
                 className="grid gap-4"
                 onSubmit={createForm.handleSubmit(handleCreate)}
               >
-              <div className="grid gap-2">
-                <label htmlFor="location" className="text-sm font-medium">
-                  Localização <span className="text-destructive">*</span>
-                </label>
-                <Input
-                  id="location"
-                  placeholder="Região, cidade ou descrição breve"
-                  {...createForm.register("location")}
-                />
-                {createForm.formState.errors.location ? (
-                  <p className="text-sm text-destructive">
-                    {createForm.formState.errors.location.message}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="grid gap-2">
-                <label htmlFor="name" className="text-sm font-medium">
-                  Nome do polo <span className="text-destructive">*</span>
-                </label>
-                <Input
-                  id="name"
-                  placeholder="Ex.: Belo Horizonte - MG"
-                  {...createForm.register("name")}
-                />
-                {createForm.formState.errors.name ? (
-                  <p className="text-sm text-destructive">
-                    {createForm.formState.errors.name.message}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="grid gap-2">
-                <label htmlFor="address" className="text-sm font-medium">
-                  Endereço <span className="text-destructive">*</span>
-                </label>
-                <Textarea
-                  id="address"
-                  placeholder="Rua Exemplo, 123 - Centro, Belo Horizonte - MG"
-                  rows={2}
-                  {...createForm.register("address")}
-                />
-                {createForm.formState.errors.address ? (
-                  <p className="text-sm text-destructive">
-                    {createForm.formState.errors.address.message}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
-                  <label htmlFor="phone" className="text-sm font-medium">
-                    Telefone <span className="text-destructive">*</span>
+                  <label htmlFor="slug" className="text-sm font-medium">
+                    Slug (identificador) <span className="text-destructive">*</span>
                   </label>
                   <Input
-                    id="phone"
-                    placeholder="(31) 3333-4444"
-                    {...createForm.register("phone")}
+                    id="slug"
+                    placeholder="belo-horizonte"
+                    {...createForm.register("slug")}
                   />
-                  {createForm.formState.errors.phone ? (
+                  {createForm.formState.errors.slug ? (
                     <p className="text-sm text-destructive">
-                      {createForm.formState.errors.phone.message}
+                      {createForm.formState.errors.slug.message}
                     </p>
                   ) : null}
                 </div>
 
                 <div className="grid gap-2">
-                  <label htmlFor="email" className="text-sm font-medium">
-                    E-mail <span className="text-destructive">*</span>
+                  <label htmlFor="name" className="text-sm font-medium">
+                    Nome do polo <span className="text-destructive">*</span>
                   </label>
                   <Input
-                    id="email"
-                    placeholder="contato@fafih.edu.br"
-                    type="email"
-                    {...createForm.register("email")}
+                    id="name"
+                    placeholder="Ex.: Polo Belo Horizonte"
+                    {...createForm.register("name")}
                   />
-                  {createForm.formState.errors.email ? (
+                  {createForm.formState.errors.name ? (
                     <p className="text-sm text-destructive">
-                      {createForm.formState.errors.email.message}
+                      {createForm.formState.errors.name.message}
                     </p>
                   ) : null}
                 </div>
-              </div>
 
-              <div className="grid gap-2">
-                <label htmlFor="coordinator" className="text-sm font-medium">
-                  Coordenador(a) <span className="text-destructive">*</span>
-                </label>
-                <Input
-                  id="coordinator"
-                  placeholder="Prof. Dr. João Silva"
-                  {...createForm.register("coordinator")}
-                />
-                {createForm.formState.errors.coordinator ? (
-                  <p className="text-sm text-destructive">
-                    {createForm.formState.errors.coordinator.message}
-                  </p>
-                ) : null}
-              </div>
+                <div className="grid gap-2">
+                  <label htmlFor="address" className="text-sm font-medium">
+                    Endereço
+                  </label>
+                  <Textarea
+                    id="address"
+                    placeholder="Rua Exemplo, 123 - Centro, Cidade - UF"
+                    rows={2}
+                    {...createForm.register("address")}
+                  />
+                  {createForm.formState.errors.address ? (
+                    <p className="text-sm text-destructive">
+                      {createForm.formState.errors.address.message}
+                    </p>
+                  ) : null}
+                </div>
 
-              <div className="grid gap-2">
-                <label htmlFor="mapUrl" className="text-sm font-medium">
-                  URL do mapa
-                </label>
-                <Input
-                  id="mapUrl"
-                  placeholder="https://maps.google.com/?q=..."
-                  {...createForm.register("mapUrl")}
-                />
-                {createForm.formState.errors.mapUrl ? (
-                  <p className="text-sm text-destructive">
-                    {createForm.formState.errors.mapUrl.message}
-                  </p>
-                ) : null}
-              </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-2">
+                    <label htmlFor="phone" className="text-sm font-medium">
+                      Telefone
+                    </label>
+                    <Input
+                      id="phone"
+                      placeholder="(31) 3333-4444"
+                      {...createForm.register("phone")}
+                    />
+                    {createForm.formState.errors.phone ? (
+                      <p className="text-sm text-destructive">
+                        {createForm.formState.errors.phone.message}
+                      </p>
+                    ) : null}
+                  </div>
 
-              <div className="grid gap-2">
-                <label htmlFor="courses" className="text-sm font-medium">
-                  Cursos oferecidos <span className="text-destructive">*</span>
-                </label>
-                <Textarea
-                  id="courses"
-                  rows={3}
-                  placeholder="Informe um curso por linha ou separados por vírgula"
-                  {...createForm.register("courses")}
-                />
-                {createForm.formState.errors.courses ? (
-                  <p className="text-sm text-destructive">
-                    {createForm.formState.errors.courses.message}
-                  </p>
-                ) : null}
-              </div>
+                  <div className="grid gap-2">
+                    <label htmlFor="email" className="text-sm font-medium">
+                      E-mail
+                    </label>
+                    <Input
+                      id="email"
+                      placeholder="contato@fafih.edu.br"
+                      type="email"
+                      {...createForm.register("email")}
+                    />
+                    {createForm.formState.errors.email ? (
+                      <p className="text-sm text-destructive">
+                        {createForm.formState.errors.email.message}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    createForm.reset()
-                    setCreateDialogOpen(false)
-                  }}
-                  disabled={creating}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={creating}>
-                  {creating ? "Salvando..." : "Salvar polo"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <div className="grid gap-2">
+                  <label htmlFor="coordinator" className="text-sm font-medium">
+                    Coordenador(a)
+                  </label>
+                  <Input
+                    id="coordinator"
+                    placeholder="Prof. Responsável"
+                    {...createForm.register("coordinator")}
+                  />
+                  {createForm.formState.errors.coordinator ? (
+                    <p className="text-sm text-destructive">
+                      {createForm.formState.errors.coordinator.message}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="grid gap-2">
+                  <label htmlFor="mapUrl" className="text-sm font-medium">
+                    URL do mapa
+                  </label>
+                  <Input
+                    id="mapUrl"
+                    placeholder="https://maps.google.com/?q=..."
+                    {...createForm.register("mapUrl")}
+                  />
+                  {createForm.formState.errors.mapUrl ? (
+                    <p className="text-sm text-destructive">
+                      {createForm.formState.errors.mapUrl.message}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      createForm.reset({
+                        slug: "",
+                        name: "",
+                        address: "",
+                        phone: "",
+                        email: "",
+                        coordinator: "",
+                        mapUrl: "",
+                      })
+                      setCreateDialogOpen(false)
+                    }}
+                    disabled={creating}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={creating}>
+                    {creating ? "Salvando..." : "Salvar polo"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
       </div>
 
       <Card>
@@ -485,7 +495,7 @@ export function PolosPageClient() {
               </Label>
               <Input
                 id="polo-search"
-                placeholder="Buscar por nome, cidade ou contato..."
+                placeholder="Buscar por slug, nome ou contato..."
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
@@ -535,10 +545,10 @@ export function PolosPageClient() {
                         aria-label="Selecionar todos os polos"
                       />
                     </TableHead>
-                    <TableHead className="min-w-[180px]">Polo</TableHead>
-                    <TableHead className="min-w-[160px]">Localização</TableHead>
-                    <TableHead className="min-w-[140px]">Coordenador(a)</TableHead>
-                    <TableHead className="min-w-[160px]">Contato</TableHead>
+                    <TableHead className="min-w-[140px]">Identificador</TableHead>
+                    <TableHead className="min-w-[220px]">Polo</TableHead>
+                    <TableHead className="min-w-[160px]">Coordenador(a)</TableHead>
+                    <TableHead className="min-w-[180px]">Contato</TableHead>
                     <TableHead className="w-[60px]" />
                   </TableRow>
                   </TableHeader>
@@ -553,12 +563,21 @@ export function PolosPageClient() {
                         />
                       </TableCell>
                       <TableCell>
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {polo.slug}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <div className="flex flex-col gap-1">
                           <span className="font-semibold">{polo.name}</span>
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <MapPin className="h-3 w-3" />
-                            {polo.address}
-                          </span>
+                          {polo.address ? (
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <MapPin className="h-3 w-3" />
+                              {polo.address}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Endereço não informado</span>
+                          )}
                           {polo.mapUrl ? (
                             <Link
                               href={polo.mapUrl}
@@ -572,26 +591,33 @@ export function PolosPageClient() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-muted-foreground">{polo.location}</span>
-                      </TableCell>
-                      <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-medium">{polo.coordinator}</span>
+                          <span className="font-medium">
+                            {polo.coordinator ?? "Coordenador não informado"}
+                          </span>
                           <span className="text-xs text-muted-foreground">Coordenação local</span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1 text-sm">
-                          <span className="flex items-center gap-1">
-                            <Phone className="h-3.5 w-3.5 text-primary" />
-                            {polo.phone}
-                          </span>
-                          <Link
-                            href={`mailto:${polo.email}`}
-                            className="text-xs text-primary hover:underline"
-                          >
-                            {polo.email}
-                          </Link>
+                          {polo.phone ? (
+                            <span className="flex items-center gap-1">
+                              <Phone className="h-3.5 w-3.5 text-primary" />
+                              {polo.phone}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Telefone não informado</span>
+                          )}
+                          {polo.email ? (
+                            <Link
+                              href={`mailto:${polo.email}`}
+                              className="text-xs text-primary hover:underline"
+                            >
+                              {polo.email}
+                            </Link>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">E-mail não informado</span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -653,13 +679,21 @@ export function PolosPageClient() {
                           aria-label={`Selecionar polo ${polo.name}`}
                         />
                         <div className="flex flex-1 flex-col gap-2">
-                          <div>
-                            <h3 className="text-base font-semibold text-foreground">{polo.name}</h3>
-                            <p className="text-sm text-muted-foreground">{polo.location}</p>
-                            <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <MapPin className="h-4 w-4" />
-                              {polo.address}
-                            </p>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-base font-semibold text-foreground">{polo.name}</h3>
+                              <Badge variant="outline" className="font-mono text-xs">
+                                {polo.slug}
+                              </Badge>
+                            </div>
+                            {polo.address ? (
+                              <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <MapPin className="h-4 w-4" />
+                                {polo.address}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">Endereço não informado</p>
+                            )}
                             {polo.mapUrl ? (
                               <Link
                                 href={polo.mapUrl}
@@ -674,21 +708,33 @@ export function PolosPageClient() {
                           <div className="space-y-1 text-sm text-muted-foreground">
                             <div className="flex items-center justify-between">
                               <span className="font-medium text-foreground">Coordenação</span>
-                              <span>{polo.coordinator}</span>
+                              <span>{polo.coordinator ?? "Não informado"}</span>
                             </div>
                             <div className="space-y-1">
                               <span className="font-medium text-foreground">Contato</span>
                               <div className="flex flex-col text-sm">
-                                <span className="flex items-center gap-2 text-foreground">
-                                  <Phone className="h-4 w-4 text-primary" />
-                                  {polo.phone}
-                                </span>
-                                <Link
-                                  href={`mailto:${polo.email}`}
-                                  className="text-xs text-primary hover:underline"
-                                >
-                                  {polo.email}
-                                </Link>
+                                {polo.phone ? (
+                                  <span className="flex items-center gap-2 text-foreground">
+                                    <Phone className="h-4 w-4 text-primary" />
+                                    {polo.phone}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">
+                                    Telefone não informado
+                                  </span>
+                                )}
+                                {polo.email ? (
+                                  <Link
+                                    href={`mailto:${polo.email}`}
+                                    className="text-xs text-primary hover:underline"
+                                  >
+                                    {polo.email}
+                                  </Link>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">
+                                    E-mail não informado
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -802,12 +848,16 @@ export function PolosPageClient() {
           {poloDetails ? (
             <div className="grid gap-4">
               <div>
-                <h4 className="text-sm font-semibold text-muted-foreground">Localização</h4>
-                <p className="mt-1 text-sm">{poloDetails.location}</p>
+                <h4 className="text-sm font-semibold text-muted-foreground">Identificador</h4>
+                <p className="mt-1 font-mono text-sm uppercase text-foreground">
+                  {poloDetails.slug}
+                </p>
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-muted-foreground">Endereço</h4>
-                <p className="mt-1 text-sm">{poloDetails.address}</p>
+                <p className="mt-1 text-sm">
+                  {poloDetails.address ?? "Endereço não informado"}
+                </p>
                 {poloDetails.mapUrl ? (
                   <Link
                     href={poloDetails.mapUrl}
@@ -823,28 +873,27 @@ export function PolosPageClient() {
               <div className="grid gap-2 md:grid-cols-2">
                 <div>
                   <h4 className="text-sm font-semibold text-muted-foreground">Contato</h4>
-                  <p className="mt-1 text-sm">{poloDetails.phone}</p>
-                  <Link
-                    href={`mailto:${poloDetails.email}`}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    {poloDetails.email}
-                  </Link>
+                  <p className="mt-1 text-sm">
+                    {poloDetails.phone ?? "Telefone não informado"}
+                  </p>
+                  {poloDetails.email ? (
+                    <Link
+                      href={`mailto:${poloDetails.email}`}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      {poloDetails.email}
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      E-mail não informado
+                    </span>
+                  )}
                 </div>
                 <div>
                   <h4 className="text-sm font-semibold text-muted-foreground">Coordenação</h4>
-                  <p className="mt-1 text-sm">{poloDetails.coordinator}</p>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-semibold text-muted-foreground">Cursos oferecidos</h4>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {poloDetails.courses.map((course) => (
-                    <Badge key={course} variant="outline">
-                      {course}
-                    </Badge>
-                  ))}
+                  <p className="mt-1 text-sm">
+                    {poloDetails.coordinator ?? "Não informado"}
+                  </p>
                 </div>
               </div>
 
