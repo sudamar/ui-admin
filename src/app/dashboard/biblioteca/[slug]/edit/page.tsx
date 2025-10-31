@@ -14,11 +14,14 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import MultipleSelector, { type Option } from "@/components/ui/multiselect"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Save, Tag, type LucideIcon } from "lucide-react"
+import Image from "next/image"
+import { ArrowLeft, Save, Tag, CheckCircle, XCircle, type LucideIcon } from "lucide-react"
 import * as Icons from "lucide-react"
 
 import { trabalhosService, type Trabalho } from "@/services/trabalhos/trabalhos-service"
 import { categoriasService, type Categoria } from "@/services/trabalhos/categorias-service"
+import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 const getCategoryIcon = (icon?: string): LucideIcon => {
   if (!icon) return Tag
@@ -46,9 +49,11 @@ const slugify = (value: string) =>
 const mapCategorias = (categorias: Categoria[]) => {
   const entries: Array<[string, Categoria]> = []
   categorias.forEach((categoria) => {
-    const slug = slugify(categoria.nome)
+    const slugFromName = slugify(categoria.nome)
+    const slugOriginal = categoria.slug?.trim() || slugFromName
     entries.push([categoria.nome, categoria])
-    entries.push([slug, categoria])
+    entries.push([slugOriginal, categoria])
+    entries.push([slugFromName, categoria])
   })
   return new Map(entries)
 }
@@ -71,27 +76,14 @@ const trabalhoSchema = z.object({
   nota: z
     .string()
     .optional()
-    .refine(
-      (value) =>
-        !value ||
-        (!Number.isNaN(Number.parseFloat(value)) &&
-          Number.parseFloat(value) >= 0 &&
-          Number.parseFloat(value) <= 10),
-      "Informe uma nota entre 0 e 10",
-    ),
-  visitantes: z
-    .string()
-    .min(1, "Informe a quantidade de visitas")
-    .refine((value) => !Number.isNaN(Number.parseInt(value)) && Number.parseInt(value) >= 0, "Informe um número válido"),
-  baixados: z
-    .string()
-    .optional()
-    .refine(
-      (value) =>
-        !value ||
-        (!Number.isNaN(Number.parseInt(value)) && Number.parseInt(value) >= 0),
-      "Informe um número válido",
-    ),
+    .refine((value) => {
+      if (!value) return true
+      const normalized = value.replace(",", ".")
+      const parsed = Number.parseFloat(normalized)
+      return !Number.isNaN(parsed) && parsed >= 0 && parsed <= 999
+    }, "Informe uma nota entre 0 e 999,99"),
+  visitantes: z.string().optional(),
+  baixados: z.string().optional(),
 })
 
 type TrabalhoFormValues = z.infer<typeof trabalhoSchema>
@@ -106,6 +98,11 @@ export default function EditTrabalhoPage() {
   const [pdfName, setPdfName] = useState<string>("")
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [categoriasLoading, setCategoriasLoading] = useState(true)
+  const [trabalhoId, setTrabalhoId] = useState<string | null>(null)
+  const [metrics, setMetrics] = useState<{ visitantes: number; baixados: number | null }>({
+    visitantes: 0,
+    baixados: null,
+  })
 
   const form = useForm<TrabalhoFormValues>({
     resolver: zodResolver(trabalhoSchema),
@@ -127,10 +124,41 @@ export default function EditTrabalhoPage() {
 
   const categoryMap = useMemo(() => mapCategorias(categorias), [categorias])
 
-  const tagOptions = useMemo<Option[]>(
-    () => categorias.map((categoria) => ({ value: slugify(categoria.nome), label: categoria.nome })),
-    [categorias]
-  )
+const tagOptions = useMemo<Option[]>(
+  () =>
+    categorias.map((categoria) => ({
+      value: categoria.nome,
+      label: categoria.nome,
+    })),
+  [categorias]
+)
+
+const formatNumber = (value: number | null | undefined) => {
+  if (value === null || value === undefined) return "0"
+  return new Intl.NumberFormat("pt-BR").format(value)
+}
+
+const getMedal = (downloads: number | null) => {
+  if (!downloads || downloads <= 20) return null
+  if (downloads > 100) {
+    return {
+      label: "Medalha de Ouro",
+      image: "/assets/medals/gold-medal.png",
+    }
+  }
+  if (downloads > 60) {
+    return {
+      label: "Medalha de Prata",
+      image: "/assets/medals/silver-medal.png",
+    }
+  }
+  return {
+    label: "Medalha de Bronze",
+    image: "/assets/medals/bronze-medal.png",
+  }
+}
+
+const medalInfo = useMemo(() => getMedal(metrics.baixados ?? 0), [metrics.baixados])
 
   useEffect(() => {
     const loadDados = async () => {
@@ -160,6 +188,11 @@ export default function EditTrabalhoPage() {
           baixados: trabalho.baixados?.toString() ?? "",
           arquivo: trabalho.arquivo ?? "",
         })
+        setTrabalhoId(trabalho.id)
+        setMetrics({
+          visitantes: trabalho.visitantes,
+          baixados: trabalho.baixados ?? null,
+        })
         setPdfName(trabalho.arquivo ? extrairNomeArquivo(trabalho.arquivo) : "")
       } catch (error) {
         console.error("Erro ao carregar dados", error)
@@ -173,8 +206,17 @@ export default function EditTrabalhoPage() {
   }, [form, router, slug])
 
   const onSubmit = async (values: TrabalhoFormValues) => {
+    if (!trabalhoId) {
+      toast.error("Não foi possível identificar o trabalho para atualizar.", {
+        icon: <XCircle className="h-4 w-4 text-red-500" />,
+      })
+      return
+    }
+
     setSaving(true)
     try {
+      const notaValue = values.nota ? Number.parseFloat(values.nota.replace(",", ".")) : undefined
+
       const payload: Trabalho = {
         titulo: values.titulo,
         autor: values.autor,
@@ -184,18 +226,30 @@ export default function EditTrabalhoPage() {
         slug,
         resumo: values.resumo,
         arquivo: values.arquivo ? values.arquivo : undefined,
-        nota: values.nota ? Number.parseFloat(values.nota) : undefined,
-        visitantes: Number.parseInt(values.visitantes, 10),
-        baixados: values.baixados ? Number.parseInt(values.baixados, 10) : undefined,
+        nota: notaValue,
+        visitantes: metrics.visitantes,
+        baixados: metrics.baixados ?? undefined,
       }
 
-      await trabalhosService.update(slug, payload)
+      await trabalhosService.update(trabalhoId, payload)
+      toast.success("Trabalho atualizado com sucesso!", {
+        icon: <CheckCircle className="h-4 w-4 text-blue-500" />,
+      })
       router.push("/dashboard/biblioteca")
     } catch (error) {
       console.error("Erro ao atualizar trabalho", error)
+      toast.error("Não foi possível atualizar o trabalho.", {
+        icon: <XCircle className="h-4 w-4 text-red-500" />,
+      })
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleInvalid = () => {
+    toast.error("Há campos inválidos. Verifique os destaques no formulário.", {
+      icon: <XCircle className="h-4 w-4 text-red-500" />,
+    })
   }
 
   if (loading) {
@@ -227,13 +281,13 @@ export default function EditTrabalhoPage() {
 
       <div className="w-full">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit, handleInvalid)} className="space-y-6">
             <Card className="w-full">
               <CardHeader>
-                <CardTitle>Informações principais</CardTitle>
-                <CardDescription>Altere os dados conforme necessário.</CardDescription>
+                <CardTitle>Dados principais</CardTitle>
+                <CardDescription>Edite as informações essenciais do trabalho.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-5">
                 <FormField
                   control={form.control}
                   name="titulo"
@@ -248,34 +302,68 @@ export default function EditTrabalhoPage() {
                   )}
                 />
 
-                <div className="grid gap-6 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="autor"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Autor</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nome do autor" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="data_publicacao"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Data de publicação</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <FormField
+                  control={form.control}
+                  name="autor"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Autor</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome do autor" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="data_publicacao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data de publicação</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div
+                  id="medal"
+                  className="flex flex-wrap items-center gap-3 rounded-md border border-dashed border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground"
+                >
+                  <span>
+                    <strong className="text-foreground">{formatNumber(metrics.visitantes)}</strong> visitas
+                  </span>
+                  <span>•</span>
+                  <span>
+                    <strong className="text-foreground">{formatNumber(metrics.baixados)}</strong> downloads
+                  </span>
+                  {medalInfo ? (
+                    <span className="inline-flex items-center gap-2 font-medium text-foreground">
+                      <Image
+                        src={medalInfo.image}
+                        alt={medalInfo.label}
+                        width={20}
+                        height={20}
+                        className="h-5 w-5"
+                      />
+                      {medalInfo.label}
+                    </span>
+                  ) : null}
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="w-full">
+              <CardHeader>
+                <CardTitle>Detalhes do trabalho</CardTitle>
+                <CardDescription>Altere as demais informações conforme necessário.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+
 
                 <FormField
                   control={form.control}
@@ -415,49 +503,9 @@ export default function EditTrabalhoPage() {
                         <FormLabel>Nota</FormLabel>
                         <FormControl>
                           <Input
-                            type="number"
-                            step="0.1"
-                            min={0}
-                            max={10}
-                            placeholder="9.5"
-                            value={field.value ?? ""}
-                            onChange={(event) => field.onChange(event.target.value)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="visitantes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Visitas</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            placeholder="0"
-                            value={field.value ?? ""}
-                            onChange={(event) => field.onChange(event.target.value)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="baixados"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Downloads</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            placeholder="0"
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="99,5"
                             value={field.value ?? ""}
                             onChange={(event) => field.onChange(event.target.value)}
                           />

@@ -1,43 +1,188 @@
-import trabalhosData from "@/data/trabalhos/trabalhos.json"
-
 export interface Trabalho {
+  id: string
   titulo: string
   autor: string
   data_publicacao: string
   link: string
   tags: string[]
   slug: string
-  resumo?: string
-  nota?: number
+  resumo?: string | null
+  nota?: number | null
   visitantes: number
-  baixados?: number
-  arquivo?: string
+  baixados?: number | null
+  arquivo?: string | null
 }
 
-const store: Trabalho[] = [...trabalhosData]
+type TrabalhosListResponse =
+  | {
+      success: true
+      trabalhos: Trabalho[]
+    }
+  | {
+      success: true
+      trabalho: Trabalho
+    }
+  | {
+      success: false
+      message?: string
+    }
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const API_URL = "/api/trabalhos"
+
+async function handleResponse(response: Response) {
+  if (!response.ok) {
+    console.log("*******************")
+    console.log("Erro na resposta da API", await response.status)
+    console.log("Erro na resposta da API", await response.text())
+    const errorBody = (await response.json().catch(() => null)) as
+      | { message?: string }
+      | null
+    throw new Error(
+      errorBody?.message ?? "Não foi possível processar a solicitação."
+    )
+  }
+
+  const result = (await response.json()) as TrabalhosListResponse
+  if (!("success" in result) || !result.success) {
+    throw new Error(
+      "message" in result && result.message
+        ? result.message
+        : "Não foi possível processar a solicitação."
+    )
+  }
+
+  return result
+}
 
 export const trabalhosService = {
   async getAll(): Promise<Trabalho[]> {
-    await delay(150)
-    return [...store]
-  },
+    const response = await fetch(API_URL, {
+      credentials: "include",
+    })
 
-  async getBySlug(slug: string): Promise<Trabalho | undefined> {
-    await delay(150)
-    return store.find((item) => item.slug === slug)
-  },
+    const result = await handleResponse(response)
 
-  async update(slug: string, data: Trabalho): Promise<Trabalho> {
-    await delay(250)
-    const index = store.findIndex((item) => item.slug === slug)
-    if (index === -1) {
-      throw new Error("Trabalho não encontrado.")
+    if ("trabalhos" in result) {
+      return result.trabalhos
     }
 
-    const updated: Trabalho = { ...data }
-    store[index] = updated
-    return updated
+    return [result.trabalho]
+  },
+
+  async getById(id: string): Promise<Trabalho | null> {
+    const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
+      credentials: "include",
+    })
+
+    if (response.status === 404) {
+      return null
+    }
+
+    const result = await handleResponse(response)
+
+    if ("trabalho" in result) {
+      return result.trabalho
+    }
+
+    return result.trabalhos[0] ?? null
+  },
+
+  async getBySlug(slug: string): Promise<Trabalho | null> {
+    const response = await fetch(`${API_URL}?slug=${encodeURIComponent(slug)}`, {
+      credentials: "include",
+    })
+
+    if (response.status === 404) {
+      return null
+    }
+
+    const result = await handleResponse(response)
+
+    if ("trabalho" in result) {
+      return result.trabalho
+    }
+
+    return result.trabalhos[0] ?? null
+  },
+
+  async create(data: {
+    titulo: string
+    autor: string
+    slug: string
+    data_publicacao: string
+    link: string
+    tags: string[]
+    resumo?: string | null
+    nota?: number | null
+    visitantes?: number
+    baixados?: number | null
+    arquivo?: string | null
+  }): Promise<Trabalho> {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(data),
+    })
+
+    const result = await handleResponse(response)
+
+    if ("trabalho" in result) {
+      return result.trabalho
+    }
+
+    return result.trabalhos[0]
+  },
+
+  async update(
+    id: string,
+    data: {
+      titulo: string
+      autor: string
+      slug: string
+      data_publicacao: string
+      link: string
+      tags: string[]
+      resumo?: string | null
+      nota?: number | null
+      visitantes?: number
+      baixados?: number | null
+      arquivo?: string | null
+    }
+  ): Promise<Trabalho> {
+    const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(data),
+    })
+
+    const result = await handleResponse(response)
+
+    if ("trabalho" in result) {
+      return result.trabalho
+    }
+
+    return result.trabalhos[0]
+  },
+
+  async delete(id: string): Promise<void> {
+    const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      const errorBody = (await response.json().catch(() => null)) as
+        | { message?: string }
+        | null
+      throw new Error(
+        errorBody?.message ?? "Não foi possível remover o trabalho."
+      )
+    }
   },
 }

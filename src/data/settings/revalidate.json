@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Site.fafih.edu.br",
+    "url": "https://site.fafih.edu.br/revalidate"
+  },
+  {
+    "name": "Localhost:3901",
+    "url": "https://localhost:3901/revalidate"
+  },
+  {
+    "name": "Localhost:3001",
+    "url": "https://localhost:3001/revalidate"
+  }
+]

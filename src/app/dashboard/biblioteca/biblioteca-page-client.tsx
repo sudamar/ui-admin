@@ -75,7 +75,7 @@ export function BibliotecaPageClient() {
   const categoryMap = useMemo(() => {
     const entries: Array<[string, Categoria]> = []
     categorias.forEach((categoria) => {
-      entries.push([categoria.nome, categoria])
+      entries.push([categoria.slug, categoria])
       entries.push([slugify(categoria.nome), categoria])
     })
     return new Map(entries)
@@ -84,7 +84,7 @@ export function BibliotecaPageClient() {
   const tagOptions = useMemo<Option[]>(
     () =>
       categorias.map((categoria) => ({
-        value: slugify(categoria.nome),
+        value: categoria.slug,
         label: categoria.nome,
       })),
     [categorias],
@@ -155,6 +155,19 @@ export function BibliotecaPageClient() {
     )
   }
 
+  const handleDelete = async (id: string, titulo: string) => {
+    const shouldDelete = confirm(`Deseja realmente excluir o trabalho "${titulo}"?`)
+    if (!shouldDelete) return
+
+    try {
+      await trabalhosService.delete(id)
+      setTrabalhos((prev) => prev.filter((item) => item.id !== id))
+    } catch (error) {
+      console.error("Erro ao excluir trabalho", error)
+      alert("Não foi possível excluir o trabalho. Tente novamente.")
+    }
+  }
+
   const handlePlaceholderAction = (message: string) => {
     alert(message)
   }
@@ -170,7 +183,7 @@ export function BibliotecaPageClient() {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <Button asChild className="w-full sm:w-auto">
-            <Link href="#" onClick={() => handlePlaceholderAction("Funcionalidade de cadastro em desenvolvimento.")}>
+            <Link href="/dashboard/biblioteca/new">
               <Plus className="mr-2 h-4 w-4" />
               Novo trabalho
             </Link>
@@ -374,9 +387,7 @@ export function BibliotecaPageClient() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
-                              onClick={() =>
-                                handlePlaceholderAction("Funcionalidade de exclusão disponível em breve.")
-                              }
+                              onClick={() => handleDelete(trabalho.id, trabalho.titulo)}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Excluir

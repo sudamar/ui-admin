@@ -18,6 +18,7 @@ import { categoriasService } from "@/services/trabalhos/categorias-service"
 import { cn } from "@/lib/utils"
 
 const tailwindPattern = /^[a-z0-9-:\s]+$/i
+const hexPattern = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 const categoriaSchema = z.object({
@@ -59,10 +60,21 @@ const categoriaSchema = z.object({
     .optional()
     .or(z.literal(""))
     .superRefine((value, ctx) => {
-      if (value && !tailwindPattern.test(value)) {
+      if (!value) return
+      const trimmed = value.trim()
+      if (trimmed.startsWith("#")) {
+        if (!hexPattern.test(trimmed)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Informe um hex válido (ex: #1d4ed8).",
+          })
+        }
+        return
+      }
+      if (!tailwindPattern.test(trimmed)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Informe apenas classes utilitárias válidas.",
+          message: "Informe classes Tailwind válidas.",
         })
       }
     }),
