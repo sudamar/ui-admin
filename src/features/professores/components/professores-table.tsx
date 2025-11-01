@@ -80,7 +80,10 @@ export function ProfessoresTable() {
       setLoading(true)
       setError(null)
       const data = await professoresService.getAll()
-      setRows(data)
+      const sorted = [...data].sort((a, b) =>
+        a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" })
+      )
+      setRows(sorted)
     } catch (err) {
       console.error("Erro ao carregar professores:", err)
       const message =
@@ -108,7 +111,11 @@ export function ProfessoresTable() {
 
     try {
       await professoresService.delete(professor.id)
-      setRows((prev) => prev.filter((item) => item.id !== professor.id))
+      setRows((prev) =>
+        prev
+          .filter((item) => item.id !== professor.id)
+          .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }))
+      )
       if (detailsProfessor?.id === professor.id) {
         setDetailsProfessor(null)
       }

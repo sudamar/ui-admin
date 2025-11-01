@@ -59,7 +59,10 @@ export function CursosPageClient() {
       setLoading(true)
       try {
         const data = await coursesService.getAll()
-        setCourses(data)
+        const sorted = [...data].sort((a, b) =>
+          a.title.localeCompare(b.title, "pt-BR", { sensitivity: "base" })
+        )
+        setCourses(sorted)
       } catch (error) {
         console.error("Erro ao carregar cursos:", error)
       } finally {

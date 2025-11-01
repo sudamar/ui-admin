@@ -176,7 +176,9 @@ function delay(ms: number) {
 export const coursesService = {
   async getAll(): Promise<CoursePreview[]> {
     await delay(200)
-    return [...coursesStore]
+    return [...coursesStore].sort((a, b) =>
+      a.title.localeCompare(b.title, "pt-BR", { sensitivity: "base" }),
+    )
   },
   async getById(id: number): Promise<CourseDetails | undefined> {
     await delay(150)

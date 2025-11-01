@@ -49,10 +49,14 @@ export const professoresService = {
 
     const result = await handleResponse(response)
     if ("professores" in result) {
-      return result.professores
+      return [...result.professores].sort((a, b) =>
+        a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
+      )
     }
 
-    return [result.professor]
+    return [result.professor].sort((a, b) =>
+      a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
+    )
   },
 
   async getById(id: string): Promise<Professor | null> {
