@@ -181,14 +181,14 @@ export default function CategoriasPage() {
 
   return (
     <div className="flex-1 space-y-4 pb-10 md:space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex-1">
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Categorias</h1>
           <p className="text-sm text-muted-foreground md:text-base">
             Organize as tags utilizadas nos trabalhos publicados.
           </p>
         </div>
-        <Button asChild className="w-full sm:w-auto">
+        <Button asChild className="w-full sm:w-auto lg:flex-shrink-0 whitespace-nowrap">
           <Link href="/dashboard/biblioteca/categorias/new">
             <Plus className="mr-2 h-4 w-4" />
             Nova categoria

@@ -74,6 +74,7 @@ Este documento contém instruções e diretrizes para modelos de IA (como Claude
 ### 1. Feature-Based Architecture
 
 **SEMPRE** organize código por feature (funcionalidade), não por tipo de arquivo.
+**SEMPRE** que for iniciar um servidor, veja se o mesmo já não foi iniciado pelo usuário. Caso já haja um server rodando na porta 3000 ou 3001, tente usar esse mesmo server. Se não for possível, inicie o seu server para testar, mas logo encerre para não gerar conflito com os testes manuais.
 
 **SEMPRE** use a filosofia KISS. Não se atenha a algo que não foi pedido. 
 **SEMPRE**** que for criar um services de CRUD, faça um getAllFeture, getByIdFeture, deleteFetature, insertFeature, updateByIdFeature.
