@@ -643,74 +643,72 @@ export function ProfessoresTable() {
           if (!open) closeDetails()
         }}
       >
-        <DialogContent>
-          {detailsProfessor ? (
-            <>
-              <DialogHeader>
-                <DialogTitle>{detailsProfessor.nome}</DialogTitle>
-                <DialogDescription>
-                  {detailsProfessor.titulacao || "Titulação não informada"}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="flex flex-col gap-4">
-                {detailsProfessor.foto ? (
-                  <div className="relative h-32 w-full overflow-hidden rounded-md bg-muted sm:h-48">
-                    <Image
-                      src={detailsProfessor.foto}
-                      alt={detailsProfessor.nome}
-                      fill
-                      sizes="100vw"
-                      className="object-cover"
-                      unoptimized={detailsProfessor.foto.startsWith("data:")}
-                    />
+        {detailsProfessor ? (
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl">
+            <DialogHeader className="space-y-2">
+              <DialogTitle className="break-words text-xl sm:text-2xl">{detailsProfessor.nome}</DialogTitle>
+              <DialogDescription className="text-sm">
+                {detailsProfessor.titulacao || "Titulação não informada"}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-4 sm:gap-5">
+              {detailsProfessor.foto ? (
+                <div className="relative h-32 w-full overflow-hidden rounded-md bg-muted sm:h-48">
+                  <Image
+                    src={detailsProfessor.foto}
+                    alt={detailsProfessor.nome}
+                    fill
+                    sizes="100vw"
+                    className="object-cover"
+                    unoptimized={detailsProfessor.foto.startsWith("data:")}
+                  />
+                </div>
+              ) : null}
+              <div className="space-y-3 text-sm">
+                <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
+                  <span className="font-medium">Telefone:</span>
+                  <span className="break-words text-muted-foreground">
+                    {detailsProfessor.telefone || "Não informado"}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
+                  <span className="font-medium">Email:</span>
+                  {detailsProfessor.email ? (
+                    <Link
+                      href={`mailto:${detailsProfessor.email}`}
+                      className="break-all text-emerald-600 hover:text-emerald-700 hover:underline"
+                    >
+                      {detailsProfessor.email}
+                    </Link>
+                  ) : (
+                    <span className="text-muted-foreground">Não informado</span>
+                  )}
+                </div>
+                {detailsProfessor.linkProfessor ? (
+                  <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
+                    <span className="font-medium">Página:</span>
+                    <Link
+                      href={detailsProfessor.linkProfessor}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="break-all text-primary hover:underline"
+                    >
+                      Acessar perfil
+                    </Link>
                   </div>
                 ) : null}
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <span className="font-medium">Telefone: </span>
-                    <span className="text-muted-foreground">
-                      {detailsProfessor.telefone || "Não informado"}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="font-medium">Email: </span>
-                    {detailsProfessor.email ? (
-                      <Link
-                        href={`mailto:${detailsProfessor.email}`}
-                        className="text-emerald-600 hover:text-emerald-700 hover:underline"
-                      >
-                        {detailsProfessor.email}
-                      </Link>
-                    ) : (
-                      <span className="text-muted-foreground">Não informado</span>
-                    )}
-                  </div>
-                  {detailsProfessor.linkProfessor ? (
-                    <div>
-                      <span className="font-medium">Página: </span>
-                      <Link
-                        href={detailsProfessor.linkProfessor}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        Acessar perfil
-                      </Link>
-                    </div>
-                  ) : null}
-                </div>
-                <div>
-                  <h4 className="mb-1 text-sm font-semibold uppercase text-muted-foreground">
-                    Descrição
-                  </h4>
-                  <p className="text-sm leading-relaxed">
-                    {detailsProfessor.descricao || "Sem descrição disponível."}
-                  </p>
-                </div>
               </div>
-            </>
-          ) : null}
-        </DialogContent>
+              <div className="rounded-lg border border-dashed bg-muted/30 p-3 sm:p-4">
+                <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Descrição
+                </h4>
+                <p className="break-words text-sm leading-relaxed text-foreground">
+                  {detailsProfessor.descricao || "Sem descrição disponível."}
+                </p>
+              </div>
+            </div>
+          </DialogContent>
+        ) : null}
       </Dialog>
     </>
   )

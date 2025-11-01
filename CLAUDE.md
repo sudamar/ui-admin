@@ -81,6 +81,7 @@ Este documento contém instruções e diretrizes para modelos de IA (como Claude
 Ao fazer upload de uma foto/avatar seja de professores ou alunos, **use o componente S3 do SUPABASE**. Caso seja documentos, peça-me uma decisão de onde usar. Por enquanto o S3 está disponível apenas para avatares.
 **NUNCAS** use undefined para strings vazias. Quando um campo for string e não retornar valor, preencha o form com "". E quando for número, preencha com 0.
 **NUNCA** acesse BD via front, sempre faça via API.
+**NUNCA** quebre a responsividade dessa aplicação. É prioridade total manter ela toda responsiva.
 
 ### 2. Quando Criar uma Nova Feature
 

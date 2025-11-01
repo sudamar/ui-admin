@@ -36,7 +36,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -239,7 +239,7 @@ export function MembrosAnalistasTable() {
     return Array.from(values).sort()
   }, [rows])
 
-  const isProgressVisible = progressPhase !== "idle"
+  const isProgressActive = progressPhase === "loading"
 
   useEffect(() => {
     setFormationFilter((current) => {
@@ -487,70 +487,15 @@ export function MembrosAnalistasTable() {
         <CardHeader>
           <CardTitle className="text-xl">Lista de Membros Analistas</CardTitle>
           <CardDescription>
-            {isProgressVisible ? (
-              <div className="flex flex-col gap-2">
-                <span className="text-sm text-muted-foreground">
-                  Carregando membros analistas...
-                </span>
-                <Progress value={progress} className="h-2" />
-              </div>
-            ) : (
-              "Carregando membros analistas cadastrados..."
-            )}
+            <span className="text-sm text-muted-foreground">
+              Carregando membros analistas...
+            </span>
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-            Carregando dados...
-          </div>
-          {isProgressVisible ? (
-            <div className="mt-4">
-              <Progress value={progress} className="h-2 w-full max-w-sm" />
-            </div>
-          ) : null}
+        <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-sm text-muted-foreground">
+          <span>Carregando dados...</span>
+          <Progress value={progress} className="h-2 w-full max-w-sm" />
         </CardContent>
-        <CardFooter className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm text-muted-foreground">
-            Página {currentPage} de {totalPages}
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="sr-only">Página anterior</span>
-            </Button>
-            {visiblePages.map((page) => (
-              <Button
-                key={`page-${page}`}
-                type="button"
-                variant={page === currentPage ? "default" : "outline"}
-                size="sm"
-                className="h-8 min-w-[2rem] px-2 text-xs"
-                onClick={() => setCurrentPage(page)}
-                disabled={page === currentPage}
-              >
-                {page}
-              </Button>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-              <span className="sr-only">Próxima página</span>
-            </Button>
-          </div>
-        </CardFooter>
       </Card>
     )
   }
@@ -584,7 +529,7 @@ export function MembrosAnalistasTable() {
           <CardDescription>
             {error ? (
               <span className="text-destructive">{error}</span>
-            ) : isProgressVisible ? (
+            ) : loading && isProgressActive ? (
               <div className="flex flex-col gap-2">
                 <span className="text-sm text-muted-foreground">
                   Carregando membros analistas...
@@ -904,8 +849,9 @@ export function MembrosAnalistasTable() {
           if (!open) closeDetails()
         }}
       >
-        <DialogContent className="max-w-2xl overflow-hidden border border-border/60 bg-background/95 p-0 shadow-2xl backdrop-blur-sm sm:rounded-2xl">
-          {details ? (
+        {details ? (
+          <DialogContent className="max-w-[calc(100vw-2rem)] overflow-hidden border border-border/60 bg-background/95 p-0 shadow-2xl backdrop-blur-sm sm:max-w-2xl sm:rounded-2xl">
+            <DialogTitle className="sr-only">{details.nome}</DialogTitle>
             <div className="flex flex-col" aria-labelledby="membro-analista-title" aria-describedby="membro-analista-description">
               <div className="relative h-44 w-full overflow-hidden rounded-b-[2.5rem] sm:h-52">
                 {details.foto ? (
@@ -929,20 +875,20 @@ export function MembrosAnalistasTable() {
                 )}
               </div>
 
-              <div className="space-y-6 px-6 pb-6 pt-6 sm:px-8">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="space-y-2">
+              <div className="space-y-4 px-4 pb-6 pt-6 sm:space-y-6 sm:px-6 sm:pb-8 md:px-8">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                  <div className="min-w-0 flex-1 space-y-2">
                     <h2
                       id="membro-analista-title"
-                      className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl"
+                      className="break-words text-xl font-semibold tracking-tight text-foreground sm:text-2xl md:text-3xl"
                     >
                       {details.nome}
                     </h2>
                     <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                      <Badge variant="secondary" className="text-sm">
+                      <Badge variant="secondary" className="text-xs sm:text-sm">
                         {details.tipo ?? "Formação não informada"}
                       </Badge>
-                      <span>Atendimento: {details.atendimento || "Não informado"}</span>
+                      <span className="text-xs sm:text-sm">Atendimento: {details.atendimento || "Não informado"}</span>
                     </div>
                   </div>
 
@@ -952,7 +898,7 @@ export function MembrosAnalistasTable() {
                       variant="outline"
                       size="sm"
                       asChild
-                      className="h-9 rounded-full border-primary/40 text-primary hover:bg-primary/10"
+                      className="h-9 shrink-0 rounded-full border-primary/40 text-primary hover:bg-primary/10"
                     >
                       <Link href={details.linkMembro} target="_blank" rel="noreferrer">
                         <ExternalLink className="mr-2 h-4 w-4" />
@@ -962,41 +908,41 @@ export function MembrosAnalistasTable() {
                   ) : null}
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  <div className="flex min-h-[96px] items-start gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
-                    <MapPin className="mt-1 h-4 w-4 text-muted-foreground" />
-                    <div>
+                <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
+                  <div className="flex min-h-[80px] items-start gap-3 rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5 sm:min-h-[96px] sm:px-4 sm:py-3">
+                    <MapPin className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         Local
                       </p>
-                      <p className="mt-1 text-sm text-foreground">
+                      <p className="mt-1 break-words text-sm text-foreground">
                         {details.cidade || details.estado
                           ? `${details.cidade ?? ""}${details.cidade && details.estado ? " - " : ""}${details.estado ?? ""}`
                           : "Não informado"}
                       </p>
                     </div>
                   </div>
-                  <div className="flex min-h-[96px] items-start gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
-                    <Phone className="mt-1 h-4 w-4 text-muted-foreground" />
-                    <div>
+                  <div className="flex min-h-[80px] items-start gap-3 rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5 sm:min-h-[96px] sm:px-4 sm:py-3">
+                    <Phone className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         Telefone
                       </p>
-                      <p className="mt-1 text-sm text-foreground">
+                      <p className="mt-1 break-words text-sm text-foreground">
                         {details.telefone?.trim()?.length ? details.telefone : "Não informado"}
                       </p>
                     </div>
                   </div>
-                  <div className="flex min-h-[96px] items-start gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
-                    <Mail className="mt-1 h-4 w-4 text-muted-foreground" />
-                    <div>
+                  <div className="flex min-h-[80px] items-start gap-3 rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5 sm:min-h-[96px] sm:px-4 sm:py-3">
+                    <Mail className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         Email
                       </p>
                       {details.email ? (
                         <Link
                           href={`mailto:${details.email}`}
-                          className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                          className="mt-1 inline-flex items-center gap-1 break-all text-sm font-medium text-primary hover:underline"
                         >
                           {details.email}
                         </Link>
@@ -1022,8 +968,8 @@ export function MembrosAnalistasTable() {
                 </div>
               </div>
             </div>
-          ) : null}
-        </DialogContent>
+          </DialogContent>
+        ) : null}
       </Dialog>
     </>
   )

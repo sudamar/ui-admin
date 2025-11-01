@@ -81,49 +81,49 @@ function UserDetailsDialog({ user, trigger, onDelete }: UserDetailsDialogProps) 
   return (
     <Dialog>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="bg-white sm:max-w-[480px]">
-        <DialogHeader className="pb-4">
-          <DialogTitle className="text-xl">Detalhes do Usuário</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-[calc(100vw-2rem)] bg-white sm:max-w-[480px]">
+        <DialogHeader className="pb-3 sm:pb-4">
+          <DialogTitle className="text-lg sm:text-xl">Detalhes do Usuário</DialogTitle>
+          <DialogDescription className="text-sm">
             Informações completas sobre{" "}
             <span className="font-medium text-foreground">{user.name}</span>
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-5 pt-2">
-          <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4">
-            <Avatar className="h-16 w-16">
+        <div className="space-y-4 pt-2 sm:space-y-5">
+          <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 sm:gap-4 sm:p-4">
+            <Avatar className="h-14 w-14 shrink-0 sm:h-16 sm:w-16">
               <AvatarImage
                 src={user.avatar ?? undefined}
                 alt={user.name}
                 className="h-full w-full object-cover"
               />
-              <AvatarFallback className="bg-primary/10 text-lg text-primary">
+              <AvatarFallback className="bg-primary/10 text-base text-primary sm:text-lg">
                 {getInitials(user.name)}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold">{user.name}</h3>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate text-base font-semibold sm:text-lg">{user.name}</h3>
+              <p className="truncate text-xs text-muted-foreground sm:text-sm">{user.email}</p>
             </div>
           </div>
-          <div className="grid gap-4 text-sm">
-            <div className="flex items-center justify-between py-2">
+          <div className="grid gap-3 text-sm sm:gap-4">
+            <div className="flex items-center justify-between gap-3 py-1.5 sm:py-2">
               <span className="text-muted-foreground">Perfil:</span>
-              <Badge variant={getRoleBadgeVariant(user.role) as any}>{PERFIL_LABEL[user.role]}</Badge>
+              <Badge variant={getRoleBadgeVariant(user.role) as any} className="text-xs sm:text-sm">{PERFIL_LABEL[user.role]}</Badge>
             </div>
-            <div className="flex items-center justify-between py-2">
+            <div className="flex items-center justify-between gap-3 py-1.5 sm:py-2">
               <span className="text-muted-foreground">Status:</span>
-              <Badge variant={user.status === "active" ? "default" : "secondary"}>
+              <Badge variant={user.status === "active" ? "default" : "secondary"} className="text-xs sm:text-sm">
                 {user.status === "active" ? "Ativo" : "Inativo"}
               </Badge>
             </div>
-            <div className="flex items-center justify-between py-2">
+            <div className="flex items-center justify-between gap-3 py-1.5 sm:py-2">
               <span className="text-muted-foreground">Cadastrado em:</span>
               <span className="font-medium">{new Date(user.createdAt).toLocaleDateString("pt-BR")}</span>
             </div>
           </div>
-          <div className="flex gap-3 pt-4">
-            <Button asChild className="flex-1" size="lg">
+          <div className="flex flex-col gap-2 pt-3 sm:flex-row sm:gap-3 sm:pt-4">
+            <Button asChild className="flex-1" size="default">
               <Link href={`/dashboard/usuarios/${user.id}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
                 Editar
@@ -132,7 +132,7 @@ function UserDetailsDialog({ user, trigger, onDelete }: UserDetailsDialogProps) 
             <Button
               variant="destructive"
               className="flex-1"
-              size="lg"
+              size="default"
               onClick={() => onDelete(user.id)}
             >
               <Trash2 className="mr-2 h-4 w-4" />

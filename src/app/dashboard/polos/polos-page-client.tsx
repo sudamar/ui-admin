@@ -314,10 +314,10 @@ export function PolosPageClient() {
                 Novo polo
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Adicionar novo polo</DialogTitle>
-                <DialogDescription>
+            <DialogContent className="max-h-[90vh] max-w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-2xl">
+              <DialogHeader className="space-y-2">
+                <DialogTitle className="text-lg sm:text-xl">Adicionar novo polo</DialogTitle>
+                <DialogDescription className="text-sm">
                   Informe os dados principais do polo para que ele apareça no
                   dashboard.
                 </DialogDescription>
@@ -816,27 +816,27 @@ export function PolosPageClient() {
           }
         }}
       >
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-xl">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="break-words text-lg sm:text-xl">
               {poloDetails ? poloDetails.name : "Detalhes do polo"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               Informações completas do polo selecionado.
             </DialogDescription>
           </DialogHeader>
 
           {poloDetails ? (
-            <div className="grid gap-4">
-              <div>
-                <h4 className="text-sm font-semibold text-muted-foreground">Identificador</h4>
-                <p className="mt-1 font-mono text-sm uppercase text-foreground">
+            <div className="grid gap-3 sm:gap-4">
+              <div className="rounded-lg border bg-muted/30 p-3 sm:p-4">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Identificador</h4>
+                <p className="mt-1 break-words font-mono text-sm uppercase text-foreground">
                   {poloDetails.slug}
                 </p>
               </div>
-              <div>
-                <h4 className="text-sm font-semibold text-muted-foreground">Endereço</h4>
-                <p className="mt-1 text-sm">
+              <div className="rounded-lg border bg-muted/30 p-3 sm:p-4">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Endereço</h4>
+                <p className="mt-1 break-words text-sm">
                   {poloDetails.address ?? "Endereço não informado"}
                 </p>
                 {poloDetails.mapUrl ? (
@@ -844,42 +844,42 @@ export function PolosPageClient() {
                     href={poloDetails.mapUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                    className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                   >
                     Ver no mapa
                   </Link>
                 ) : null}
               </div>
 
-              <div className="grid gap-2 md:grid-cols-2">
-                <div>
-                  <h4 className="text-sm font-semibold text-muted-foreground">Contato</h4>
-                  <p className="mt-1 text-sm">
+              <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+                <div className="rounded-lg border bg-muted/30 p-3 sm:p-4">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contato</h4>
+                  <p className="mt-1 break-words text-sm">
                     {poloDetails.phone ?? "Telefone não informado"}
                   </p>
                   {poloDetails.email ? (
                     <Link
                       href={`mailto:${poloDetails.email}`}
-                      className="text-xs text-primary hover:underline"
+                      className="mt-1 block break-all text-xs text-primary hover:underline"
                     >
                       {poloDetails.email}
                     </Link>
                   ) : (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="mt-1 block text-xs text-muted-foreground">
                       E-mail não informado
                     </span>
                   )}
                 </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-muted-foreground">Coordenação</h4>
-                  <p className="mt-1 text-sm">
+                <div className="rounded-lg border bg-muted/30 p-3 sm:p-4">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Coordenação</h4>
+                  <p className="mt-1 break-words text-sm">
                     {poloDetails.coordinator ?? "Não informado"}
                   </p>
                 </div>
               </div>
 
-              <div className="flex justify-end">
-                <Button variant="outline" onClick={closeDetails}>
+              <div className="flex justify-end pt-2">
+                <Button variant="outline" onClick={closeDetails} size="default">
                   Fechar
                 </Button>
               </div>
