@@ -402,8 +402,8 @@ export function ProfessoresTable() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid gap-3 md:grid-cols-[2fr_1fr] lg:grid-cols-[2fr_1fr_1fr]">
-            <div className="relative flex items-center">
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,0.6fr)_minmax(0,0.4fr)]">
+            <div className="relative flex items-center xl:flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar por nome, telefone, email ou link..."
@@ -412,7 +412,7 @@ export function ProfessoresTable() {
                   setSearchTerm(event.target.value)
                   setCurrentPage(1)
                 }}
-                className="pl-9 pr-16"
+                className="w-full pl-9 pr-16"
               />
               {searchTerm ? (
                 <Button
@@ -431,7 +431,7 @@ export function ProfessoresTable() {
             </div>
           </div>
 
-          <div className="hidden rounded-lg border bg-background shadow-sm md:block">
+          <div className="hidden rounded-lg border bg-background shadow-sm xl:block">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-background">
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -480,7 +480,7 @@ export function ProfessoresTable() {
             </Table>
           </div>
 
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 xl:hidden">
             {paginatedRows.length ? (
               paginatedRows.map((row) => {
                 const professor = row.original

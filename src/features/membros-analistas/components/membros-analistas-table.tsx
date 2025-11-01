@@ -544,8 +544,8 @@ export function MembrosAnalistasTable() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid items-start gap-3 md:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] lg:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)]">
-            <div className="relative flex items-center">
+          <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,0.6fr)_minmax(0,0.4fr)]">
+            <div className="relative flex items-center xl:flex-1 xl:min-w-[220px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar por nome, tipo, cidade, email..."
@@ -554,7 +554,7 @@ export function MembrosAnalistasTable() {
                   setSearchTerm(event.target.value)
                   setCurrentPage(1)
                 }}
-                className="pl-9 pr-16"
+                className="pl-9 pr-16 w-full"
               />
               {searchTerm ? (
                 <Button
@@ -571,7 +571,7 @@ export function MembrosAnalistasTable() {
                 </Button>
               ) : null}
             </div>
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end md:gap-2">
+            <div className="flex flex-col gap-3 xl:flex-1 xl:flex-row xl:flex-wrap xl:items-center xl:justify-end xl:gap-2">
               <Select
                 value={stateFilter}
                 onValueChange={(value) => {
@@ -579,7 +579,7 @@ export function MembrosAnalistasTable() {
                   setCurrentPage(1)
                 }}
               >
-                <SelectTrigger className="h-10 md:w-[40%] lg:w-[40%] xl:w-[35%]">
+                <SelectTrigger className="h-10 w-full xl:flex-1 xl:min-w-[200px] xl:max-w-[280px]">
                   <SelectValue placeholder="Filtrar por UF" />
                 </SelectTrigger>
                 <SelectContent>
@@ -598,7 +598,7 @@ export function MembrosAnalistasTable() {
                   setCurrentPage(1)
                 }}
               >
-                <SelectTrigger className="h-10 md:w-[60%] lg:w-[60%] xl:w-[65%]">
+                <SelectTrigger className="h-10 w-full xl:flex-1 xl:min-w-[240px] xl:max-w-[320px]">
                   <SelectValue placeholder="Filtrar por formação" />
                 </SelectTrigger>
                 <SelectContent>
@@ -620,14 +620,14 @@ export function MembrosAnalistasTable() {
                   setFormationFilter("all")
                   setCurrentPage(1)
                 }}
-                className="self-start md:self-auto"
+                className="self-start md:self-auto md:shrink-0 md:h-10 md:px-3 xl:px-4"
               >
                 Limpar filtros
               </Button>
             </div>
           </div>
 
-          <div className="hidden rounded-lg border bg-background shadow-sm md:block">
+          <div className="hidden rounded-lg border bg-background shadow-sm xl:block">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-background">
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -676,7 +676,7 @@ export function MembrosAnalistasTable() {
             </Table>
           </div>
 
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 xl:hidden">
             {paginatedRows.length ? (
               paginatedRows.map((row) => {
                 const membro = row.original

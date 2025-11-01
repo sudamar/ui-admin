@@ -246,6 +246,16 @@ export function UsersPageClient() {
     return filtered
   }, [users, searchTerm, roleFilter, statusFilter, sortField, sortOrder])
 
+  const formatLastLogin = (value?: string | null) => {
+    if (!value) return "Nunca acessou"
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(date)
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -259,26 +269,28 @@ export function UsersPageClient() {
 
   return (
     <div className="flex-1 space-y-4 md:space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:justify-between">
+        <div className="flex-1 min-w-[240px]">
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Usuários</h1>
           <p className="text-sm text-muted-foreground md:text-base">
             Gerencie os usuários que realmente acessam o sistema
           </p>
         </div>
-        {authUser?.perfil === PerfilUsuario.Admin ? (
-          <Button asChild className="w-full sm:w-auto">
-            <Link href="/dashboard/usuarios/new">
+        <div className="w-full md:w-auto md:flex-none">
+          {authUser?.perfil === PerfilUsuario.Admin ? (
+            <Button asChild className="w-full justify-center md:w-auto md:px-5">
+              <Link href="/dashboard/usuarios/new" className="inline-flex items-center justify-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                Novo Usuário
+              </Link>
+            </Button>
+          ) : (
+            <Button className="w-full justify-center md:w-auto" disabled title="Apenas administradores podem criar usuários">
               <UserPlus className="mr-2 h-4 w-4" />
               Novo Usuário
-            </Link>
-          </Button>
-        ) : (
-          <Button className="w-full sm:w-auto" disabled title="Apenas administradores podem criar usuários">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Novo Usuário
-          </Button>
-        )}
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -289,43 +301,45 @@ export function UsersPageClient() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 grid gap-3 md:mb-6 md:grid-cols-2 xl:grid-cols-3">
-            <div className="relative md:col-span-2 xl:col-span-1">
+          <div className="mb-4 grid gap-3 md:mb-6 xl:grid-cols-[minmax(0,0.6fr)_minmax(0,0.4fr)]">
+            <div className="relative xl:flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar por nome ou email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
+                className="w-full pl-9"
               />
             </div>
-            <Select
-              value={roleFilter}
-              onValueChange={(value) =>
-                setRoleFilter(value === "all" ? "all" : (value as PerfilUsuario))
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filtrar por perfil" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os perfis</SelectItem>
-                <SelectItem value={PerfilUsuario.Admin}>{PERFIL_LABEL[PerfilUsuario.Admin]}</SelectItem>
-                <SelectItem value={PerfilUsuario.Secretaria}>{PERFIL_LABEL[PerfilUsuario.Secretaria]}</SelectItem>
-                <SelectItem value={PerfilUsuario.Professor}>{PERFIL_LABEL[PerfilUsuario.Professor]}</SelectItem>
-                <SelectItem value={PerfilUsuario.Aluno}>{PERFIL_LABEL[PerfilUsuario.Aluno]}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filtrar por status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="active">Ativo</SelectItem>
-                <SelectItem value="inactive">Inativo</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid gap-3 lg:grid-cols-2 xl:flex xl:flex-1 xl:justify-end xl:gap-2">
+              <Select
+                value={roleFilter}
+                onValueChange={(value) =>
+                  setRoleFilter(value === "all" ? "all" : (value as PerfilUsuario))
+                }
+              >
+                <SelectTrigger className="w-full xl:flex-1 xl:min-w-[200px] xl:max-w-[260px]">
+                  <SelectValue placeholder="Filtrar por perfil" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os perfis</SelectItem>
+                  <SelectItem value={PerfilUsuario.Admin}>{PERFIL_LABEL[PerfilUsuario.Admin]}</SelectItem>
+                  <SelectItem value={PerfilUsuario.Secretaria}>{PERFIL_LABEL[PerfilUsuario.Secretaria]}</SelectItem>
+                  <SelectItem value={PerfilUsuario.Professor}>{PERFIL_LABEL[PerfilUsuario.Professor]}</SelectItem>
+                  <SelectItem value={PerfilUsuario.Aluno}>{PERFIL_LABEL[PerfilUsuario.Aluno]}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full xl:flex-1 xl:min-w-[180px] xl:max-w-[220px]">
+                  <SelectValue placeholder="Filtrar por status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="active">Ativo</SelectItem>
+                  <SelectItem value="inactive">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="rounded-lg border bg-background shadow-md">
             {filteredAndSortedUsers.length === 0 ? (
@@ -334,7 +348,7 @@ export function UsersPageClient() {
               </div>
             ) : (
               <>
-                <div className="hidden max-h-[600px] overflow-auto md:block">
+                <div className="hidden max-h-[600px] overflow-auto xl:block">
                   <Table>
                     <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
                       <TableRow className="hover:bg-transparent">
@@ -391,18 +405,19 @@ export function UsersPageClient() {
                             {getSortIcon("status")}
                           </Button>
                         </TableHead>
-                        <TableHead>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleSort("createdAt")}
-                            className="-ml-3 h-8 data-[state=open]:bg-accent"
-                          >
-                            Cadastrado em
-                            {getSortIcon("createdAt")}
-                          </Button>
-                        </TableHead>
-                        <TableHead className="text-center">Ações</TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSort("createdAt")}
+                          className="-ml-3 h-8 data-[state=open]:bg-accent"
+                        >
+                          Cadastrado em
+                          {getSortIcon("createdAt")}
+                        </Button>
+                      </TableHead>
+                      <TableHead>Último acesso</TableHead>
+                      <TableHead className="text-center">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -443,6 +458,7 @@ export function UsersPageClient() {
                           <TableCell>
                             {new Date(user.createdAt).toLocaleDateString("pt-BR")}
                           </TableCell>
+                          <TableCell>{formatLastLogin(user.lastSignInAt)}</TableCell>
                           <TableCell className="text-center">
                             <div className="flex items-center justify-center gap-2">
                               <UserDetailsDialog
@@ -492,7 +508,7 @@ export function UsersPageClient() {
                           Exibindo {filteredAndSortedUsers.length} de {users.length} usuários
                           {selectedUsers.length > 0 && ` • ${selectedUsers.length} selecionado(s)`}
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell colSpan={2} className="text-center">
                           {selectedUsers.length > 0 && (
                             <Button variant="destructive" size="sm">
                               Remover Selecionados
@@ -504,7 +520,7 @@ export function UsersPageClient() {
                   </Table>
                 </div>
 
-                <div className="space-y-3 p-4 md:hidden">
+                <div className="space-y-3 p-4 xl:hidden">
                   {filteredAndSortedUsers.map((user) => (
                     <Card key={user.id} className="border border-border/70 shadow-sm">
                       <CardContent className="space-y-4 p-4">
@@ -536,6 +552,10 @@ export function UsersPageClient() {
                           <Badge variant={user.status === "active" ? "default" : "secondary"}>
                             {user.status === "active" ? "Ativo" : "Inativo"}
                           </Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <span className="font-medium text-foreground">Último acesso</span>
+                          <span>{formatLastLogin(user.lastSignInAt)}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm text-muted-foreground">
                           <span className="font-medium text-foreground">Cadastrado em</span>

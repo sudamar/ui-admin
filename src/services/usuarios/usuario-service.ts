@@ -8,6 +8,7 @@ export interface User {
   status: "active" | "inactive"
   createdAt: string
   avatar?: string | null
+  lastSignInAt?: string | null
 }
 
 export interface UpdateUserInput {
@@ -29,6 +30,7 @@ type ApiUserResponse =
         status: "active" | "inactive"
         createdAt: string
         avatarUrl: string | null
+        lastSignInAt?: string | null
       }>
     }
   | {
@@ -41,6 +43,7 @@ type ApiUserResponse =
         status: "active" | "inactive"
         createdAt: string
         avatarUrl: string | null
+        lastSignInAt?: string | null
       }
     }
   | {
@@ -56,6 +59,7 @@ function mapApiUser(user: {
   status: "active" | "inactive"
   createdAt: string
   avatarUrl: string | null
+  lastSignInAt?: string | null
 }): User {
   return {
     id: user.id,
@@ -65,6 +69,7 @@ function mapApiUser(user: {
     status: user.status,
     createdAt: user.createdAt,
     avatar: user.avatarUrl,
+    lastSignInAt: user.lastSignInAt ?? null,
   }
 }
 

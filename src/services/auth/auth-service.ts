@@ -80,6 +80,7 @@ export type SupabaseListedUser = {
   status: "active" | "inactive"
   createdAt: string
   avatarUrl: string | null
+  lastSignInAt?: string | null
 }
 
 async function getUserDetails(userId: string): Promise<UserDetailsRow | null> {
@@ -188,6 +189,10 @@ function mapSupabaseUserToListedUser(
       ? metadata.status.toLowerCase()
       : undefined
   const status = metaStatus === "inactive" ? "inactive" : "active"
+  const lastSignInAt =
+    user.last_sign_in_at ??
+    mapToString(metadata.last_sign_in_at) ??
+    mapToString(metadata.lastSignInAt)
 
   return {
     id: mapped.id,
@@ -197,7 +202,15 @@ function mapSupabaseUserToListedUser(
     status,
     createdAt: user.created_at ?? new Date().toISOString(),
     avatarUrl: mapped.avatarUrl ?? null,
+    lastSignInAt,
   }
+}
+
+function mapToString(value: unknown): string | null {
+  if (!value) return null
+  if (typeof value === "string") return value
+  if (value instanceof Date) return value.toISOString()
+  return null
 }
 
 function normalizePerfil(value: unknown): PerfilUsuario {
@@ -511,7 +524,10 @@ export async function listSupabaseUsers(): Promise<SupabaseListedUser[]> {
   const detailsMap = await getUserDetailsMap(collectedUsers.map((user) => user.id))
 
   return collectedUsers.map((user) =>
-    mapSupabaseUserToListedUser(user, detailsMap[user.id] ?? null)
+    mapSupabaseUserToListedUser(
+      user,
+      detailsMap[user.id] ?? null
+    )
   )
 }
 
