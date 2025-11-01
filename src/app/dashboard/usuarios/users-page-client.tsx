@@ -263,7 +263,7 @@ export function UsersPageClient() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Usuários</h1>
           <p className="text-sm text-muted-foreground md:text-base">
-            Gerencie os usuários do sistema
+            Gerencie os usuários que realmente acessam o sistema
           </p>
         </div>
         {authUser?.perfil === PerfilUsuario.Admin ? (
