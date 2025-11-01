@@ -7,7 +7,7 @@
       "role": "Admin",
       "status": "active",
       "createdAt": "2024-01-15",
-      "avatar": "/assets/avatares/1.png"
+      "avatar": "/assets/images/avatares/1.png"
     },
     {
       "id": 2,
@@ -16,7 +16,7 @@
       "role": "Editor",
       "status": "active",
       "createdAt": "2024-02-20",
-      "avatar": "/assets/avatares/2.png"
+      "avatar": "/assets/images/avatares/2.png"
     },
     {
       "id": 3,
@@ -25,7 +25,7 @@
       "role": "Viewer",
       "status": "inactive",
       "createdAt": "2024-03-10",
-      "avatar": "/assets/avatares/3.png"
+      "avatar": "/assets/images/avatares/3.png"
     },
     {
       "id": 4,
@@ -34,7 +34,7 @@
       "role": "Editor",
       "status": "active",
       "createdAt": "2024-01-25",
-      "avatar": "/assets/avatares/4.png"
+      "avatar": "/assets/images/avatares/4.png"
     },
     {
       "id": 5,
@@ -43,7 +43,7 @@
       "role": "Admin",
       "status": "active",
       "createdAt": "2024-02-05",
-      "avatar": "/assets/avatares/5.png"
+      "avatar": "/assets/images/avatares/5.png"
     },
     {
       "id": 6,
@@ -52,7 +52,7 @@
       "role": "Viewer",
       "status": "active",
       "createdAt": "2024-03-15",
-      "avatar": "/assets/avatares/6.png"
+      "avatar": "/assets/images/avatares/6.png"
     },
     {
       "id": 7,
@@ -61,7 +61,7 @@
       "role": "Editor",
       "status": "inactive",
       "createdAt": "2024-01-30",
-      "avatar": "/assets/avatares/7.png"
+      "avatar": "/assets/images/avatares/7.png"
     },
     {
       "id": 8,
@@ -70,7 +70,7 @@
       "role": "Viewer",
       "status": "active",
       "createdAt": "2024-02-28",
-      "avatar": "/assets/avatares/8.png"
+      "avatar": "/assets/images/avatares/8.png"
     }
   ]
 }

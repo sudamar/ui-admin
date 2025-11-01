@@ -13,24 +13,87 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
 import type { Professor } from "../types"
-import { readProfessorOverrides, writeProfessorOverride } from "../storage"
+import { professoresService } from "@/services/professores/professores-service"
 
-type EditProfessorFormProps = {
-  professor: Professor
+type ProfessorFormProps = {
+  professorId?: string
 }
 
-export function EditProfessorForm({ professor }: EditProfessorFormProps) {
+const emptyProfessor: Professor = {
+  id: "",
+  nome: "",
+  titulacao: "",
+  descricao: "",
+  foto: "",
+  email: "",
+  telefone: "",
+  linkProfessor: "",
+}
+
+function formatPhoneNumber(value: string): string {
+  const digits = value.replace(/\D/g, "")
+
+  if (digits.length === 0) {
+    return ""
+  }
+
+  if (digits.length <= 2) {
+    return `(${digits}`
+  }
+
+  const ddd = digits.slice(0, 2)
+  const isMobile = digits.length > 10
+  const firstPart = digits.slice(2, isMobile ? 7 : 6)
+  const lastPart = digits.slice(isMobile ? 7 : 6, isMobile ? 11 : 10)
+
+  let result = `(${ddd}`
+  result += ") "
+  result += firstPart
+
+  if (lastPart) {
+    result += `-${lastPart}`
+  }
+
+  return result.trim()
+}
+
+export function ProfessorForm({ professorId }: ProfessorFormProps) {
   const router = useRouter()
-  const [formData, setFormData] = useState<Professor>(professor)
+  const [formData, setFormData] = useState<Professor>({ ...emptyProfessor })
+  const [loading, setLoading] = useState(!!professorId)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    const overrides = readProfessorOverrides()
-    const override = overrides[professor.id]
-    if (override) {
-      setFormData(override)
+    if (!professorId) {
+      setFormData({ ...emptyProfessor })
+      setLoading(false)
+      return
     }
-  }, [professor.id])
+
+    const load = async () => {
+      setLoading(true)
+      try {
+        const professor = await professoresService.getById(professorId)
+        if (!professor) {
+          toast.error("Professor não encontrado.")
+          router.push("/dashboard/professores")
+          return
+        }
+        setFormData({
+          ...professor,
+          telefone: professor.telefone ? formatPhoneNumber(professor.telefone) : "",
+        })
+      } catch (error) {
+        console.error("Erro ao carregar professor:", error)
+        toast.error("Não foi possível carregar os dados do professor.")
+        router.push("/dashboard/professores")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void load()
+  }, [professorId, router])
 
   const handleChange = (
     field: keyof Professor,
@@ -44,12 +107,32 @@ export function EditProfessorForm({ professor }: EditProfessorFormProps) {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (!formData) return
     setIsSubmitting(true)
     try {
-      // Aqui faria a chamada para salvar no backend.
-      await new Promise((resolve) => setTimeout(resolve, 400))
-      writeProfessorOverride(formData)
-      toast.success("Dados do professor atualizados com sucesso!")
+      if (professorId) {
+        await professoresService.update(professorId, {
+          nome: formData.nome,
+          titulacao: formData.titulacao,
+          descricao: formData.descricao,
+          foto: formData.foto,
+          email: formData.email,
+          telefone: formData.telefone,
+          linkProfessor: formData.linkProfessor,
+        })
+        toast.success("Dados do professor atualizados com sucesso!")
+      } else {
+        await professoresService.create({
+          nome: formData.nome,
+          titulacao: formData.titulacao,
+          descricao: formData.descricao,
+          foto: formData.foto,
+          email: formData.email,
+          telefone: formData.telefone,
+          linkProfessor: formData.linkProfessor,
+        })
+        toast.success("Professor cadastrado com sucesso!")
+      }
       router.push("/dashboard/professores")
       router.refresh()
     } catch (error) {
@@ -58,6 +141,14 @@ export function EditProfessorForm({ professor }: EditProfessorFormProps) {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (loading || !formData) {
+    return (
+      <div className="rounded-md border border-dashed border-muted-foreground/30 p-6 text-center text-sm text-muted-foreground">
+        Carregando dados do professor...
+      </div>
+    )
   }
 
   return (
@@ -80,7 +171,7 @@ export function EditProfessorForm({ professor }: EditProfessorFormProps) {
             <Label htmlFor="titulacao">Titulação</Label>
             <Input
               id="titulacao"
-              value={formData.titulacao}
+              value={formData.titulacao ?? ""}
               onChange={(event) => handleChange("titulacao", event.target.value)}
             />
           </div>
@@ -103,7 +194,7 @@ export function EditProfessorForm({ professor }: EditProfessorFormProps) {
             <Input
               id="email"
               type="email"
-              value={formData.email}
+              value={formData.email ?? ""}
               onChange={(event) => handleChange("email", event.target.value)}
               placeholder="nome@exemplo.com"
             />
@@ -112,10 +203,25 @@ export function EditProfessorForm({ professor }: EditProfessorFormProps) {
             <Label htmlFor="telefone">Telefone</Label>
             <Input
               id="telefone"
-              value={formData.telefone}
-              onChange={(event) => handleChange("telefone", event.target.value)}
+              inputMode="tel"
+              value={formData.telefone ?? ""}
+              onChange={(event) => handleChange("telefone", formatPhoneNumber(event.target.value))}
               placeholder="(00) 00000-0000"
+              maxLength={15}
             />
+          </div>
+          <div className="grid gap-2 md:col-span-2">
+            <Label htmlFor="linkProfessor">Link do professor</Label>
+            <Input
+              id="linkProfessor"
+              type="url"
+              value={formData.linkProfessor ?? ""}
+              onChange={(event) => handleChange("linkProfessor", event.target.value)}
+              placeholder="https://linkedin.com/in/..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Informe um link público do professor (LinkedIn, currículo, site pessoal, etc.).
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -128,7 +234,7 @@ export function EditProfessorForm({ professor }: EditProfessorFormProps) {
           <Label htmlFor="descricao">Resumo profissional</Label>
           <Textarea
             id="descricao"
-            value={formData.descricao}
+            value={formData.descricao ?? ""}
             onChange={(event) => handleChange("descricao", event.target.value)}
             rows={6}
           />

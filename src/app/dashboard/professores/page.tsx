@@ -4,15 +4,11 @@ import { UserPlus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { ProfessoresTable } from "@/features/professores/components/professores-table"
-import { getProfessores } from "@/features/professores/data"
-import type { Professor } from "@/features/professores/types"
 
 export const metadata: Metadata = {
   title: "Professores",
   description: "Gerencie o corpo docente da FAFIH.",
 }
-
-const professores: Professor[] = getProfessores()
 
 export default function ProfessoresPage() {
   return (
@@ -32,7 +28,7 @@ export default function ProfessoresPage() {
         </Button>
       </div>
 
-      <ProfessoresTable data={professores} />
+      <ProfessoresTable />
     </div>
   )
 }

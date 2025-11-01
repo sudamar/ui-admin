@@ -9,7 +9,7 @@
       "A Pós-Graduação em Psicologia Junguiana oferece uma formação aprofundada na teoria e prática da Psicologia Analítica desenvolvida por Carl Gustav Jung. Este programa é destinado a profissionais da área da saúde mental que desejam se especializar nesta abordagem terapêutica única e transformadora.",
       "O curso aborda conceitos fundamentais como inconsciente coletivo, arquétipos, individuação, tipos psicológicos e análise de sonhos, proporcionando uma compreensão integral da psique humana segundo a perspectiva junguiana."
     ],
-    "image": "/assets/cursos/imagem-fafih-curso-psicologia-junguiana.png",
+    "image": "/assets/images/cursos/imagem-fafih-curso-psicologia-junguiana.png",
     "hero": {
       "type": "video",
       "source": "/assets/videos/video-curso-1.mp4",
@@ -320,7 +320,7 @@
       "O curso fundamenta-se principalmente na obra de Carl Gustav Jung, complementada por especialistas junguianos modernos, neurociências e Psiconeuroendocrinoimunologia (PNEI), proporcionando uma visão integral do ser humano.",
       "Com encontros mensais aos sábados e carga horária que pode chegar a 610 horas, o programa capacita profissionais da saúde e áreas afins a compreenderem os sintomas de adoecimento em múltiplas dimensões, reconhecendo a doença como sinal de desequilíbrio do ser total e potencial caminho para crescimento e evolução."
     ],
-    "image": "/assets/cursos/imagem-fafih-curso-psicossomatica.png",
+    "image": "/assets/images/cursos/imagem-fafih-curso-psicossomatica.png",
     "hero": {
       "type": "video",
       "source": "/assets/videos/video-curso-2.mp4",
@@ -762,7 +762,7 @@
       "Este curso oferece recursos teóricos e práticos para que os alunos, após aprenderem a estimular o surgimento das expressões criativas, saibam trabalhar terapeuticamente com elas. Percorreremos as várias formas de expressões criativas utilizadas pelos seres humanos: das manifestações bidimensionais (desenho e pintura), passando pelas tridimensionais (esculturas e modelagem), e pelas expressões literárias, musicais, sonoras, corporais e das artes cênicas, até chegarmos às expressões de caráter iniciático, dos estados alterados de consciência.",
       "Nosso modelo educativo compreende aulas expositivas, práticas, debates, participação em eventos científicos, atividades programadas (seminários) e estágio-pesquisa (ateliê expressivo-terapêutico-educacional) que possibilitará ao profissional de ajuda o exercício constante da transição entre os vários campos do saber e atender melhor sua clientela perante os problemas contemporâneos, integrando o estético com o ético e o científico - o belo, o bom e o verdadeiro."
     ],
-    "image": "/assets/cursos/imagem-fafih-curso-arteterapia.png",
+    "image": "/assets/images/cursos/imagem-fafih-curso-arteterapia.png",
     "hero": {
       "type": "video",
       "source": "/assets/videos/video-curso-3.mp4",
@@ -1248,7 +1248,7 @@
     "fullDescription": [
       "Este curso oferece uma análise profunda dos Livros Negros (Black Books) e do Livro Vermelho (Liber Novus) de C.G. Jung, documentos fundamentais para compreender o desenvolvimento da psicologia analítica."
     ],
-    "image": "/assets/cursos/imagem-fafih-curso-livros-negros.jpeg",
+    "image": "/assets/images/cursos/imagem-fafih-curso-livros-negros.jpeg",
     "hero": {
       "type": "video",
       "source": "/assets/videos/video-curso-4.mp4",
@@ -1311,7 +1311,7 @@
     "fullDescription": [
       "Este workshop oferece uma jornada única na arteterapia, explorando as imagens oníricas como fonte de criatividade e autoconhecimento através de técnicas expressivas."
     ],
-    "image": "/assets/cursos/imagem-fafih-curso-oficina-arterapia.png",
+    "image": "/assets/images/cursos/imagem-fafih-curso-oficina-arterapia.png",
     "hero": {
       "type": "video",
       "source": "/assets/videos/video-curso-5.mp4",
@@ -1376,7 +1376,7 @@
       "A evolução da imagem de Deus na Era de Peixes e em sua transição para a Era de Aquário. Investigaremos como a jornada pessoal de Jung, ao superar os aspectos negativos de seu próprio complexo paterno, ilumina os desafios contemporâneos de um contexto patriarcal de perda de referências simbólicas, de desencanto e ameaças à vida no planeta.",
       "Entretanto, é da sombra -- a nigredo dos alquimistas -- que se ergue o grito de esperança, como diz Jung, no \"esplendor sereno da vida\"."
     ],
-    "image": "/assets/cursos/imagem-fafih-curso-aion.jpeg",
+    "image": "/assets/images/cursos/imagem-fafih-curso-aion.jpeg",
     "hero": {
       "type": "video",
       "source": "/assets/videos/video-curso-6.mp4",
@@ -1580,7 +1580,7 @@
       "O IJEP - Instituto Junguiano de Ensino e Pesquisa, tendo como visão a integração das dimensões do bom, do belo e do verdadeiro, presentes nas ciências das religiões, nas artes e nas ciências médicas e da saúde, disseminador da importância da filosofia na vida das pessoas e da base da obra de Jung, criou a FORMAÇÃO DE MEMBROS ANALISTAS JUNGUIANOS, visando, à luz psicologia analítica de Carl Gustav Jung, propiciar aos Profissionais em Formação os fundamentos teóricos e a prática do exercício profissional.",
       "Obviamente que, pela perspectiva junguiana, jamais poderemos integrar o bom, o belo e o verdadeiro, sem o reconhecimento das suas antinomias, na forma do mal, do feio e do falso ou mentiroso, porque sem a descida aos infernos para que a sombra seja encarada, jamais poderemos compreender a totalidade."
     ],
-    "image": "/assets/cursos/imagem-fafih-curso-formacao-analista.png",
+    "image": "/assets/images/cursos/imagem-fafih-curso-formacao-analista.png",
     "hero": {
       "type": "video",
       "source": "/assets/videos/video-curso-7.mp4",
@@ -2034,6 +2034,6 @@
     "diferenciais": [],
     "ctaLabel": "Adquira Agora",
     "moreInfoUrl": "https://ijep.com.br/inscricao/aluno",
-    "image": "/assets/cursos/imagem-fafih-curso-congressos-junguianos.png"
+    "image": "/assets/images/cursos/imagem-fafih-curso-congressos-junguianos.png"
   }
 ]

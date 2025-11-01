@@ -6,29 +6,21 @@ import { Button } from "@/components/ui/button"
 import { ProfessorForm } from "@/features/professores/components/edit-professor-form"
 
 export const metadata: Metadata = {
-  title: "Editar professor",
-  description: "Atualize os dados do professor selecionado.",
+  title: "Novo professor",
+  description: "Cadastre um novo professor na plataforma.",
 }
 
-type PageProps = {
-  params: Promise<{
-    id: string
-  }>
-}
-
-export default async function EditProfessorPage({ params }: PageProps) {
-  const { id } = await params
-
+export default function NovoProfessorPage() {
   return (
     <div className="flex-1 space-y-6">
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-              Editar professor
+              Novo professor
             </h1>
             <p className="text-sm text-muted-foreground md:text-base">
-              Atualize os dados do professor selecionado.
+              Preencha as informações abaixo para cadastrar um novo professor.
             </p>
           </div>
           <Button asChild variant="outline" className="hidden sm:inline-flex">
@@ -46,7 +38,7 @@ export default async function EditProfessorPage({ params }: PageProps) {
         </Button>
       </div>
 
-      <ProfessorForm professorId={id} />
+      <ProfessorForm />
     </div>
   )
 }

@@ -551,7 +551,7 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                       />
                     </FormControl>
                     <FormDescription>
-                      Faça upload de uma imagem 16:9 ou cole uma URL existente hospedada em /public/assets/cursos.
+                      Faça upload de uma imagem 16:9 ou cole uma URL existente hospedada em /public/assets/images/cursos.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

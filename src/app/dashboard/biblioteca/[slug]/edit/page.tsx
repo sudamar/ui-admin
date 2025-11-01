@@ -187,18 +187,18 @@ const getMedal = (downloads: number | null) => {
   if (downloads > 100) {
     return {
       label: "Medalha de Ouro",
-      image: "/assets/medals/gold-medal.png",
+      image: "/assets/images/medals/gold-medal.png",
     }
   }
   if (downloads > 60) {
     return {
       label: "Medalha de Prata",
-      image: "/assets/medals/silver-medal.png",
+      image: "/assets/images/medals/silver-medal.png",
     }
   }
   return {
     label: "Medalha de Bronze",
-    image: "/assets/medals/bronze-medal.png",
+    image: "/assets/images/medals/bronze-medal.png",
   }
 }
 
