@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -31,6 +31,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { FileUpload } from "@/components/ui/file-upload"
 import { CurrencyInput } from "@/components/ui/currency-input"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader } from "@/components/ui/card"
@@ -43,7 +44,7 @@ import {
 } from "@/components/ui/select"
 import { ComposerInput } from "@/components/ui/composer-input"
 import {
-  coursesService,
+  cursosService,
   type CourseAvailability,
   type CourseDetails,
 } from "@/services/cursos/cursos-service"
@@ -60,37 +61,7 @@ const currencyField = z
   .min(0, "Informe um valor maior ou igual a zero")
   .optional()
 
-const courseSchema = z.object({
-  title: z.string().min(1, "Informe um título"),
-  subtitle: z.string().optional(),
-  slug: z
-    .string()
-    .min(1, "Informe o slug")
-    .regex(/^[a-z0-9-]+$/, "Use apenas letras minúsculas, números e hífen"),
-  category: z.string().min(1, "Informe a categoria"),
-  categoryLabel: z.string().optional(),
-  modalidade: z.string().optional(),
-  duration: z.string().optional(),
-  workload: z.string().optional(),
-  startDate: z.string().optional(),
-  maxStudents: z.string().optional(),
-  certificate: z.string().optional(),
-  image: z.string().optional(),
-  price: currencyField,
-  originalPrice: currencyField,
-  precoMatricula: currencyField,
-  monthlyPrice: z.string().optional(),
-  description: z.string().optional(),
-  fullDescription: z.string().optional(),
-  justificativa: z.string().optional(),
-  objetivos: z.string().optional(),
-  publico: z.string().optional(),
-  ctaLabel: z.string().optional(),
-  moreInfoUrl: z.string().optional(),
-  availability: z.enum(["promotion", "open", "limited", "sold-out"]),
-})
 
-export type CourseFormValues = z.infer<typeof courseSchema>
 
 function hasHtml(value: string) {
   return /<\/?[a-z][\s\S]*>/i.test(value)
@@ -167,6 +138,53 @@ interface CourseFormProps {
 
 export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseFormProps) {
   const router = useRouter()
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const courseSchema = useMemo(() => {
+    const baseSchema = z.object({
+      title: z.string().min(1, "Informe um título"),
+      subtitle: z.string().optional(),
+      slug:
+        z
+          .string()
+          .min(1, "Informe o slug")
+          .regex(/^[a-z0-9-]+$/, "Use apenas letras minúsculas, números e hífen"),
+      category: z.string().min(1, "Informe a categoria"),
+      categoryLabel: z.string().optional(),
+      modalidade: z.string().optional(),
+      duration: z.string().optional(),
+      workload: z.string().optional(),
+      startDate: z.string().optional(),
+      maxStudents: z.string().optional(),
+      certificate: z.string().optional(),
+      image_folder: z.string().optional(),
+      price: currencyField,
+      originalPrice: currencyField,
+      precoMatricula: currencyField,
+      monthlyPrice: z.string().optional(),
+      description: z.string().optional(),
+      fullDescription: z.string().optional(),
+      justificativa: z.string().optional(),
+      objetivos: z.string().optional(),
+      publico: z.string().optional(),
+      ctaLabel: z.string().optional(),
+      moreInfoUrl: z.string().optional(),
+      videoUrl: z.string().url("Informe uma URL válida").optional().or(z.literal("")),
+      availability: z.enum(["promotion", "open", "limited", "sold-out"]),
+    });
+
+    if (mode === 'create') {
+      return baseSchema.extend({
+        image_folder: z.string().min(1, "A imagem de capa é obrigatória"),
+        videoUrl: z.string().min(1, "O vídeo da landing page é obrigatório").url("Informe uma URL válida"),
+      });
+    }
+
+    return baseSchema;
+  }, [mode]);
+
+  type CourseFormValues = z.infer<typeof courseSchema>;
 
   const defaultValues: CourseFormValues = useMemo(() => {
     if (!initialData) {
@@ -182,7 +200,7 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
         startDate: "",
         maxStudents: "",
         certificate: "",
-        image: undefined,
+        image_folder: undefined,
         price: undefined,
         originalPrice: undefined,
         precoMatricula: undefined,
@@ -194,6 +212,7 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
         publico: "",
         ctaLabel: "",
         moreInfoUrl: "",
+        videoUrl: "",
         availability: "open",
       }
     }
@@ -210,7 +229,7 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
       startDate: initialData.startDate ?? "",
       maxStudents: initialData.maxStudents ?? "",
       certificate: initialData.certificate ?? "",
-      image: initialData.image ?? undefined,
+      image_folder: initialData.image_folder ?? undefined,
       price: initialData.price,
       originalPrice: initialData.originalPrice,
       precoMatricula: initialData.precoMatricula,
@@ -222,6 +241,7 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
       publico: htmlArrayToPlainText(initialData.publico),
       ctaLabel: initialData.ctaLabel ?? "",
       moreInfoUrl: initialData.moreInfoUrl ?? "",
+      videoUrl: initialData.videoUrl ?? "",
       availability: initialData.availability,
     }
   }, [initialData])
@@ -236,52 +256,61 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
   const isEdit = mode === "edit"
 
   const handleSubmit = async (values: CourseFormValues) => {
-    const payload: CourseDetails = {
-      id: initialData?.id ?? 0,
-      slug: values.slug,
-      title: values.title,
-      subtitle: values.subtitle,
-      description: composerTextToHtml(values.description),
-      fullDescription: composerTextToHtmlArray(values.fullDescription),
-      category: values.category,
-      categoryLabel: values.categoryLabel,
-      image: values.image,
-      price: values.price,
-      originalPrice: values.originalPrice,
-      precoMatricula: values.precoMatricula,
-      monthlyPrice: values.monthlyPrice,
-      modalidade: values.modalidade,
-      duration: values.duration,
-      workload: values.workload,
-      startDate: values.startDate,
-      maxStudents: values.maxStudents,
-      certificate: values.certificate,
-      justificativa: composerTextToHtmlArray(values.justificativa),
-      objetivos: composerTextToHtmlArray(values.objetivos),
-      publico: composerTextToHtmlArray(values.publico),
-      ctaLabel: values.ctaLabel,
-      moreInfoUrl: values.moreInfoUrl,
-      availability: values.availability,
-      tags: [],
-    }
+    const loadingToast = toast.loading(isEdit ? "Atualizando curso..." : "Criando curso...")
 
     try {
+      const payload: CourseDetails = {
+        id: initialData?.id ?? 0,
+        slug: values.slug,
+        title: values.title,
+        subtitle: values.subtitle,
+        description: composerTextToHtml(values.description),
+        fullDescription: composerTextToHtmlArray(values.fullDescription),
+        category: values.category,
+        categoryLabel: values.categoryLabel,
+        image_folder: values.image_folder,
+        price: values.price,
+        originalPrice: values.originalPrice,
+        precoMatricula: values.precoMatricula,
+        monthlyPrice: values.monthlyPrice,
+        modalidade: values.modalidade,
+        duration: values.duration,
+        workload: values.workload,
+        startDate: values.startDate,
+        maxStudents: values.maxStudents,
+        certificate: values.certificate,
+        justificativa: composerTextToHtmlArray(values.justificativa),
+        objetivos: composerTextToHtmlArray(values.objetivos),
+        publico: composerTextToHtmlArray(values.publico),
+        ctaLabel: values.ctaLabel,
+        moreInfoUrl: values.moreInfoUrl,
+        videoUrl: values.videoUrl,
+        availability: values.availability,
+        tags: [],
+      }
+
+      console.log("[CourseForm] Enviando payload:", payload)
+
       const { id, tags, ...rest } = payload
       const saved = isEdit
-        ? await coursesService.update(initialData!.id, rest)
-        : await coursesService.create(rest)
+        ? await cursosService.update(initialData!.id, rest)
+        : await cursosService.create(rest)
 
       if (!saved) {
+        toast.dismiss(loadingToast)
         toast.error("Não foi possível salvar o curso.")
         return
       }
 
-      toast.success(isEdit ? "Curso atualizado com sucesso." : "Curso criado com sucesso.")
+      toast.dismiss(loadingToast)
+      toast.success(isEdit ? "Curso atualizado com sucesso!" : "Curso criado com sucesso!")
       await onSubmit?.(saved)
       router.push("/dashboard/cursos")
     } catch (error) {
-      console.error(error)
-      toast.error("Ocorreu um erro ao salvar o curso.")
+      console.error("[CourseForm] Erro ao salvar curso:", error)
+      toast.dismiss(loadingToast)
+      const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro ao salvar o curso."
+      toast.error(errorMessage)
     }
   }
 
@@ -497,6 +526,7 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
             </CardContent>
           </Card>
 
+           {/* ************* Card Detalhes de slug e etiqueta) ******************/}
           <Card className="shadow-2xl border border-border/60 bg-card">
             <CardHeader className="flex flex-col gap-4">
               <div className="flex items-center gap-2 font-semibold text-foreground">
@@ -535,31 +565,10 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="image"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Imagem de capa</FormLabel>
-                    <FormControl>
-                      <ImageUpload
-                        value={field.value}
-                        onChange={(value) => field.onChange(value ?? undefined)}
-                        label={undefined}
-                        description={undefined}
-                        previewClassName="h-[500px] w-full max-w-[430px]"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Faça upload de uma imagem 16:9 ou cole uma URL existente hospedada em /public/assets/images/cursos.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </CardContent>
           </Card>
 
+        {/* ************* Card Financeiro ******************/}
           <Card className="shadow-2xl border border-border/60 bg-card">
             <CardHeader className="flex flex-col gap-4">
               <div className="flex items-center gap-2 font-semibold text-foreground">
@@ -585,7 +594,7 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                         onValueChange={(val) => field.onChange(val ?? undefined)}
                         placeholder="R$ 0,00"
                         onBlur={field.onBlur}
-                      />
+                        />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -605,12 +614,12 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                         onValueChange={(val) => field.onChange(val ?? undefined)}
                         placeholder="R$ 0,00"
                         onBlur={field.onBlur}
-                      />
+                        />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+                />
               <FormField
                 control={form.control}
                 name="precoMatricula"
@@ -625,12 +634,12 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                         onValueChange={(val) => field.onChange(val ?? undefined)}
                         placeholder="R$ 0,00"
                         onBlur={field.onBlur}
-                      />
+                        />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+                />
               <FormField
                 control={form.control}
                 name="monthlyPrice"
@@ -643,7 +652,7 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+                />
               <FormField
                 control={form.control}
                 name="ctaLabel"
@@ -656,7 +665,7 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+                />
               <FormField
                 control={form.control}
                 name="moreInfoUrl"
@@ -669,16 +678,98 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                     <FormMessage />
                   </FormItem>
                 )}
+                />
+            </CardContent>
+          </Card>
+
+          {/* ************* Card Mídias do curso ******************/}
+          <Card className="shadow-2xl border border-border/60 bg-card">
+            <CardHeader className="flex flex-col gap-4">
+              <div className="flex items-center gap-2 font-semibold text-foreground">
+                <ImageIcon className="size-4" strokeWidth={2.5} aria-hidden="true" />
+                <span className="text-xs uppercase tracking-[0.2em] font-semibold text-foreground">
+                  Mídias do Curso
+                </span>
+              </div>
+              <CardDescription>Faça upload da imagem de capa e vídeo de apresentação do curso.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="image_folder"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Imagem de capa</FormLabel>
+                    <FormControl>
+                      <FileUpload
+                        onChange={(files) => {
+                          const file = files[0]
+                          if (file) {
+                            setImageFile(file)
+                            const imageUrl = URL.createObjectURL(file)
+                            field.onChange(imageUrl)
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Faça upload de uma imagem 16:9.
+                    </FormDescription>
+                    <FormMessage />
+                    {field.value && (
+                      <div className="mt-4">
+                        <img
+                          src={field.value}
+                          alt="Preview da imagem"
+                          className="w-1/3 mx-auto rounded-md"
+                        />
+                      </div>
+                    )}
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="videoUrl"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Vídeo da Landing Page</FormLabel>
+                    <FormControl>
+                      <FileUpload
+                        onChange={(files) => {
+                          const file = files[0]
+                          if (file) {
+                            setVideoFile(file)
+                            const videoUrl = URL.createObjectURL(file)
+                            field.onChange(videoUrl)
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    {field.value && (
+                      <div className="mt-4">
+                        <video
+                          src={field.value}
+                          controls
+                          className="w-1/3 mx-auto rounded-md"
+                        />
+                      </div>
+                    )}
+                  </FormItem>
+                )}
               />
             </CardContent>
           </Card>
 
+       
+          {/* ************* Card Descrição resumida ******************/}
           <Card className="shadow-2xl border border-border/60 bg-card">
             <CardHeader className="flex flex-col gap-4">
               <div className="flex items-center gap-2 font-semibold text-foreground">
                 <AlignLeft className="size-4" strokeWidth={2.5} aria-hidden="true" />
                 <span className="text-xs uppercase tracking-[0.2em] font-semibold text-foreground">
-                  Descrição
+                  Descrição resumida
                 </span>
               </div>
               <CardDescription>Apresente brevemente o curso no catálogo. O conteúdo continuará a ser salvo em HTML.</CardDescription>
@@ -692,7 +783,6 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                 }
                 clearOnSend={false}
                 placeholder="Resumo do curso..."
-                sendLabel="Aplicar"
                 textareaClassName="min-h-[220px]"
                 aria-label="Descrição resumida do curso"
               />
@@ -716,7 +806,6 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                 onSend={(message) => form.setValue("fullDescription", message, { shouldDirty: true })}
                 clearOnSend={false}
                 placeholder="Detalhes completos do curso..."
-                sendLabel="Aplicar"
                 textareaClassName="min-h-[320px]"
                 aria-label="Descrição detalhada do curso"
               />
@@ -740,7 +829,6 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                 onSend={(message) => form.setValue("justificativa", message, { shouldDirty: true })}
                 clearOnSend={false}
                 placeholder="Por que ofertar este curso?"
-                sendLabel="Aplicar"
                 textareaClassName="min-h-[260px]"
                 aria-label="Justificativa do curso"
               />
@@ -764,7 +852,6 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                 onSend={(message) => form.setValue("objetivos", message, { shouldDirty: true })}
                 clearOnSend={false}
                 placeholder="Objetivos do curso..."
-                sendLabel="Aplicar"
                 textareaClassName="min-h-[260px]"
                 aria-label="Objetivos do curso"
               />
@@ -788,7 +875,6 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                 onSend={(message) => form.setValue("publico", message, { shouldDirty: true })}
                 clearOnSend={false}
                 placeholder="Profissionais indicados..."
-                sendLabel="Aplicar"
                 textareaClassName="min-h-[260px]"
                 aria-label="Público-alvo do curso"
               />

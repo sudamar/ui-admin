@@ -5,20 +5,20 @@ import { useParams } from "next/navigation"
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { CourseForm } from "@/features/courses/components/course-form"
-import { coursesService, type CourseDetails } from "@/services/cursos/cursos-service"
+import { cursosService, type CourseDetails } from "@/services/cursos/cursos-service"
 
 export default function EditCoursePage() {
   const params = useParams<{ id: string }>()
-  const courseId = Number(params?.id)
+  const courseId = params?.id
   const [course, setCourse] = useState<CourseDetails | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (Number.isNaN(courseId)) return
+    if (!courseId) return
 
     const load = async () => {
       setLoading(true)
-      const data = await coursesService.getById(courseId)
+      const data = await cursosService.getById(courseId)
       setCourse(data ?? null)
       setLoading(false)
     }
@@ -48,7 +48,7 @@ export default function EditCoursePage() {
       mode="edit"
       initialData={course}
       onDelete={async () => {
-        return coursesService.delete(course.id)
+        return cursosService.delete(course.id)
       }}
     />
   )

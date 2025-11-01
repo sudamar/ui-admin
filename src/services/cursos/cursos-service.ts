@@ -1,10 +1,4 @@
-import cursosData from "@/data/cursos/cursos.json"
-
-export type CourseAvailability =
-  | "promotion"
-  | "open"
-  | "limited"
-  | "sold-out"
+export type CourseAvailability = "promotion" | "open" | "limited" | "sold-out"
 
 export interface CourseTag {
   label: string
@@ -12,75 +6,122 @@ export interface CourseTag {
   className?: string
 }
 
-export interface CoursePreview {
-  id: number
+export interface CursoHighlight {
+  id: string
+  icon: string
   title: string
   description: string
-  category: string
+  bgColor?: string
+  iconColor?: string
+  ordem: number
+}
+
+export interface CursoProfessor {
+  id: string
+  professorId: string
+  papel?: string
+}
+
+export interface Curso {
+  id: string
+  slug: string
+  title: string
+  subtitle?: string
+  description?: string
+  fullDescription?: Record<string, unknown>
+  image_folder?: string
+  category?: string
   categoryLabel?: string
-  image?: string
   price?: number
   originalPrice?: number
-  availability: CourseAvailability
-  tags: CourseTag[]
-}
-
-export interface CourseHero {
-  type?: string
-  source?: string
-  alt?: string
-  fallbackImage?: string
-}
-
-export interface CourseDetails extends CoursePreview {
-  slug: string
-  subtitle?: string
-  fullDescription?: string[]
-  hero?: CourseHero
+  precoMatricula?: number
   modalidade?: string
   duration?: string
   workload?: string
   startDate?: string
   maxStudents?: string
   certificate?: string
+  monthlyPrice?: string
+  justificativa?: Record<string, unknown>
+  objetivos?: Record<string, unknown>
+  publico?: Record<string, unknown>
+  investmentDetails?: Record<string, unknown>
+  additionalInfo?: Record<string, unknown>
+  coordenadorId?: string
+  createdAt?: string
+  updatedAt?: string
+  videoUrl?: string
+  imageUrl?: string
+  highlights?: CursoHighlight[]
+  professores?: CursoProfessor[]
+  availability?: CourseAvailability
+  tags?: CourseTag[]
+}
+
+// Interface para preview (compatibilidade com código existente)
+export interface CoursePreview {
+  id: string
+  title: string
+  description: string
+  category: string
+  categoryLabel?: string
+  image_folder?: string
   price?: number
   originalPrice?: number
-  precoMatricula?: number
-  monthlyPrice?: string
-  justificativa?: string[]
-  objetivos?: string[]
-  publico?: string[]
-  highlights?: Array<{
-    title?: string
-    description?: string
-    icon?: string
-    bgColor?: string
-    iconColor?: string
-  }>
-  ctaLabel?: string
-  moreInfoUrl?: string
   availability: CourseAvailability
+  tags: CourseTag[]
 }
 
-const AVAILABILITY_SEQUENCE: CourseAvailability[] = [
-  "promotion",
-  "open",
-  "limited",
-  "sold-out",
-]
+type CursosResponse =
+  | { success: true; cursos: Curso[] }
+  | { success: true; curso: Curso }
+  | { success: false; message?: string }
 
-function computeAvailability(index: number): CourseAvailability {
-  return AVAILABILITY_SEQUENCE[index % AVAILABILITY_SEQUENCE.length]
+const API_URL = "/api/cursos"
+
+async function handleResponse(response: Response): Promise<CursosResponse> {
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as
+      | { message?: string }
+      | null
+    throw new Error(
+      errorBody?.message ?? "Não foi possível processar a solicitação.",
+    )
+  }
+
+  return (await response.json()) as CursosResponse
 }
 
-function buildTags(course: CourseDetails): CourseTag[] {
-  const tags: CourseTag[] = []
+// Funções auxiliares para compatibilidade
+function computeAvailability(curso: Curso): CourseAvailability {
+  // Lógica para determinar disponibilidade
+  // Por enquanto, retorna "open" por padrão, mas pode ser baseado em:
+  // - Promoção: se originalPrice > price
+  // - Vagas limitadas: baseado em maxStudents
+  // - Esgotado: baseado em algum campo futuro
 
   if (
-    typeof course.originalPrice === "number" &&
-    typeof course.price === "number" &&
-    course.originalPrice > course.price
+    typeof curso.originalPrice === "number" &&
+    typeof curso.price === "number" &&
+    curso.originalPrice > curso.price
   ) {
+    return "promotion"
+  }
+
+  // Se tiver maxStudents definido e for um número baixo, pode ser "limited"
+  const maxStudents = curso.maxStudents ? parseInt(curso.maxStudents, 10) : 0
+  if (maxStudents > 0 && maxStudents <= 10) {
+    return "limited"
+  }
+
+  return "open"
+}
+
+function buildTags(curso: Curso): CourseTag[] {
+  const tags: CourseTag[] = []
+  const availability = curso.availability ?? computeAvailability(curso)
+
+  if (availability === "promotion") {
     tags.push({
       label: "Promoção",
       variant: "default",
@@ -88,7 +129,7 @@ function buildTags(course: CourseDetails): CourseTag[] {
     })
   }
 
-  switch (course.availability) {
+  switch (availability) {
     case "open":
       tags.push({
         label: "Vagas em aberto",
@@ -113,143 +154,156 @@ function buildTags(course: CourseDetails): CourseTag[] {
   return tags
 }
 
-function stripHtml(value?: string) {
-  if (!value) return ""
-  return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
-}
+function enrichCurso(curso: Curso): Curso {
+  const availability = curso.availability ?? computeAvailability(curso)
+  const tags = curso.tags ?? buildTags({ ...curso, availability })
 
-const rawCourses: CourseDetails[] = cursosData.map((curso, index) => {
-  const availability = computeAvailability(index)
   return {
-    id: curso.id,
-    slug: curso.slug,
-    title: curso.title,
-    subtitle: curso.subtitle,
-    description: curso.description ?? "",
-    fullDescription: curso.fullDescription ?? [],
-    hero: curso.hero,
-    category: curso.category ?? "outros",
-    categoryLabel: curso.categoryLabel,
-    image: curso.image,
-    price: curso.price,
-    originalPrice: curso.originalPrice,
-    precoMatricula: curso.precoMatricula,
-    monthlyPrice: curso.monthlyPrice,
-    modalidade: curso.modalidade,
-    duration: curso.duration,
-    workload: curso.workload,
-    startDate: curso.startDate,
-    maxStudents: curso.maxStudents,
-    certificate: curso.certificate,
-    justificativa: curso.justificativa ?? [],
-    objetivos: curso.objetivos ?? [],
-    publico: curso.publico ?? [],
-    highlights: curso.highlights ?? [],
-    ctaLabel: curso.ctaLabel,
-    moreInfoUrl: curso.moreInfoUrl,
+    ...curso,
     availability,
-    tags: [],
+    tags,
   }
-})
-
-rawCourses.forEach((course, index) => {
-  rawCourses[index].tags = buildTags(course)
-})
-
-const coursesStore: CoursePreview[] = rawCourses.map((course) => ({
-  id: course.id,
-  title: course.title,
-  description: stripHtml(course.description) || course.description || "",
-  category: course.category,
-  categoryLabel: course.categoryLabel,
-  image: course.image,
-  price: course.price,
-  originalPrice: course.originalPrice,
-  availability: course.availability,
-  tags: buildTags(course),
-}))
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export const coursesService = {
+function toCoursePreview(curso: Curso): CoursePreview {
+  const enriched = enrichCurso(curso)
+  return {
+    id: enriched.id,
+    title: enriched.title,
+    description: enriched.description ?? "",
+    category: enriched.category ?? "outros",
+    categoryLabel: enriched.categoryLabel,
+    image_folder: enriched.image_folder,
+    price: enriched.price,
+    originalPrice: enriched.originalPrice,
+    availability: enriched.availability!,
+    tags: enriched.tags!,
+  }
+}
+
+const serializePayload = (input: Omit<Curso, "id" | "createdAt" | "updatedAt">) => ({
+  slug: input.slug,
+  title: input.title,
+  subtitle: input.subtitle ?? "",
+  description: input.description ?? "",
+  fullDescription: input.fullDescription ?? null,
+  image_folder: input.image_folder ?? "",
+  category: input.category ?? "",
+  categoryLabel: input.categoryLabel ?? "",
+  price: input.price ?? 0,
+  originalPrice: input.originalPrice ?? 0,
+  precoMatricula: input.precoMatricula ?? 0,
+  modalidade: input.modalidade ?? "",
+  duration: input.duration ?? "",
+  workload: input.workload ?? "",
+  startDate: input.startDate ?? "",
+  maxStudents: input.maxStudents ?? "",
+  certificate: input.certificate ?? "",
+  monthlyPrice: input.monthlyPrice ?? "",
+  justificativa: input.justificativa ?? null,
+  objetivos: input.objetivos ?? null,
+  publico: input.publico ?? null,
+  investmentDetails: input.investmentDetails ?? null,
+  additionalInfo: input.additionalInfo ?? null,
+  coordenadorId: input.coordenadorId ?? null,
+  videoUrl: input.videoUrl ?? "",
+  imageUrl: input.imageUrl ?? "",
+  highlights: input.highlights ?? [],
+  professores: input.professores ?? [],
+})
+
+export const cursosService = {
   async getAll(): Promise<CoursePreview[]> {
-    await delay(200)
-    return [...coursesStore].sort((a, b) =>
-      a.title.localeCompare(b.title, "pt-BR", { sensitivity: "base" }),
-    )
-  },
-  async getById(id: number): Promise<CourseDetails | undefined> {
-    await delay(150)
-    return rawCourses.find((course) => course.id === id)
-  },
-  async create(course: Omit<CourseDetails, "id" | "tags">): Promise<CourseDetails> {
-    await delay(250)
-    const nextId = rawCourses.length > 0 ? Math.max(...rawCourses.map((c) => c.id)) + 1 : 1
-    const details: CourseDetails = {
-      ...course,
-      id: nextId,
-      tags: [],
-      description: course.description ?? "",
-      category: course.category ?? "outros",
-    }
-    details.tags = buildTags(details)
-    rawCourses.push(details)
-    coursesStore.push({
-      id: details.id,
-      title: details.title,
-      description: stripHtml(details.description) || details.description || "",
-      category: details.category,
-      categoryLabel: details.categoryLabel,
-      image: details.image,
-      price: details.price,
-      originalPrice: details.originalPrice,
-      availability: details.availability,
-      tags: details.tags,
+    const response = await fetch(API_URL, {
+      credentials: "include",
     })
-    return details
+
+    const result = await handleResponse(response)
+    const cursos = "cursos" in result ? result.cursos : [result.curso]
+
+    return cursos
+      .map(enrichCurso)
+      .map(toCoursePreview)
+      .sort((a, b) =>
+        a.title.localeCompare(b.title, "pt-BR", { sensitivity: "base" }),
+      )
   },
-  async update(id: number, partial: Partial<CourseDetails>): Promise<CourseDetails | undefined> {
-    await delay(250)
-    const index = rawCourses.findIndex((course) => course.id === id)
-    if (index === -1) return undefined
 
-    rawCourses[index] = {
-      ...rawCourses[index],
-      ...partial,
-    }
-    rawCourses[index].tags = buildTags(rawCourses[index])
+  async getById(id: string): Promise<Curso | null> {
+    const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
+      credentials: "include",
+    })
 
-    const previewIndex = coursesStore.findIndex((course) => course.id === id)
-    if (previewIndex !== -1) {
-      coursesStore[previewIndex] = {
-        id: rawCourses[index].id,
-        title: rawCourses[index].title,
-        description: stripHtml(rawCourses[index].description) || rawCourses[index].description || "",
-        category: rawCourses[index].category,
-        categoryLabel: rawCourses[index].categoryLabel,
-        image: rawCourses[index].image,
-        price: rawCourses[index].price,
-        originalPrice: rawCourses[index].originalPrice,
-        availability: rawCourses[index].availability,
-        tags: rawCourses[index].tags,
-      }
+    if (response.status === 404) {
+      return null
     }
 
-    return rawCourses[index]
+    const result = await handleResponse(response)
+    const curso = "curso" in result ? result.curso : result.cursos[0]
+
+    return curso ? enrichCurso(curso) : null
   },
-  async delete(id: number): Promise<boolean> {
-    await delay(200)
-    const index = rawCourses.findIndex((course) => course.id === id)
-    if (index === -1) return false
 
-    rawCourses.splice(index, 1)
-    const previewIndex = coursesStore.findIndex((course) => course.id === id)
-    if (previewIndex !== -1) {
-      coursesStore.splice(previewIndex, 1)
+  async getBySlug(slug: string): Promise<Curso | null> {
+    const response = await fetch(`${API_URL}?slug=${encodeURIComponent(slug)}`, {
+      credentials: "include",
+    })
+
+    if (response.status === 404) {
+      return null
     }
 
-    return true
+    const result = await handleResponse(response)
+    const curso = "curso" in result ? result.curso : result.cursos[0]
+
+    return curso ? enrichCurso(curso) : null
+  },
+
+  async create(data: Omit<Curso, "id" | "createdAt" | "updatedAt">): Promise<Curso> {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(serializePayload(data)),
+    })
+
+    const result = await handleResponse(response)
+    const curso = "curso" in result ? result.curso : result.cursos[0]
+
+    return enrichCurso(curso)
+  },
+
+  async update(id: string, data: Omit<Curso, "id" | "createdAt" | "updatedAt">): Promise<Curso> {
+    const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(serializePayload(data)),
+    })
+
+    const result = await handleResponse(response)
+    const curso = "curso" in result ? result.curso : result.cursos[0]
+
+    return enrichCurso(curso)
+  },
+
+  async delete(id: string): Promise<void> {
+    const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      const errorBody = (await response.json().catch(() => null)) as
+        | { message?: string }
+        | null
+      throw new Error(
+        errorBody?.message ?? "Não foi possível remover o curso.",
+      )
+    }
   },
 }

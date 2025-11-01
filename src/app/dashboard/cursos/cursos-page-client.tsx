@@ -38,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { coursesService, type CoursePreview } from "@/services/cursos/cursos-service"
+import { cursosService, type CoursePreview } from "@/services/cursos/cursos-service"
 import { cn } from "@/lib/utils"
 
 const availabilityLabels: Record<CoursePreview["availability"], string> = {
@@ -58,7 +58,7 @@ export function CursosPageClient() {
     const loadCourses = async () => {
       setLoading(true)
       try {
-        const data = await coursesService.getAll()
+        const data = await cursosService.getAll()
         const sorted = [...data].sort((a, b) =>
           a.title.localeCompare(b.title, "pt-BR", { sensitivity: "base" })
         )
@@ -72,6 +72,19 @@ export function CursosPageClient() {
 
     void loadCourses()
   }, [])
+
+  const handleDelete = async (id: string, title: string) => {
+    const shouldDelete = confirm(`Deseja realmente remover o curso "${title}"?`)
+    if (!shouldDelete) return
+
+    try {
+      await cursosService.delete(id)
+      setCourses((prev) => prev.filter((course) => course.id !== id))
+    } catch (error) {
+      console.error("Erro ao remover curso:", error)
+      alert("Não foi possível remover o curso. Tente novamente.")
+    }
+  }
 
   const filteredCourses = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
@@ -176,9 +189,9 @@ export function CursosPageClient() {
                     <TableRow key={course.id} className="hover:bg-muted/50 transition-colors">
                       <TableCell>
                         <div className="relative h-16 w-24 overflow-hidden rounded-md border bg-muted">
-                          {course.image ? (
+                          {course.image_folder ? (
                             <Image
-                              src={course.image}
+                              src={course.image_folder}
                               alt={course.title}
                               fill
                               sizes="96px"
@@ -192,12 +205,7 @@ export function CursosPageClient() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-semibold leading-none">{course.title}</div>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {course.description}
-                          </p>
-                        </div>
+                        <div className="font-semibold leading-none">{course.title}</div>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground capitalize">
                         {course.categoryLabel ?? course.category.replace(/-/g, " ")}
@@ -263,7 +271,10 @@ export function CursosPageClient() {
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive focus:text-destructive">
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => handleDelete(course.id, course.title)}
+                            >
                               Remover curso
                             </DropdownMenuItem>
                           </DropdownMenuContent>
