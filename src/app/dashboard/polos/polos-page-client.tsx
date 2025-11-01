@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
-import { Building, MapPin, MoreHorizontal, Phone, Plus, Trash2 } from "lucide-react"
+import { Building, Eye, MapPin, Pencil, Phone, Plus, Trash2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -26,14 +26,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -621,40 +613,33 @@ export function PolosPageClient() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => openDetails(polo)}>
-                              Ver detalhes
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/dashboard/polos/${polo.id}/edit`}>
-                                Editar
-                              </Link>
-                            </DropdownMenuItem>
-                            {polo.mapUrl ? (
-                              <DropdownMenuItem asChild>
-                                <Link href={polo.mapUrl} target="_blank" rel="noreferrer">
-                                  Ver mapa
-                                </Link>
-                              </DropdownMenuItem>
-                            ) : null}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(polo.id)}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Excluir polo
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        </TableCell>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8"
+                            onClick={() => openDetails(polo)}
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">Ver detalhes</span>
+                          </Button>
+                          <Button size="icon" variant="outline" className="h-8 w-8" asChild>
+                            <Link href={`/dashboard/polos/${polo.id}/edit`}>
+                              <Pencil className="h-4 w-4" />
+                              <span className="sr-only">Editar</span>
+                            </Link>
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            className="h-8 w-8"
+                            onClick={() => handleDelete(polo.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Excluir polo</span>
+                          </Button>
+                        </div>
+                      </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -749,44 +734,40 @@ export function PolosPageClient() {
                         >
                           Ver detalhes
                         </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              className="w-full justify-center sm:w-auto"
-                            >
-                              Ações
-                              <MoreHorizontal className="ml-2 h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => openDetails(polo)}>
-                              Ver detalhes
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/dashboard/polos/${polo.id}/edit`}>
-                                Editar
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9"
+                            onClick={() => openDetails(polo)}
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">Ver detalhes</span>
+                          </Button>
+                          {polo.mapUrl ? (
+                            <Button variant="outline" size="icon" className="h-9 w-9" asChild>
+                              <Link href={polo.mapUrl} target="_blank" rel="noreferrer">
+                                <MapPin className="h-4 w-4" />
+                                <span className="sr-only">Ver mapa</span>
                               </Link>
-                            </DropdownMenuItem>
-                            {polo.mapUrl ? (
-                              <DropdownMenuItem asChild>
-                                <Link href={polo.mapUrl} target="_blank" rel="noreferrer">
-                                  Ver mapa
-                                </Link>
-                              </DropdownMenuItem>
-                            ) : null}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => handleDelete(polo.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Excluir polo
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                            </Button>
+                          ) : null}
+                          <Button variant="outline" size="icon" className="h-9 w-9" asChild>
+                            <Link href={`/dashboard/polos/${polo.id}/edit`}>
+                              <Pencil className="h-4 w-4" />
+                              <span className="sr-only">Editar</span>
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="h-9 w-9"
+                            onClick={() => handleDelete(polo.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Excluir polo</span>
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

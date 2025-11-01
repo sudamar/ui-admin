@@ -11,8 +11,22 @@ export async function GET(request: Request) {
 
   try {
     const response = await fetch(url);
-    const data = await response.json();
-    return NextResponse.json(data);
+    const contentType = response.headers.get("content-type") ?? "";
+
+    if (contentType.includes("application/json")) {
+      const data = await response.json();
+      return NextResponse.json(data, { status: response.status });
+    }
+
+    const text = await response.text();
+    return NextResponse.json(
+      {
+        success: response.ok,
+        status: response.status,
+        body: text,
+      },
+      { status: response.status },
+    );
   } catch (error) {
     console.error("Revalidate proxy error:", error);
 
