@@ -1,26 +1,32 @@
 'use client'
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
-
 import {
   AlignLeft,
   FileText,
-  Image as ImageIcon,
+  ImageIcon,
   Lightbulb,
   ScrollText,
-  SlidersHorizontal,
   Send,
+  SlidersHorizontal,
   Target,
   Users,
   Wallet,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card"
 import {
   Form,
   FormControl,
@@ -31,10 +37,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { FileUpload } from "@/components/ui/file-upload"
-import { CurrencyInput } from "@/components/ui/currency-input"
-import { ImageUpload } from "@/components/ui/image-upload"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -42,12 +44,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ComposerInput } from "@/components/ui/composer-input"
-import {
-  cursosService,
-  type CourseAvailability,
-  type CourseDetails,
-} from "@/services/cursos/cursos-service"
+import { RichTextEditorHybrid } from "@/components/shared/rich-text-editor-hybrid"
+import { FileUpload } from "@/components/ui/file-upload"
+import { CurrencyInput } from "@/components/ui/currency-input"
+import { cursosService, type CourseDetails, type CourseAvailability } from "@/services/cursos/cursos-service"
+import { professoresService } from "@/services/professores/professores-service"
+import type { Professor } from "@/features/professores/types"
+
+// Função para capitalizar primeira letra
+function capitalize(str: string): string {
+  if (!str) return str
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+// Enum de categorias baseado no database categoria_cursos
+const categoryCourseOptions = [
+  { value: " ", label: "Não informado" },
+  { value: "especialização", label: "Especialização" },
+  { value: "graduação", label: "Graduação" },
+  { value: "formação", label: "Formação" },
+  { value: "extensão", label: "Extensão" },
+  { value: "congressos", label: "Congressos" },
+] as const
 
 const availabilityOptions: { value: CourseAvailability; label: string }[] = [
   { value: "promotion", label: "Promoção" },
@@ -61,70 +79,46 @@ const currencyField = z
   .min(0, "Informe um valor maior ou igual a zero")
   .optional()
 
-
-
-function hasHtml(value: string) {
-  return /<\/?[a-z][\s\S]*>/i.test(value)
-}
-
-function normalizeParagraph(value: string) {
+function htmlToHtmlArray(value?: string): string[] {
+  if (!value) return []
   const trimmed = value.trim()
-  if (!trimmed) return ""
-  if (hasHtml(trimmed)) return trimmed
-  const withBreaks = trimmed.replace(/\n/g, "<br />")
-  return `<p>${withBreaks}</p>`
-}
+  if (!trimmed) return []
 
-function htmlToPlainText(value?: string) {
-  if (!value) return ""
-  if (!hasHtml(value)) return value
+  // Se já é HTML, dividir pelos elementos de bloco
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(trimmed, 'text/html')
+  const elements = Array.from(doc.body.children)
 
-  return value
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/(p|div|section|article|blockquote|h[1-6])>/gi, "\n\n")
-    .replace(/<\/li>/gi, "\n")
-    .replace(/<li>/gi, "- ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/<[^>]+>/g, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .replace(/[ \t]+\n/g, "\n")
-    .trim()
-}
-
-function htmlArrayToPlainText(values?: string[]) {
-  if (!values || values.length === 0) return ""
-  return values
-    .map((item) => htmlToPlainText(item))
-    .filter(Boolean)
-    .join("\n\n")
-}
-
-function composerTextToHtml(value?: string) {
-  if (!value) return ""
-  const trimmed = value.trim()
-  if (!trimmed) return ""
-  if (hasHtml(trimmed)) return trimmed
-
-  const blocks = trimmed
-    .split(/\n{2,}/)
-    .map((block) => block.trim())
-    .filter(Boolean)
-
-  if (blocks.length === 0) return ""
-  if (blocks.length === 1) {
-    return normalizeParagraph(blocks[0])
+  if (elements.length === 0) {
+    // Caso não tenha elementos, retornar como parágrafo único
+    return [trimmed]
   }
 
-  return blocks.map((block) => normalizeParagraph(block)).join("")
+  return elements.map(el => el.outerHTML).filter(Boolean)
 }
 
-function composerTextToHtmlArray(value?: string) {
-  if (!value) return []
-  return value
-    .split(/\n{2,}/)
-    .map((block) => block.trim())
+function arrayToRecord(arr: string[]): Record<string, unknown> {
+  if (!arr || arr.length === 0) return {}
+
+  // Converter array para objeto com índices numéricos
+  return arr.reduce((acc, item, index) => {
+    acc[index.toString()] = item
+    return acc
+  }, {} as Record<string, unknown>)
+}
+
+function recordToArray(record?: Record<string, unknown> | string[]): string[] {
+  // Se já é array, retorna como está
+  if (Array.isArray(record)) return record
+
+  // Se é null, undefined ou não é objeto, retorna array vazio
+  if (!record || typeof record !== 'object') return []
+
+  // Converter Record para array, mantendo a ordem dos índices
+  return Object.keys(record)
+    .sort((a, b) => parseInt(a) - parseInt(b))
+    .map(key => String(record[key]))
     .filter(Boolean)
-    .map((block) => normalizeParagraph(block))
 }
 
 type CourseFormMode = "create" | "edit"
@@ -140,49 +134,46 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
   const router = useRouter()
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [professores, setProfessores] = useState<Professor[]>([])
 
-  const courseSchema = useMemo(() => {
-    const baseSchema = z.object({
-      title: z.string().min(1, "Informe um título"),
-      subtitle: z.string().optional(),
-      slug:
-        z
-          .string()
-          .min(1, "Informe o slug")
-          .regex(/^[a-z0-9-]+$/, "Use apenas letras minúsculas, números e hífen"),
-      category: z.string().min(1, "Informe a categoria"),
-      categoryLabel: z.string().optional(),
-      modalidade: z.string().optional(),
-      duration: z.string().optional(),
-      workload: z.string().optional(),
-      startDate: z.string().optional(),
-      maxStudents: z.string().optional(),
-      certificate: z.string().optional(),
-      image_folder: z.string().optional(),
-      price: currencyField,
-      originalPrice: currencyField,
-      precoMatricula: currencyField,
-      monthlyPrice: z.string().optional(),
-      description: z.string().optional(),
-      fullDescription: z.string().optional(),
-      justificativa: z.string().optional(),
-      objetivos: z.string().optional(),
-      publico: z.string().optional(),
-      ctaLabel: z.string().optional(),
-      moreInfoUrl: z.string().optional(),
-      videoUrl: z.string().url("Informe uma URL válida").optional().or(z.literal("")),
-      availability: z.enum(["promotion", "open", "limited", "sold-out"]),
-    });
-
-    if (mode === 'create') {
-      return baseSchema.extend({
-        image_folder: z.string().min(1, "A imagem de capa é obrigatória"),
-        videoUrl: z.string().min(1, "O vídeo da landing page é obrigatório").url("Informe uma URL válida"),
-      });
+  useEffect(() => {
+    const fetchProfessores = async () => {
+      const data = await professoresService.getAll()
+      setProfessores(data)
     }
+    void fetchProfessores()
+  }, [])
 
-    return baseSchema;
-  }, [mode]);
+  const courseSchema = z.object({
+    title: z.string().min(1, "Informe um título"),
+    subtitle: z.string().optional(),
+    slug:
+      z
+        .string()
+        .min(1, "Informe o slug")
+        .regex(/^[a-z0-9-]+$/, "Use apenas letras minúsculas, números e hífen"),
+    category: z.string().min(1, "Informe a categoria"),
+    categoryLabel: z.string().optional(),
+    modalidade: z.string().optional(),
+    duration: z.string().optional(),
+    workload: z.string().optional(),
+    startDate: z.string().optional(),
+    maxStudents: z.string().optional(),
+    certificate: z.string().optional(),
+    image_folder: z.string().optional(),
+    price: currencyField,
+    originalPrice: currencyField,
+    precoMatricula: currencyField,
+    monthlyPrice: z.string().optional(),
+    shortDescription: z.string().optional(),
+    fullDescription: z.string().optional(),
+    justificativa: z.string().optional(),
+    objetivos: z.string().optional(),
+    publico: z.string().optional(),
+    videoUrl: z.string().optional(),
+    availability: z.enum(["promotion", "open", "limited", "sold-out"]),
+    coordenadorId: z.string().optional(),
+  });
 
   type CourseFormValues = z.infer<typeof courseSchema>;
 
@@ -205,15 +196,14 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
         originalPrice: undefined,
         precoMatricula: undefined,
         monthlyPrice: "",
-        description: "",
+        shortDescription: "",
         fullDescription: "",
         justificativa: "",
         objetivos: "",
         publico: "",
-        ctaLabel: "",
-        moreInfoUrl: "",
         videoUrl: "",
         availability: "open",
+        coordenadorId: "",
       }
     }
 
@@ -234,15 +224,14 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
       originalPrice: initialData.originalPrice,
       precoMatricula: initialData.precoMatricula,
       monthlyPrice: initialData.monthlyPrice ?? "",
-      description: htmlToPlainText(initialData.description),
-      fullDescription: htmlArrayToPlainText(initialData.fullDescription),
-      justificativa: htmlArrayToPlainText(initialData.justificativa),
-      objetivos: htmlArrayToPlainText(initialData.objetivos),
-      publico: htmlArrayToPlainText(initialData.publico),
-      ctaLabel: initialData.ctaLabel ?? "",
-      moreInfoUrl: initialData.moreInfoUrl ?? "",
+      shortDescription: initialData.shortDescription ?? "",
+      fullDescription: recordToArray(initialData.fullDescription as Record<string, unknown> | string[] | undefined).join(""),
+      justificativa: recordToArray(initialData.justificativa as Record<string, unknown> | string[] | undefined).join(""),
+      objetivos: recordToArray(initialData.objetivos as Record<string, unknown> | string[] | undefined).join(""),
+      publico: recordToArray(initialData.publico as Record<string, unknown> | string[] | undefined).join(""),
       videoUrl: initialData.videoUrl ?? "",
-      availability: initialData.availability,
+      availability: initialData.availability ?? "open",
+      coordenadorId: initialData.coordenadorId ?? "",
     }
   }, [initialData])
 
@@ -259,13 +248,17 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
     const loadingToast = toast.loading(isEdit ? "Atualizando curso..." : "Criando curso...")
 
     try {
+      console.log("=== [CourseForm] INÍCIO DO SUBMIT ===")
+      console.log("[CourseForm] Modo:", mode)
+      console.log("[CourseForm] Values do formulário:", values)
+
       const payload: CourseDetails = {
-        id: initialData?.id ?? 0,
+        id: initialData?.id ?? "",
         slug: values.slug,
         title: values.title,
         subtitle: values.subtitle,
-        description: composerTextToHtml(values.description),
-        fullDescription: composerTextToHtmlArray(values.fullDescription),
+        shortDescription: values.shortDescription,
+        fullDescription: htmlToHtmlArray(values.fullDescription),
         category: values.category,
         categoryLabel: values.categoryLabel,
         image_folder: values.image_folder,
@@ -279,35 +272,84 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
         startDate: values.startDate,
         maxStudents: values.maxStudents,
         certificate: values.certificate,
-        justificativa: composerTextToHtmlArray(values.justificativa),
-        objetivos: composerTextToHtmlArray(values.objetivos),
-        publico: composerTextToHtmlArray(values.publico),
-        ctaLabel: values.ctaLabel,
-        moreInfoUrl: values.moreInfoUrl,
+        justificativa: htmlToHtmlArray(values.justificativa),
+        objetivos: htmlToHtmlArray(values.objetivos),
+        publico: htmlToHtmlArray(values.publico),
         videoUrl: values.videoUrl,
         availability: values.availability,
+        coordenadorId: values.coordenadorId,
         tags: [],
       }
 
-      console.log("[CourseForm] Enviando payload:", payload)
+      console.log("[CourseForm] 1. Payload inicial (CourseDetails):", JSON.stringify(payload, null, 2))
 
-      const { id, tags, ...rest } = payload
+      const { id, tags, fullDescription, justificativa, objetivos, publico, ...rest } = payload
+
+      console.log("[CourseForm] 2. Arrays extraídos:")
+      console.log("  - fullDescription:", fullDescription)
+      console.log("  - justificativa:", justificativa)
+      console.log("  - objetivos:", objetivos)
+      console.log("  - publico:", publico)
+
+      // Converter arrays para Record para o backend
+      const backendPayload = {
+        ...rest,
+        fullDescription: arrayToRecord(fullDescription || []),
+        justificativa: arrayToRecord(justificativa || []),
+        objetivos: arrayToRecord(objetivos || []),
+        publico: arrayToRecord(publico || []),
+      }
+
+      console.log("[CourseForm] 3. Backend payload (com Records):", JSON.stringify(backendPayload, null, 2))
+      console.log("[CourseForm] 4. Chamando cursosService.update/create...")
+      console.log("[CourseForm]    - isEdit:", isEdit)
+      console.log("[CourseForm]    - initialData?.id:", initialData?.id)
+
       const saved = isEdit
-        ? await cursosService.update(initialData!.id, rest)
-        : await cursosService.create(rest)
+        ? await cursosService.update(initialData!.id, backendPayload)
+        : await cursosService.create(backendPayload)
+
+      console.log("[CourseForm] 5. Resposta do cursosService:")
+      console.log(JSON.stringify(saved, null, 2))
 
       if (!saved) {
+        console.error("[CourseForm] ❌ Resposta é null ou undefined")
         toast.dismiss(loadingToast)
         toast.error("Não foi possível salvar o curso.")
         return
       }
 
+      console.log("[CourseForm] 6. Convertendo Curso para CourseDetails...")
+
+      // Converter Curso para CourseDetails
+      const courseDetails: CourseDetails = {
+        ...saved,
+        fullDescription: recordToArray(saved.fullDescription),
+        justificativa: recordToArray(saved.justificativa),
+        objetivos: recordToArray(saved.objetivos),
+        publico: recordToArray(saved.publico),
+      }
+
+      console.log("[CourseForm] 7. CourseDetails final:")
+      console.log(JSON.stringify(courseDetails, null, 2))
+
       toast.dismiss(loadingToast)
       toast.success(isEdit ? "Curso atualizado com sucesso!" : "Curso criado com sucesso!")
-      await onSubmit?.(saved)
+
+      console.log("[CourseForm] 8. Chamando onSubmit callback...")
+      await onSubmit?.(courseDetails)
+
+      console.log("[CourseForm] 9. Redirecionando para /dashboard/cursos")
       router.push("/dashboard/cursos")
     } catch (error) {
+      console.error("[CourseForm] ========== ERRO CAPTURADO ==========")
       console.error("[CourseForm] Erro ao salvar curso:", error)
+      console.error("[CourseForm] Tipo do erro:", typeof error)
+      console.error("[CourseForm] Nome do erro:", error instanceof Error ? error.name : "Unknown")
+      console.error("[CourseForm] Mensagem do erro:", error instanceof Error ? error.message : String(error))
+      console.error("[CourseForm] Stack trace:", error instanceof Error ? error.stack : "N/A")
+      console.error("[CourseForm] ============================================")
+
       toast.dismiss(loadingToast)
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro ao salvar o curso."
       toast.error(errorMessage)
@@ -330,11 +372,28 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
     }
   }
 
+  const handleValidationError = (errors: typeof form.formState.errors) => {
+    const errorMessages = Object.entries(errors)
+      .map(([field, error]) => {
+        const fieldName = field === 'title' ? 'Título' :
+                         field === 'slug' ? 'Slug' :
+                         field === 'category' ? 'Tipo de curso' :
+                         field === 'image_folder' ? 'Imagem de capa' :
+                         field === 'videoUrl' ? 'Vídeo' :
+                         field
+        return `${fieldName}: ${error?.message || 'Campo inválido'}`
+      })
+
+    if (errorMessages.length > 0) {
+      errorMessages.forEach(msg => toast.error(msg))
+    }
+  }
+
   return (
     <Form {...form}>
       <form
         noValidate
-        onSubmit={form.handleSubmit(handleSubmit)}
+        onSubmit={form.handleSubmit(handleSubmit, handleValidationError)}
         className="space-y-6 pb-28"
       >
         <div className="space-y-6">
@@ -356,7 +415,7 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                   <FormItem className="md:col-span-2">
                     <FormLabel>Título do curso</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex.: Pós-Graduação em Psicologia Junguiana" {...field} />
+                      <Input placeholder="Ex.: Psicologia Junguiana" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -388,12 +447,11 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                       </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="nao-informado">Não informado</SelectItem>
-                        <SelectItem value="pos">Pós-Graduação</SelectItem>
-                        <SelectItem value="graduacao">Graduação</SelectItem>
-                        <SelectItem value="formacao">Formação</SelectItem>
-                        <SelectItem value="extensao">Extensão</SelectItem>
-                        <SelectItem value="congressos">Congressos</SelectItem>
+                        {categoryCourseOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value} className="capitalize">
+                            {capitalize(option.label)}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormDescription>Define a classificação principal usada no catálogo.</FormDescription>
@@ -496,33 +554,76 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="availability"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Disponibilidade</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {availabilityOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Controla os badges de status exibidos no catálogo.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="coordenadorId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Coordenador</FormLabel>
+                      <div className="flex gap-2">
+                        <Select value={field.value || undefined} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Selecione o coordenador" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {professores.map((professor) => (
+                              <SelectItem key={professor.id} value={professor.id}>
+                                {professor.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {field.value && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => field.onChange("")}
+                            title="Remover coordenador"
+                          >
+                            ✕
+                          </Button>
+                        )}
+                      </div>
+                      <FormDescription>
+                        Selecione o coordenador responsável pelo curso.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="availability"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Disponibilidade</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {availabilityOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Controla os badges de status exibidos no catálogo.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -653,32 +754,6 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                   </FormItem>
                 )}
                 />
-              <FormField
-                control={form.control}
-                name="ctaLabel"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2 lg:col-span-1">
-                    <FormLabel>Texto do botão</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Quero me inscrever" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-                />
-              <FormField
-                control={form.control}
-                name="moreInfoUrl"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2 lg:col-span-3">
-                    <FormLabel>URL de matrícula / mais informações</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://ijep.com.br/inscricao/..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-                />
             </CardContent>
           </Card>
 
@@ -772,19 +847,25 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                   Descrição resumida
                 </span>
               </div>
-              <CardDescription>Apresente brevemente o curso no catálogo. O conteúdo continuará a ser salvo em HTML.</CardDescription>
+              <CardDescription>Apresente brevemente o curso no catálogo. Use a formatação rica para destacar informações importantes.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ComposerInput
-                value={form.watch("description") ?? ""}
-                onValueChange={(val) => form.setValue("description", val, { shouldDirty: true })}
-                onSend={(message) =>
-                  form.setValue("description", message, { shouldDirty: true })
-                }
-                clearOnSend={false}
-                placeholder="Resumo do curso..."
-                textareaClassName="min-h-[220px]"
-                aria-label="Descrição resumida do curso"
+              <FormField
+                control={form.control}
+                name="shortDescription"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <RichTextEditorHybrid
+                        value={field.value ?? ""}
+                        onChange={(html) => field.onChange(html)}
+                        placeholder="Resumo do curso..."
+                        minHeight="220px"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </CardContent>
           </Card>
@@ -797,17 +878,25 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                   Descrição
                 </span>
               </div>
-              <CardDescription>Detalhe módulos, diferenciais e conteúdo completo. O texto será convertido para HTML na publicação.</CardDescription>
+              <CardDescription>Detalhe módulos, diferenciais e conteúdo completo. Use títulos, listas e negrito para organizar o conteúdo.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ComposerInput
-                value={form.watch("fullDescription") ?? ""}
-                onValueChange={(val) => form.setValue("fullDescription", val, { shouldDirty: true })}
-                onSend={(message) => form.setValue("fullDescription", message, { shouldDirty: true })}
-                clearOnSend={false}
-                placeholder="Detalhes completos do curso..."
-                textareaClassName="min-h-[320px]"
-                aria-label="Descrição detalhada do curso"
+              <FormField
+                control={form.control}
+                name="fullDescription"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <RichTextEditorHybrid
+                        value={field.value ?? ""}
+                        onChange={(html) => field.onChange(html)}
+                        placeholder="Detalhes completos do curso..."
+                        minHeight="320px"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </CardContent>
           </Card>
@@ -820,17 +909,25 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                   Narrativa
                 </span>
               </div>
-              <CardDescription>Explique o propósito do curso. Cada parágrafo será convertido em HTML.</CardDescription>
+              <CardDescription>Explique o propósito do curso. Use parágrafos e formatação para tornar o texto mais atraente.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ComposerInput
-                value={form.watch("justificativa") ?? ""}
-                onValueChange={(val) => form.setValue("justificativa", val, { shouldDirty: true })}
-                onSend={(message) => form.setValue("justificativa", message, { shouldDirty: true })}
-                clearOnSend={false}
-                placeholder="Por que ofertar este curso?"
-                textareaClassName="min-h-[260px]"
-                aria-label="Justificativa do curso"
+              <FormField
+                control={form.control}
+                name="justificativa"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <RichTextEditorHybrid
+                        value={field.value ?? ""}
+                        onChange={(html) => field.onChange(html)}
+                        placeholder="Por que ofertar este curso?"
+                        minHeight="260px"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </CardContent>
           </Card>
@@ -843,17 +940,25 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                   Estratégia
                 </span>
               </div>
-              <CardDescription>Defina metas de aprendizado. Separe objetivos com linhas em branco para gerar parágrafos distintos.</CardDescription>
+              <CardDescription>Defina metas de aprendizado. Use listas para organizar os objetivos de forma clara.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ComposerInput
-                value={form.watch("objetivos") ?? ""}
-                onValueChange={(val) => form.setValue("objetivos", val, { shouldDirty: true })}
-                onSend={(message) => form.setValue("objetivos", message, { shouldDirty: true })}
-                clearOnSend={false}
-                placeholder="Objetivos do curso..."
-                textareaClassName="min-h-[260px]"
-                aria-label="Objetivos do curso"
+              <FormField
+                control={form.control}
+                name="objetivos"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <RichTextEditorHybrid
+                        value={field.value ?? ""}
+                        onChange={(html) => field.onChange(html)}
+                        placeholder="Objetivos do curso..."
+                        minHeight="260px"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </CardContent>
           </Card>
@@ -866,17 +971,25 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
                   Público
                 </span>
               </div>
-              <CardDescription>Detalhe quem se beneficia diretamente do curso. O conteúdo será transformado em HTML automaticamente.</CardDescription>
+              <CardDescription>Detalhe quem se beneficia diretamente do curso. Use listas para destacar os diferentes perfis profissionais.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ComposerInput
-                value={form.watch("publico") ?? ""}
-                onValueChange={(val) => form.setValue("publico", val, { shouldDirty: true })}
-                onSend={(message) => form.setValue("publico", message, { shouldDirty: true })}
-                clearOnSend={false}
-                placeholder="Profissionais indicados..."
-                textareaClassName="min-h-[260px]"
-                aria-label="Público-alvo do curso"
+              <FormField
+                control={form.control}
+                name="publico"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <RichTextEditorHybrid
+                        value={field.value ?? ""}
+                        onChange={(html) => field.onChange(html)}
+                        placeholder="Profissionais indicados..."
+                        minHeight="260px"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </CardContent>
           </Card>
@@ -893,7 +1006,7 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
           </CardHeader>
           <CardFooter className="sticky bottom-4 left-0 right-0 z-40 flex flex-col gap-3 rounded-lg border border-border/60 bg-card/95 p-4 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/75 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-muted-foreground">
-              Os campos com texto usam o Composer em HTML. Revise a formatação antes de publicar.
+              Os campos de texto suportam formatação rica (negrito, listas, títulos). Revise o conteúdo antes de publicar.
             </div>
             <div className="flex flex-wrap gap-2">
               {isEdit ? (

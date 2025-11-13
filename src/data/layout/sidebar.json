@@ -15,6 +15,7 @@
         { "label": "Professores", "icon": "Users", "iconColor": "text-amber-500", "href": "/dashboard/professores", "show": true },
         { "label": "Membros analistas", "icon": "UserCog", "iconColor": "text-teal-500", "href": "/dashboard/membros-analistas", "show": true },
         { "label": "Cursos", "icon": "BookOpen", "iconColor": "text-indigo-500", "href": "/dashboard/cursos", "show": true },
+        { "label": "Novos cursos", "icon": "FolderPlus", "iconColor": "text-emerald-600", "href": "/dashboard/novos-cursos", "show": true },
         {
           "label": "Biblioteca",
           "icon": "FileText",

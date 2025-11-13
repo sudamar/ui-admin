@@ -27,8 +27,8 @@ export interface Curso {
   slug: string
   title: string
   subtitle?: string
-  description?: string
-  fullDescription?: Record<string, unknown>
+  shortDescription?: string
+  fullDescription?: Record<string, unknown> | string | null
   image_folder?: string
   category?: string
   categoryLabel?: string
@@ -42,11 +42,11 @@ export interface Curso {
   maxStudents?: string
   certificate?: string
   monthlyPrice?: string
-  justificativa?: Record<string, unknown>
-  objetivos?: Record<string, unknown>
-  publico?: Record<string, unknown>
-  investmentDetails?: Record<string, unknown>
-  additionalInfo?: Record<string, unknown>
+  justificativa?: Record<string, unknown> | string | null
+  objetivos?: Record<string, unknown> | string | null
+  publico?: Record<string, unknown> | string | null
+  investmentDetails?: Record<string, unknown> | string | null
+  additionalInfo?: Record<string, unknown> | string | null
   coordenadorId?: string
   createdAt?: string
   updatedAt?: string
@@ -62,7 +62,7 @@ export interface Curso {
 export interface CoursePreview {
   id: string
   title: string
-  description: string
+  shortDescription: string
   category: string
   categoryLabel?: string
   image_folder?: string
@@ -70,6 +70,14 @@ export interface CoursePreview {
   originalPrice?: number
   availability: CourseAvailability
   tags: CourseTag[]
+}
+
+// Tipo para detalhes do curso com campos estendidos para formulário
+export interface CourseDetails extends Omit<Curso, 'fullDescription' | 'justificativa' | 'objetivos' | 'publico'> {
+  fullDescription?: string[]
+  justificativa?: string[]
+  objetivos?: string[]
+  publico?: string[]
 }
 
 type CursosResponse =
@@ -80,16 +88,60 @@ type CursosResponse =
 const API_URL = "/api/cursos"
 
 async function handleResponse(response: Response): Promise<CursosResponse> {
+  console.log("[cursosService] handleResponse - Status:", response.status)
+  console.log("[cursosService] handleResponse - Headers:", Object.fromEntries(response.headers.entries()))
+
+  // Clonar a resposta para ler o body sem consumí-lo
+  const clonedResponse = response.clone()
+  const rawText = await clonedResponse.text()
+  console.log("[cursosService] handleResponse - Raw Response Text (length:", rawText.length, "):", rawText)
+
+  // Verificar se a resposta está vazia
+  if (!rawText || rawText.trim() === '') {
+    console.error("[cursosService] handleResponse - ⚠️ RESPOSTA VAZIA!")
+    console.error("[cursosService] handleResponse - Status:", response.status)
+    console.error("[cursosService] handleResponse - StatusText:", response.statusText)
+    console.error("[cursosService] handleResponse - URL:", response.url)
+    throw new Error("A API retornou uma resposta vazia")
+  }
+
   if (!response.ok) {
-    const errorBody = (await response.json().catch(() => null)) as
-      | { message?: string }
-      | null
+    let errorBody: { message?: string } | null = null
+
+    try {
+      errorBody = JSON.parse(rawText) as { message?: string }
+    } catch (e) {
+      console.error("[cursosService] handleResponse - Erro ao parsear JSON de erro:", e)
+      console.error("[cursosService] handleResponse - Raw text recebido:", rawText)
+    }
+
+    console.error("[cursosService] handleResponse - ERRO DETALHADO:", {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.url,
+      rawText,
+      errorBody,
+      headers: Object.fromEntries(response.headers.entries())
+    })
+
     throw new Error(
       errorBody?.message ?? "Não foi possível processar a solicitação.",
     )
   }
 
-  return (await response.json()) as CursosResponse
+  let jsonResponse: CursosResponse
+  try {
+    jsonResponse = JSON.parse(rawText) as CursosResponse
+    console.log("[cursosService] handleResponse - ✅ Sucesso (parsed):", JSON.stringify(jsonResponse, null, 2))
+  } catch (e) {
+    console.error("[cursosService] handleResponse - ❌ Erro ao parsear JSON de sucesso:", e)
+    console.error("[cursosService] handleResponse - Raw text:", rawText)
+    console.error("[cursosService] handleResponse - Raw text length:", rawText.length)
+    console.error("[cursosService] handleResponse - First 100 chars:", rawText.substring(0, 100))
+    throw new Error("Resposta da API não é um JSON válido")
+  }
+
+  return jsonResponse
 }
 
 // Funções auxiliares para compatibilidade
@@ -170,7 +222,7 @@ function toCoursePreview(curso: Curso): CoursePreview {
   return {
     id: enriched.id,
     title: enriched.title,
-    description: enriched.description ?? "",
+    shortDescription: enriched.shortDescription ?? "",
     category: enriched.category ?? "outros",
     categoryLabel: enriched.categoryLabel,
     image_folder: enriched.image_folder,
@@ -181,36 +233,43 @@ function toCoursePreview(curso: Curso): CoursePreview {
   }
 }
 
-const serializePayload = (input: Omit<Curso, "id" | "createdAt" | "updatedAt">) => ({
-  slug: input.slug,
-  title: input.title,
-  subtitle: input.subtitle ?? "",
-  description: input.description ?? "",
-  fullDescription: input.fullDescription ?? null,
-  image_folder: input.image_folder ?? "",
-  category: input.category ?? "",
-  categoryLabel: input.categoryLabel ?? "",
-  price: input.price ?? 0,
-  originalPrice: input.originalPrice ?? 0,
-  precoMatricula: input.precoMatricula ?? 0,
-  modalidade: input.modalidade ?? "",
-  duration: input.duration ?? "",
-  workload: input.workload ?? "",
-  startDate: input.startDate ?? "",
-  maxStudents: input.maxStudents ?? "",
-  certificate: input.certificate ?? "",
-  monthlyPrice: input.monthlyPrice ?? "",
-  justificativa: input.justificativa ?? null,
-  objetivos: input.objetivos ?? null,
-  publico: input.publico ?? null,
-  investmentDetails: input.investmentDetails ?? null,
-  additionalInfo: input.additionalInfo ?? null,
-  coordenadorId: input.coordenadorId ?? null,
-  videoUrl: input.videoUrl ?? "",
-  imageUrl: input.imageUrl ?? "",
-  highlights: input.highlights ?? [],
-  professores: input.professores ?? [],
-})
+const serializePayload = (input: Omit<Curso, "id" | "createdAt" | "updatedAt">) => {
+  console.log("[cursosService] serializePayload - INPUT:", JSON.stringify(input, null, 2))
+
+  const serialized = {
+    slug: input.slug,
+    title: input.title,
+    subtitle: input.subtitle ?? "",
+    shortDescription: input.shortDescription ?? "",
+    fullDescription: input.fullDescription ?? null,
+    image_folder: input.image_folder ?? "",
+    category: input.category ?? "",
+    categoryLabel: input.categoryLabel ?? "",
+    price: input.price ?? 0,
+    originalPrice: input.originalPrice ?? 0,
+    precoMatricula: input.precoMatricula ?? 0,
+    modalidade: input.modalidade ?? "",
+    duration: input.duration ?? "",
+    workload: input.workload ?? "",
+    startDate: input.startDate ?? "",
+    maxStudents: input.maxStudents ?? "",
+    certificate: input.certificate ?? "",
+    monthlyPrice: input.monthlyPrice ?? "",
+    justificativa: input.justificativa ?? null,
+    objetivos: input.objetivos ?? null,
+    publico: input.publico ?? null,
+    investmentDetails: input.investmentDetails ?? null,
+    additionalInfo: input.additionalInfo ?? null,
+    coordenadorId: input.coordenadorId ?? null,
+    videoUrl: input.videoUrl ?? "",
+    imageUrl: input.imageUrl ?? "",
+    highlights: input.highlights ?? [],
+    professores: input.professores ?? [],
+  }
+
+  console.log("[cursosService] serializePayload - OUTPUT:", JSON.stringify(serialized, null, 2))
+  return serialized
+}
 
 export const cursosService = {
   async getAll(): Promise<CoursePreview[]> {
@@ -276,14 +335,26 @@ export const cursosService = {
   },
 
   async update(id: string, data: Omit<Curso, "id" | "createdAt" | "updatedAt">): Promise<Curso> {
+    console.log(`[cursosService] update - ID: ${id}`)
+    console.log("[cursosService] update - Data recebida:", data)
+
+    const serializedData = serializePayload(data)
+    const bodyString = JSON.stringify(serializedData)
+
+    console.log("[cursosService] update - Body que será enviado:", bodyString)
+    console.log("[cursosService] update - URL:", `${API_URL}?id=${encodeURIComponent(id)}`)
+
     const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify(serializePayload(data)),
+      body: bodyString,
     })
+
+    console.log("[cursosService] update - Response status:", response.status)
+    console.log("[cursosService] update - Response ok:", response.ok)
 
     const result = await handleResponse(response)
     const curso = "curso" in result ? result.curso : result.cursos[0]

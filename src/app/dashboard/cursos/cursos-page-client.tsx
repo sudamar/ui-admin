@@ -41,6 +41,12 @@ import {
 import { cursosService, type CoursePreview } from "@/services/cursos/cursos-service"
 import { cn } from "@/lib/utils"
 
+// Função para capitalizar primeira letra
+function capitalize(str: string): string {
+  if (!str) return str
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
 const availabilityLabels: Record<CoursePreview["availability"], string> = {
   promotion: "Promoção",
   open: "Vagas em aberto",
@@ -92,7 +98,7 @@ export function CursosPageClient() {
       const matchesSearch =
         term.length === 0 ||
         course.title.toLowerCase().includes(term) ||
-        course.description.toLowerCase().includes(term) ||
+        course.shortDescription.toLowerCase().includes(term) ||
         course.category.toLowerCase().includes(term)
 
       const matchesStatus = statusFilter === "all" || course.availability === statusFilter
@@ -207,8 +213,8 @@ export function CursosPageClient() {
                       <TableCell>
                         <div className="font-semibold leading-none">{course.title}</div>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground capitalize">
-                        {course.categoryLabel ?? course.category.replace(/-/g, " ")}
+                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                        {capitalize(course.categoryLabel ?? course.category.replace(/-/g, " "))}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         <div className="flex flex-col text-sm">

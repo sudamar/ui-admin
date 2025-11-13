@@ -26,7 +26,7 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   },
 })
 
-const optionalString = (schema: z.ZodType<string>) =>
+const optionalString = (schema: z.ZodString) =>
   z
     .union([schema, z.literal(""), z.null(), z.undefined()])
     .transform((value) => {
@@ -36,42 +36,25 @@ const optionalString = (schema: z.ZodType<string>) =>
       return value
     })
 
-const optionalNumber = z
-  .union([z.number(), z.null(), z.undefined()])
-  .transform((value) => {
-    if (value === null || value === undefined) {
-      return undefined
-    }
-    return value
-  })
+const optionalNumber = z.number().nullish().transform(v => v ?? undefined)
 
 const optionalJson = z
-  .union([
-    z.record(z.unknown()),
-    z.array(z.unknown()),
-    z.literal(""),
-    z.null(),
-    z.undefined(),
-  ])
-  .transform((value) => {
-    if (value === null || value === undefined || value === "") {
-      return undefined
-    }
-    return value
-  })
+  .any()
+  .nullish()
+  .transform(v => v ?? undefined)
 
 const highlightSchema = z.object({
   icon: z.string().min(1, "Ícone obrigatório"),
   title: z.string().min(1, "Título obrigatório"),
   description: z.string().min(1, "Descrição obrigatória"),
-  bgColor: optionalString(z.string()),
-  iconColor: optionalString(z.string()),
+  bgColor: z.union([z.string(), z.literal(""), z.null(), z.undefined()]).transform(v => v || undefined),
+  iconColor: z.union([z.string(), z.literal(""), z.null(), z.undefined()]).transform(v => v || undefined),
   ordem: z.number().int().default(0),
 })
 
 const professorSchema = z.object({
   professorId: z.string().uuid("ID de professor inválido"),
-  papel: optionalString(z.string()),
+  papel: z.union([z.string(), z.literal(""), z.null(), z.undefined()]).transform(v => v || undefined),
 })
 
 const cursoSchema = z.object({
@@ -89,33 +72,43 @@ const cursoSchema = z.object({
     .trim()
     .min(3, "Título obrigatório")
     .max(255, "Título muito longo"),
-  subtitle: optionalString(z.string().trim()),
-  description: optionalString(z.string().trim()),
+  subtitle: z.string().nullish(),
+  shortDescription: z.string().nullish(),
   fullDescription: optionalJson,
-  image_folder: optionalString(z.string().trim()),
-  category: optionalString(z.string().trim().max(100)),
-  categoryLabel: optionalString(z.string().trim().max(100)),
+  image_folder: z.string().nullish(),
+  category: z.string().nullish(),
+  categoryLabel: z.string().nullish(),
   price: optionalNumber,
   originalPrice: optionalNumber,
   precoMatricula: optionalNumber,
-  modalidade: optionalString(z.string().trim().max(50)),
-  duration: optionalString(z.string().trim().max(100)),
-  workload: optionalString(z.string().trim().max(100)),
-  startDate: optionalString(z.string().trim().max(100)),
-  maxStudents: optionalString(z.string().trim().max(100)),
-  certificate: optionalString(z.string().trim().max(255)),
-  monthlyPrice: optionalString(z.string().trim().max(100)),
+  modalidade: z.string().nullish(),
+  duration: z.string().nullish(),
+  workload: z.string().nullish(),
+  startDate: z.string().nullish(),
+  maxStudents: z.string().nullish(),
+  certificate: z.string().nullish(),
+  monthlyPrice: z.string().nullish(),
   justificativa: optionalJson,
   objetivos: optionalJson,
   publico: optionalJson,
   investmentDetails: optionalJson,
   additionalInfo: optionalJson,
-  coordenadorId: optionalString(z.string().uuid("ID de coordenador inválido")),
-  videoUrl: optionalString(z.string().trim().url("URL de vídeo inválida")),
-  imageUrl: optionalString(z.string().trim().url("URL de imagem inválida")),
+  coordenadorId: z.preprocess(
+    (val) => {
+      if (typeof val === 'object' && val !== null && 'id' in val && typeof val.id === 'string') {
+        return val.id;
+      }
+      return val;
+    },
+    z.string().uuid("ID de coordenador inválido").nullish()
+  ),
+  videoUrl: z.string().nullish(),
+  imageUrl: z.string().nullish(),
   highlights: z.array(highlightSchema).optional().default([]),
   professores: z.array(professorSchema).optional().default([]),
 })
+
+console.log("[API cursos] cursoSchema criado:", typeof cursoSchema, typeof cursoSchema?.safeParse)
 
 type CursoPayload = z.infer<typeof cursoSchema>
 
@@ -124,7 +117,7 @@ type CursoRow = {
   slug: string
   title: string
   subtitle: string | null
-  description: string | null
+  short_description: string | null
   full_description: Record<string, unknown> | null
   image_folder: string | null
   category: string | null
@@ -177,7 +170,7 @@ type CursoDto = {
   slug: string
   title: string
   subtitle?: string
-  description?: string
+  shortDescription?: string
   fullDescription?: Record<string, unknown>
   image_folder?: string
   category?: string
@@ -224,7 +217,7 @@ function mapCurso(row: CursoRow): CursoDto {
     slug: row.slug,
     title: row.title,
     subtitle: row.subtitle ?? undefined,
-    description: row.description ?? undefined,
+    shortDescription: row.short_description ?? undefined,
     fullDescription: row.full_description ?? undefined,
     image_folder: row.image_folder ?? undefined,
     category: row.category ?? undefined,
@@ -405,14 +398,21 @@ export async function POST(request: Request) {
   const payload = await request.json().catch(() => null)
   console.log("[POST /api/cursos] Payload recebido:", JSON.stringify(payload, null, 2))
 
-  const parsed = cursoSchema.safeParse(payload)
+  const parsed = cursoSchema?.safeParse(payload) 
 
   if (!parsed.success) {
     console.error("[POST /api/cursos] Validação falhou:", parsed.error.issues)
+
+    // Criar mensagem amigável com os erros
+    const errorMessages = parsed.error.issues.map(issue => {
+      const fieldName = issue.path.join('.')
+      return `${fieldName}: ${issue.message}`
+    }).join('; ')
+
     return NextResponse.json(
       {
         success: false,
-        message: "Dados inválidos.",
+        message: errorMessages || "Dados inválidos.",
         issues: parsed.error.issues,
       },
       { status: 400 },
@@ -425,7 +425,7 @@ export async function POST(request: Request) {
     slug: parsed.data.slug,
     title: parsed.data.title,
     subtitle: parsed.data.subtitle ?? null,
-    description: parsed.data.description ?? null,
+    short_description: parsed.data.shortDescription ?? null,
     full_description: parsed.data.fullDescription ?? null,
     image_folder: parsed.data.image_folder ?? null,
     category: parsed.data.category ?? null,
@@ -552,16 +552,55 @@ export async function PATCH(request: Request) {
   }
 
   const payload = await request.json().catch(() => null)
-  console.log("[PATCH /api/cursos] Payload recebido para curso", id)
+  console.log("[PATCH /api/cursos] ========== PAYLOAD COMPLETO ==========")
+  console.log("[PATCH /api/cursos] Payload recebido para curso", id, ":")
+  console.log(JSON.stringify(payload, null, 2))
+  console.log("[PATCH /api/cursos] =======================================")
 
-  const parsed = cursoSchema.safeParse(payload)
-
-  if (!parsed.success) {
-    console.error("[PATCH /api/cursos] Validação falhou:", parsed.error.issues)
+  if (!payload) {
+    console.error("[PATCH /api/cursos] Payload é null ou inválido")
     return NextResponse.json(
       {
         success: false,
-        message: "Dados inválidos.",
+        message: "Corpo da requisição inválido.",
+      },
+      { status: 400 },
+    )
+  }
+
+  console.log("[PATCH] Validando payload com Zod...")
+
+  let parsed
+  try {
+    parsed = cursoSchema.safeParse(payload)
+    console.log("[PATCH] safeParse executado com sucesso:", parsed.success)
+  } catch (error) {
+    console.error("[PATCH] ❌ Erro ao executar safeParse:")
+    console.error("[PATCH] Error:", error)
+    console.error("[PATCH] Error message:", error instanceof Error ? error.message : String(error))
+    console.error("[PATCH] Error stack:", error instanceof Error ? error.stack : "N/A")
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Erro ao validar dados: " + (error instanceof Error ? error.message : String(error)),
+      },
+      { status: 500 },
+    )
+  }
+
+  if (!parsed || !parsed.success) {
+    console.error("[PATCH /api/cursos] Validação falhou:", parsed?.error?.issues)
+
+    // Criar mensagem amigável com os erros
+    const errorMessages = parsed.error.issues.map(issue => {
+      const fieldName = issue.path.join('.')
+      return `${fieldName}: ${issue.message}`
+    }).join('; ')
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: errorMessages || "Dados inválidos.",
         issues: parsed.error.issues,
       },
       { status: 400 },
@@ -574,7 +613,7 @@ export async function PATCH(request: Request) {
     slug: parsed.data.slug,
     title: parsed.data.title,
     subtitle: parsed.data.subtitle ?? null,
-    description: parsed.data.description ?? null,
+    short_description: parsed.data.shortDescription ?? null,
     full_description: parsed.data.fullDescription ?? null,
     image_folder: parsed.data.image_folder ?? null,
     category: parsed.data.category ?? null,
@@ -698,10 +737,18 @@ export async function PATCH(request: Request) {
   }
 
   console.log("[PATCH /api/cursos] Curso atualizado com sucesso:", id)
-  return NextResponse.json({
+
+  const finalResponse = {
     success: true,
     curso,
-  })
+  }
+
+  console.log("[PATCH /api/cursos] ========== RESPOSTA FINAL ==========")
+  console.log("[PATCH /api/cursos] Response que será enviada:")
+  console.log(JSON.stringify(finalResponse, null, 2))
+  console.log("[PATCH /api/cursos] ====================================")
+
+  return NextResponse.json(finalResponse)
 }
 
 export async function DELETE(request: Request) {

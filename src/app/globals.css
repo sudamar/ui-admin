@@ -2,6 +2,22 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Forçar direção LTR no Lexical Editor */
+[contenteditable="true"],
+[contenteditable="plaintext-only"],
+.ContentEditable__root {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: embed !important;
+}
+
+[contenteditable="true"] *,
+[contenteditable="plaintext-only"] *,
+.ContentEditable__root * {
+  direction: ltr !important;
+  unicode-bidi: embed !important;
+}
+
 :root {
   --radius: 0.65rem;
   --background: oklch(1 0 0);

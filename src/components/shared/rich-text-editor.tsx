@@ -1,112 +1,245 @@
 'use client'
 
-import { useRef, useState } from "react"
+import { LexicalComposer } from '@lexical/react/LexicalComposer';
+import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
+import { ContentEditable } from '@lexical/react/LexicalContentEditable';
+import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
+import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
+import { HeadingNode, QuoteNode } from '@lexical/rich-text';
+import { ListItemNode, ListNode } from '@lexical/list';
+import { LinkNode } from '@lexical/link';
+import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { useEffect } from 'react';
+import { $getRoot, EditorState, LexicalEditor } from 'lexical';
+import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
+import { Bold, Italic, List, ListOrdered, Heading2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import {
+  FORMAT_TEXT_COMMAND,
+  $getSelection,
+  $isRangeSelection,
+} from 'lexical';
+import { $setBlocksType } from '@lexical/selection';
+import { $createHeadingNode } from '@lexical/rich-text';
+import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND } from '@lexical/list';
 
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card } from "@/components/ui/card"
+const editorTheme = {
+  ltr: 'ltr',
+  rtl: 'rtl',
+  paragraph: 'mb-2 text-base leading-relaxed',
+  heading: {
+    h1: 'text-3xl font-bold mb-4 mt-6',
+    h2: 'text-2xl font-bold mb-3 mt-5',
+    h3: 'text-xl font-bold mb-2 mt-4',
+  },
+  list: {
+    ul: 'list-disc list-inside mb-2 ml-4',
+    ol: 'list-decimal list-inside mb-2 ml-4',
+    listitem: 'mb-1',
+  },
+  text: {
+    bold: 'font-bold',
+    italic: 'italic',
+    underline: 'underline',
+  },
+};
 
-const toolbarButtons = [
-  { icon: "B", command: "bold", label: "Negrito" },
-  { icon: "I", command: "italic", label: "Itálico" },
-  { icon: "U", command: "underline", label: "Sublinhado" },
-  { icon: "•", command: "insertUnorderedList", label: "Lista" },
-  { icon: "1.", command: "insertOrderedList", label: "Lista numerada" },
-  { icon: "“”", command: "formatBlock", value: "blockquote", label: "Citação" },
-]
+function onError(error: Error) {
+  console.error('[RichTextEditor] Error:', error);
+}
+
+function ToolbarPlugin() {
+  const [editor] = useLexicalComposerContext();
+
+  const formatText = (format: 'bold' | 'italic' | 'underline') => {
+    editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
+  };
+
+  const formatHeading = () => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        $setBlocksType(selection, () => $createHeadingNode('h2'));
+      }
+    });
+  };
+
+  const insertBulletList = () => {
+    editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+  };
+
+  const insertNumberedList = () => {
+    editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-1 border-b border-border bg-muted/30 p-2 rounded-t-lg">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => formatText('bold')}
+        className="h-8 w-8 p-0"
+        title="Negrito (Ctrl+B)"
+      >
+        <Bold className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => formatText('italic')}
+        className="h-8 w-8 p-0"
+        title="Itálico (Ctrl+I)"
+      >
+        <Italic className="h-4 w-4" />
+      </Button>
+
+      <Separator orientation="vertical" className="mx-1 h-6" />
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={formatHeading}
+        className="h-8 w-8 p-0"
+        title="Título (H2)"
+      >
+        <Heading2 className="h-4 w-4" />
+      </Button>
+
+      <Separator orientation="vertical" className="mx-1 h-6" />
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={insertBulletList}
+        className="h-8 w-8 p-0"
+        title="Lista com marcadores"
+      >
+        <List className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={insertNumberedList}
+        className="h-8 w-8 p-0"
+        title="Lista numerada"
+      >
+        <ListOrdered className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
+
+function InitialContentPlugin({ html }: { html?: string }) {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    if (!html || !html.trim()) return;
+
+    editor.update(() => {
+      try {
+        const parser = new DOMParser();
+        const dom = parser.parseFromString(html, 'text/html');
+        const nodes = $generateNodesFromDOM(editor, dom);
+
+        const root = $getRoot();
+        root.clear();
+
+        // Filtrar apenas element nodes
+        const elementNodes = nodes.filter(node =>
+          node.__type === 'paragraph' ||
+          node.__type === 'heading' ||
+          node.__type === 'list' ||
+          node.__type === 'listitem' ||
+          node.__type === 'quote'
+        );
+
+        if (elementNodes.length > 0) {
+          root.append(...elementNodes);
+        }
+      } catch (error) {
+        console.error('[RichTextEditor] Error loading HTML:', error);
+      }
+    });
+  }, [editor, html]);
+
+  return null;
+}
 
 interface RichTextEditorProps {
-  id: string
-  label?: string
-  description?: string
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  minHeight?: number
+  value?: string;
+  onChange?: (html: string) => void;
+  placeholder?: string;
+  minHeight?: string;
 }
 
 export function RichTextEditor({
-  id,
-  label,
-  description,
   value,
   onChange,
-  placeholder,
-  minHeight = 320,
+  placeholder = "Digite aqui...",
+  minHeight = "200px"
 }: RichTextEditorProps) {
-  const editorRef = useRef<HTMLDivElement>(null)
-  const [tab, setTab] = useState<"write" | "preview">("write")
 
-  const exec = (command: string, value?: string) => {
-    if (command === "formatBlock" && value) {
-      document.execCommand(command, false, value)
-    } else {
-      document.execCommand(command, false, value ?? "")
-    }
-    editorRef.current?.focus()
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML)
-    }
-  }
+  // IMPORTANTE: Criar editorState inicial com direção LTR forçada
+  const initialEditorState = () => {
+    const root = $getRoot();
+    root.setDirection('ltr');
+  };
+
+  const initialConfig = {
+    namespace: 'RichTextEditor',
+    theme: editorTheme,
+    onError,
+    editorState: initialEditorState,
+    nodes: [
+      HeadingNode,
+      QuoteNode,
+      ListItemNode,
+      ListNode,
+      LinkNode,
+    ],
+  };
+
+  const handleChange = (editorState: EditorState, editor: LexicalEditor) => {
+    editor.update(() => {
+      const htmlString = $generateHtmlFromNodes(editor, null);
+      onChange?.(htmlString);
+    });
+  };
 
   return (
-    <div className="space-y-2">
-      {label ? <Label htmlFor={id}>{label}</Label> : null}
-      {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
-
-      <Tabs value={tab} onValueChange={(val) => setTab(val as typeof tab)} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="write">Editar</TabsTrigger>
-          <TabsTrigger value="preview">Pré-visualizar</TabsTrigger>
-        </TabsList>
-        <TabsContent value="write" className="mt-2">
-          <Card className="border bg-card">
-            <div className="flex flex-wrap gap-1 border-b bg-muted/50 p-2">
-              {toolbarButtons.map((button) => (
-                <Button
-                  key={button.label}
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 w-8 p-0 text-sm text-muted-foreground"
-                  title={button.label}
-                  onClick={() => exec(button.command, button.value)}
-                >
-                  {button.icon}
-                </Button>
-              ))}
-            </div>
-            <div
-              ref={editorRef}
-              id={id}
-              role="textbox"
-              contentEditable
-              data-placeholder={placeholder}
-              suppressContentEditableWarning
-              style={{ minHeight }}
-              className="prose prose-sm max-w-none whitespace-pre-wrap rounded-b-md bg-background p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              onBlur={() => {
-                if (editorRef.current) {
-                  onChange(editorRef.current.innerHTML)
-                }
-              }}
-              dangerouslySetInnerHTML={{ __html: value }}
-            />
-          </Card>
-        </TabsContent>
-        <TabsContent
-          value="preview"
-          className="mt-2 rounded-md border bg-muted/40 p-4"
-        >
-          <div
-            className="prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{
-              __html: value || "<p class='text-muted-foreground text-sm'>Nenhum conteúdo.</p>",
-            }}
+    <LexicalComposer initialConfig={initialConfig}>
+      <div className="relative border border-border rounded-lg overflow-hidden bg-background" dir="ltr" style={{ direction: 'ltr' }}>
+        <ToolbarPlugin />
+        <div className="relative" dir="ltr" style={{ direction: 'ltr' }}>
+          <RichTextPlugin
+            contentEditable={
+              <ContentEditable
+                className="outline-none px-4 py-3 prose prose-sm max-w-none"
+                style={{ minHeight, direction: 'ltr', textAlign: 'left' }}
+                dir="ltr"
+                lang="pt-BR"
+              />
+            }
+            placeholder={
+              <div className="absolute top-3 left-4 text-muted-foreground pointer-events-none select-none">
+                {placeholder}
+              </div>
+            }
+            ErrorBoundary={LexicalErrorBoundary}
           />
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
+        </div>
+        <HistoryPlugin />
+        <InitialContentPlugin html={value} />
+        <OnChangePlugin onChange={handleChange} />
+      </div>
+    </LexicalComposer>
+  );
 }

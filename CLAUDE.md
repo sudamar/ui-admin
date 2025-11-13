@@ -706,7 +706,7 @@ Ao receber uma solicitação, responda com:
 3. **Código** com comentários explicativos
 4. **Instruções de teste** (se aplicável)
 5. **Próximos passos** (se houver)
-5. **Sempre rode NPM LINT** em cada alteração para verificar erros.
+5. **Sempre rode NEXT LINT** em cada alteração para verificar erros.
 
 ---
 
