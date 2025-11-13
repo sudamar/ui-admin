@@ -24,11 +24,6 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cursosService, type CoursePreview } from "@/services/cursos/cursos-service"
 
-const currencyFormatter = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-})
-
 const actions = [
   { label: "Editar Dados Básicos", slug: "editar-dados-basicos" },
   { label: "Editar Conteúdo", slug: "editar-conteudo" },
@@ -36,6 +31,11 @@ const actions = [
   { label: "Editar Valores", slug: "editar-valores" },
   { label: "Editar Destaques", slug: "editar-destaques" },
 ]
+
+// Função para remover tags HTML de uma string
+function stripHtmlTags(html: string): string {
+  return html.replace(/<[^>]*>/g, "")
+}
 
 export function NovosCursosTable() {
   const [courses, setCourses] = useState<CoursePreview[]>([])
@@ -158,7 +158,6 @@ export function NovosCursosTable() {
                 <TableHead className="w-[80px]" />
                 <TableHead>Nome</TableHead>
                 <TableHead>Categoria</TableHead>
-                <TableHead className="w-[180px]">Valor</TableHead>
                 <TableHead className="w-[200px] text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -171,7 +170,7 @@ export function NovosCursosTable() {
                       <p className="font-semibold leading-tight">{course.title}</p>
                       {course.shortDescription ? (
                         <p className="text-sm text-muted-foreground line-clamp-1">
-                          {course.shortDescription}
+                          {stripHtmlTags(course.shortDescription)}
                         </p>
                       ) : null}
                     </div>
@@ -180,21 +179,6 @@ export function NovosCursosTable() {
                     <p className="font-medium">
                       {course.categoryLabel ?? course.category}
                     </p>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1 text-right">
-                      <p className="text-base font-semibold text-foreground">
-                        {typeof course.price === "number"
-                          ? currencyFormatter.format(course.price)
-                          : "Sob consulta"}
-                      </p>
-                      {typeof course.originalPrice === "number" &&
-                      course.originalPrice > (course.price ?? 0) ? (
-                        <p className="text-xs text-muted-foreground line-through">
-                          {currencyFormatter.format(course.originalPrice)}
-                        </p>
-                      ) : null}
-                    </div>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -238,20 +222,6 @@ export function NovosCursosTable() {
                       {course.categoryLabel ?? course.category}
                     </p>
                   </div>
-                </div>
-                <div className="flex flex-col gap-1 text-sm">
-                  <span className="text-muted-foreground">Valor</span>
-                  <span className="text-base font-semibold text-foreground">
-                    {typeof course.price === "number"
-                      ? currencyFormatter.format(course.price)
-                      : "Sob consulta"}
-                  </span>
-                  {typeof course.originalPrice === "number" &&
-                  course.originalPrice > (course.price ?? 0) ? (
-                    <span className="text-xs text-muted-foreground line-through">
-                      {currencyFormatter.format(course.originalPrice)}
-                    </span>
-                  ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {actions.map((action) => (
