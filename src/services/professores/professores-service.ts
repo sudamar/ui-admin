@@ -48,6 +48,9 @@ export const professoresService = {
     })
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao buscar professores")
+    }
     if ("professores" in result) {
       return [...result.professores].sort((a, b) =>
         a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
@@ -69,6 +72,9 @@ export const professoresService = {
     }
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao buscar professor")
+    }
     if ("professor" in result) {
       return result.professor
     }
@@ -87,6 +93,9 @@ export const professoresService = {
     })
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao criar professor")
+    }
     if ("professor" in result) {
       return result.professor
     }
@@ -105,6 +114,9 @@ export const professoresService = {
     })
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao atualizar professor")
+    }
     if ("professor" in result) {
       return result.professor
     }

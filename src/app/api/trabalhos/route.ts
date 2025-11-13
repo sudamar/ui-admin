@@ -111,7 +111,6 @@ function mapTrabalho(row: TrabalhoRow): Omit<TrabalhoDTO, 'tags'> {
     slug: row.slug,
     data_publicacao: row.data_publicacao,
     link: row.link,
-    tags: [], // Será preenchido depois com as categorias
     resumo: row.resumo,
     nota: row.nota,
     visitantes: row.visitantes,

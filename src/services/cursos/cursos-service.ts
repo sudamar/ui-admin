@@ -278,6 +278,9 @@ export const cursosService = {
     })
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao buscar cursos")
+    }
     const cursos = "cursos" in result ? result.cursos : [result.curso]
 
     return cursos
@@ -298,6 +301,9 @@ export const cursosService = {
     }
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao buscar curso")
+    }
     const curso = "curso" in result ? result.curso : result.cursos[0]
 
     return curso ? enrichCurso(curso) : null
@@ -313,6 +319,9 @@ export const cursosService = {
     }
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao buscar curso")
+    }
     const curso = "curso" in result ? result.curso : result.cursos[0]
 
     return curso ? enrichCurso(curso) : null
@@ -329,6 +338,9 @@ export const cursosService = {
     })
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao criar curso")
+    }
     const curso = "curso" in result ? result.curso : result.cursos[0]
 
     return enrichCurso(curso)
@@ -357,6 +369,9 @@ export const cursosService = {
     console.log("[cursosService] update - Response ok:", response.ok)
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao atualizar curso")
+    }
     const curso = "curso" in result ? result.curso : result.cursos[0]
 
     return enrichCurso(curso)

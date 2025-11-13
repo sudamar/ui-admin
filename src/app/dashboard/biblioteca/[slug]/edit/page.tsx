@@ -264,6 +264,7 @@ const medalInfo = useMemo(() => getMedal(metrics.baixados ?? 0), [metrics.baixad
       const notaValue = values.nota ? Number.parseFloat(values.nota.replace(",", ".")) : undefined
 
       const payload: Trabalho = {
+        id: trabalhoId,
         titulo: values.titulo,
         autor: values.autor,
         data_publicacao: values.data_publicacao,

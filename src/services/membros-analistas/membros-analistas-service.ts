@@ -54,6 +54,9 @@ export const membrosAnalistasService = {
     })
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao buscar membros")
+    }
     const members = "membros" in result ? result.membros : [result.membro]
 
     return [...members].sort((a, b) =>
@@ -71,6 +74,9 @@ export const membrosAnalistasService = {
     }
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao buscar membro")
+    }
     if ("membro" in result) {
       return result.membro
     }
@@ -89,6 +95,9 @@ export const membrosAnalistasService = {
     })
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao criar membro")
+    }
     if ("membro" in result) {
       return result.membro
     }
@@ -107,6 +116,9 @@ export const membrosAnalistasService = {
     })
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao atualizar membro")
+    }
     if ("membro" in result) {
       return result.membro
     }

@@ -107,11 +107,11 @@ function arrayToRecord(arr: string[]): Record<string, unknown> {
   }, {} as Record<string, unknown>)
 }
 
-function recordToArray(record?: Record<string, unknown> | string[]): string[] {
+function recordToArray(record?: Record<string, unknown> | string[] | string | null): string[] {
   // Se já é array, retorna como está
   if (Array.isArray(record)) return record
 
-  // Se é null, undefined ou não é objeto, retorna array vazio
+  // Se é null, undefined, string ou não é objeto, retorna array vazio
   if (!record || typeof record !== 'object') return []
 
   // Converter Record para array, mantendo a ordem dos índices

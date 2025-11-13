@@ -56,50 +56,30 @@ const createPoloSchema = z.object({
     .min(1, "Informe o nome do polo.")
     .min(3, "O nome precisa ter ao menos 3 caracteres."),
   address: z
-    .union([
-      z
-        .string()
-        .trim()
-        .min(5, "Informe um endereço válido."),
-      z.literal(""),
-    ])
-    .transform((value) => (value === "" ? undefined : value)),
+    .string()
+    .trim()
+    .min(5, "Informe um endereço válido.")
+    .or(z.literal("")),
   phone: z
-    .union([
-      z
-        .string()
-        .trim()
-        .min(8, "Informe um telefone válido."),
-      z.literal(""),
-    ])
-    .transform((value) => (value === "" ? undefined : value)),
+    .string()
+    .trim()
+    .min(8, "Informe um telefone válido.")
+    .or(z.literal("")),
   email: z
-    .union([
-      z
-        .string()
-        .trim()
-        .email("Informe um e-mail válido."),
-      z.literal(""),
-    ])
-    .transform((value) => (value === "" ? undefined : value)),
+    .string()
+    .trim()
+    .email("Informe um e-mail válido.")
+    .or(z.literal("")),
   coordinator: z
-    .union([
-      z
-        .string()
-        .trim()
-        .min(3, "Informe um nome válido."),
-      z.literal(""),
-    ])
-    .transform((value) => (value === "" ? undefined : value)),
+    .string()
+    .trim()
+    .min(3, "Informe um nome válido.")
+    .or(z.literal("")),
   mapUrl: z
-    .union([
-      z
-        .string()
-        .trim()
-        .url("Informe uma URL válida para o mapa."),
-      z.literal(""),
-    ])
-    .transform((value) => (value === "" ? undefined : value)),
+    .string()
+    .trim()
+    .url("Informe uma URL válida para o mapa.")
+    .or(z.literal("")),
 })
 
 type CreatePoloFormValues = z.infer<typeof createPoloSchema>
@@ -177,11 +157,11 @@ export function PolosPageClient() {
       const newPolo = await polosService.create({
         slug: values.slug,
         name: values.name,
-        address: values.address,
-        phone: values.phone,
-        email: values.email,
-        coordinator: values.coordinator,
-        mapUrl: values.mapUrl,
+        address: values.address || undefined,
+        phone: values.phone || undefined,
+        email: values.email || undefined,
+        coordinator: values.coordinator || undefined,
+        mapUrl: values.mapUrl || undefined,
       })
 
       setPolos((prev) => [newPolo, ...prev])

@@ -6,6 +6,7 @@ export type Professor = {
   foto?: string
   email?: string
   telefone?: string
+  linkProfessor?: string
   createdAt?: string
   updatedAt?: string
 }

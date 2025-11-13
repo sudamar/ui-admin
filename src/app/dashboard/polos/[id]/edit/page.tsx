@@ -40,35 +40,30 @@ const editPoloSchema = z.object({
     }),
   name: z.string().min(3, { message: "Informe um nome válido." }),
   address: z
-    .union([
-      z.string().trim().min(5, { message: "Informe um endereço válido." }),
-      z.literal(""),
-    ])
-    .transform((value) => (value === "" ? undefined : value)),
+    .string()
+    .trim()
+    .min(5, { message: "Informe um endereço válido." })
+    .or(z.literal("")),
   phone: z
-    .union([
-      z.string().trim().min(8, { message: "Informe um telefone válido." }),
-      z.literal(""),
-    ])
-    .transform((value) => (value === "" ? undefined : value)),
+    .string()
+    .trim()
+    .min(8, { message: "Informe um telefone válido." })
+    .or(z.literal("")),
   email: z
-    .union([
-      z.string().trim().email({ message: "Informe um e-mail válido." }),
-      z.literal(""),
-    ])
-    .transform((value) => (value === "" ? undefined : value)),
+    .string()
+    .trim()
+    .email({ message: "Informe um e-mail válido." })
+    .or(z.literal("")),
   coordinator: z
-    .union([
-      z.string().trim().min(3, { message: "Informe um nome válido." }),
-      z.literal(""),
-    ])
-    .transform((value) => (value === "" ? undefined : value)),
+    .string()
+    .trim()
+    .min(3, { message: "Informe um nome válido." })
+    .or(z.literal("")),
   mapUrl: z
-    .union([
-      z.string().trim().url({ message: "Informe uma URL válida." }),
-      z.literal(""),
-    ])
-    .transform((value) => (value === "" ? undefined : value)),
+    .string()
+    .trim()
+    .url({ message: "Informe uma URL válida." })
+    .or(z.literal("")),
 })
 
 type EditPoloFormValues = z.infer<typeof editPoloSchema>
@@ -127,11 +122,11 @@ export default function EditPoloPage() {
       await polosService.update(poloId, {
         slug: values.slug,
         name: values.name,
-        address: values.address,
-        phone: values.phone,
-        email: values.email,
-        coordinator: values.coordinator,
-        mapUrl: values.mapUrl,
+        address: values.address || undefined,
+        phone: values.phone || undefined,
+        email: values.email || undefined,
+        coordinator: values.coordinator || undefined,
+        mapUrl: values.mapUrl || undefined,
       })
 
       router.push("/dashboard/polos")

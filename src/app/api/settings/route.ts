@@ -7,7 +7,10 @@ export async function GET() {
     const settings = await getSettingsFromDB();
     return NextResponse.json(settings);
   } catch (error) {
-    return new NextResponse(error.message, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Erro desconhecido" },
+      { status: 500 }
+    );
   }
 }
 
@@ -17,6 +20,9 @@ export async function POST(request: Request) {
     const updatedSetting = await updateSettingInDB(key, value);
     return NextResponse.json(updatedSetting);
   } catch (error) {
-    return new NextResponse(error.message, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Erro desconhecido" },
+      { status: 500 }
+    );
   }
 }

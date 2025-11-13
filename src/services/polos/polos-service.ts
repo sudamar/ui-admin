@@ -48,6 +48,9 @@ export const polosService = {
     })
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao buscar polos")
+    }
     if ("polos" in result) {
       return result.polos
     }
@@ -65,6 +68,9 @@ export const polosService = {
     }
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao buscar polo")
+    }
     if ("polo" in result) {
       return result.polo
     }
@@ -83,6 +89,9 @@ export const polosService = {
     })
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao criar polo")
+    }
     if ("polo" in result) {
       return result.polo
     }
@@ -101,6 +110,9 @@ export const polosService = {
     })
 
     const result = await handleResponse(response)
+    if (!result.success) {
+      throw new Error(result.message || "Erro ao atualizar polo")
+    }
     if ("polo" in result) {
       return result.polo
     }
