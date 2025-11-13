@@ -191,142 +191,173 @@ export function ProfilePageClient() {
         </p>
       </div>
 
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>Informações básicas</CardTitle>
-          <CardDescription>
-            Seus dados são exibidos para outros administradores do sistema.
-          </CardDescription>
-        </CardHeader>
-        <Form {...form}>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <CardContent className="space-y-6">
-              <div className="flex items-start gap-4">
-                <div className="relative h-16 w-16 overflow-hidden rounded-full bg-muted">
-                  {avatarPreview ? (
-                    <Image
-                      src={avatarPreview}
-                      alt={namePreview}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-                      {(namePreview || user.name)
-                        .split(" ")
-                        .map((part) => part[0])
-                        .join("")
-                        .slice(0, 2)
-                        .toUpperCase()}
+      <Form {...form}>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Coluna lateral - Preview do perfil */}
+            <div className="lg:col-span-1">
+              <Card className="sticky top-6">
+                <CardHeader>
+                  <CardTitle>Preview</CardTitle>
+                  <CardDescription>
+                    Como seu perfil será exibido
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="relative h-32 w-32 overflow-hidden rounded-full bg-muted ring-4 ring-background">
+                      {avatarPreview ? (
+                        <Image
+                          src={avatarPreview}
+                          alt={namePreview}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-3xl font-semibold text-muted-foreground">
+                          {(namePreview || user.name)
+                            .split(" ")
+                            .map((part) => part[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-center space-y-1">
+                      <p className="font-semibold text-lg">{namePreview}</p>
+                      <p className="text-sm text-muted-foreground">{PERFIL_LABEL[userPerfilLabel]}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    </div>
+                  </div>
+                  {form.watch("bio") && (
+                    <div className="pt-4 border-t">
+                      <p className="text-sm text-muted-foreground italic">
+                        "{form.watch("bio")}"
+                      </p>
                     </div>
                   )}
-                </div>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>A foto pública é exibida no dashboard e em comunicações internas.</p>
-                  <p>Você pode enviar uma imagem ou informar uma URL pública existente.</p>
-                </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Coluna principal - Formulário */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informações pessoais</CardTitle>
+                  <CardDescription>
+                    Dados básicos exibidos no dashboard
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome completo</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Seu nome" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="displayName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome de exibição</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Como prefere ser chamado" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <FormLabel>Email</FormLabel>
+                      <Input value={user.email} disabled readOnly />
+                    </div>
+                    <div className="space-y-2">
+                      <FormLabel>Perfil</FormLabel>
+                      <Input value={PERFIL_LABEL[userPerfilLabel]} disabled readOnly />
+                    </div>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="bio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bio</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Conte um pouco sobre você (opcional)"
+                            rows={4}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Foto do perfil</CardTitle>
+                  <CardDescription>
+                    Sua foto é exibida no dashboard e comunicações internas
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name="avatarPublic"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <ImageUpload
+                            value={field.value ?? ""}
+                            onChange={(value) => field.onChange(value ?? "")}
+                            previewClassName="h-40 w-full"
+                            disabled={uploading || form.formState.isSubmitting}
+                            description="Arraste uma imagem ou clique para enviar. Também é possível colar uma URL pública."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={form.formState.isSubmitting || uploading}
+                  className="min-w-[200px]"
+                >
+                  {form.formState.isSubmitting || uploading
+                    ? "Salvando..."
+                    : "Salvar alterações"}
+                </Button>
               </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <FormLabel>Email</FormLabel>
-                  <Input value={user.email} disabled readOnly />
-                </div>
-                <div className="space-y-2">
-                  <FormLabel>Perfil</FormLabel>
-                  <Input value={PERFIL_LABEL[userPerfilLabel]} disabled readOnly />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome completo</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Seu nome" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="displayName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome de exibição</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Como prefere ser chamado" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="avatarPublic"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Foto pública</FormLabel>
-                    <FormControl>
-                      <ImageUpload
-                        value={field.value ?? ""}
-                        onChange={(value) => field.onChange(value ?? "")}
-                        className="max-w-sm"
-                        previewClassName="h-32 w-full"
-                        disabled={uploading || form.formState.isSubmitting}
-                        description="Arraste uma imagem ou clique para enviar. Também é possível colar uma URL pública."
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="bio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bio</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Conte um pouco sobre você (opcional)"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-            <CardFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-sm text-muted-foreground">
-                <p>Email</p>
-                <p className="font-medium text-foreground">{user.email}</p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Perfil atual: <span className="font-medium text-foreground">{PERFIL_LABEL[userPerfilLabel]}</span>
-                </p>
-              </div>
-              <Button
-                type="submit"
-                disabled={form.formState.isSubmitting || uploading}
-              >
-                {form.formState.isSubmitting || uploading
-                  ? "Salvando..."
-                  : "Salvar alterações"}
-              </Button>
-            </CardFooter>
-          </form>
-        </Form>
-      </Card>
+            </div>
+          </div>
+        </form>
+      </Form>
     </div>
   )
 }

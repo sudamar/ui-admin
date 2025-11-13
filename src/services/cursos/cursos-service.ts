@@ -56,6 +56,7 @@ export interface Curso {
   professores?: CursoProfessor[]
   availability?: CourseAvailability
   tags?: CourseTag[]
+  is_ativo?: boolean
 }
 
 // Interface para preview (compatibilidade com código existente)
@@ -70,6 +71,7 @@ export interface CoursePreview {
   originalPrice?: number
   availability: CourseAvailability
   tags: CourseTag[]
+  is_ativo?: boolean
 }
 
 // Tipo para detalhes do curso com campos estendidos para formulário
@@ -230,6 +232,7 @@ function toCoursePreview(curso: Curso): CoursePreview {
     originalPrice: enriched.originalPrice,
     availability: enriched.availability!,
     tags: enriched.tags!,
+    is_ativo: enriched.is_ativo ?? true,
   }
 }
 

@@ -129,6 +129,7 @@ export function ProfessoresTable() {
   const columns: ColumnDef<Professor>[] = [
     {
       accessorKey: "nome",
+      size: 375,
       header: ({ column }) => (
         <SortingButton
           label="Nome"
@@ -140,7 +141,7 @@ export function ProfessoresTable() {
       cell: ({ row }) => (
         <div>
           <p className="font-medium">{row.original.nome}</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {row.original.titulacao || "Titulação não informada"}
           </p>
         </div>
@@ -207,6 +208,7 @@ export function ProfessoresTable() {
     {
       id: "actions",
       header: "Ações",
+      size: 150,
       enableSorting: false,
       cell: ({ row }) => {
         const professor = row.original
@@ -218,7 +220,7 @@ export function ProfessoresTable() {
               className="h-8 w-8"
               onClick={() => setDetailsProfessor(professor)}
             >
-              <Eye className="h-4 w-4" />
+              <Eye className="h-4 w-4 text-blue-600" />
               <span className="sr-only">Ver detalhes</span>
             </Button>
             <Button
@@ -228,17 +230,17 @@ export function ProfessoresTable() {
               asChild
             >
               <Link href={`/dashboard/professores/${professor.id}/editar`}>
-                <Pencil className="h-4 w-4" />
+                <Pencil className="h-4 w-4 text-amber-600" />
                 <span className="sr-only">Editar</span>
               </Link>
             </Button>
             <Button
               size="icon"
-              variant="destructive"
-              className="h-8 w-8"
+              variant="outline"
+              className="h-8 w-8 border-red-200 hover:bg-red-50"
               onClick={() => handleDelete(professor)}
             >
-              <Trash className="h-4 w-4" />
+              <Trash className="h-4 w-4 text-red-600" />
               <span className="sr-only">Remover</span>
             </Button>
           </div>
@@ -558,7 +560,7 @@ export function ProfessoresTable() {
                           className="w-full justify-center"
                           onClick={() => setDetailsProfessor(professor)}
                         >
-                          <Eye className="mr-2 h-4 w-4" />
+                          <Eye className="mr-2 h-4 w-4 text-blue-600" />
                           Ver detalhes
                         </Button>
                         <Button
@@ -568,14 +570,14 @@ export function ProfessoresTable() {
                           asChild
                         >
                           <Link href={`/dashboard/professores/${professor.id}/editar`}>
-                            <Pencil className="mr-2 h-4 w-4" />
+                            <Pencil className="mr-2 h-4 w-4 text-amber-600" />
                             Editar
                           </Link>
                         </Button>
                         <Button
-                          variant="destructive"
+                          variant="outline"
                           size="sm"
-                          className="w-full justify-center"
+                          className="w-full justify-center border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                           onClick={() => handleDelete(professor)}
                         >
                           <Trash className="mr-2 h-4 w-4" />
