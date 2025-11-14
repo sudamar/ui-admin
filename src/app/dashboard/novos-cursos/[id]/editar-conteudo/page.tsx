@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { FileText, Loader2 } from "lucide-react"
+import Link from "next/link"
+import { ArrowLeft, FileText, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -198,6 +199,17 @@ export default function EditarConteudoPage() {
       ) : null}
 
       <div className="space-y-6">
+        <Button
+          asChild
+          variant="ghost"
+          className="inline-flex w-full items-center justify-center gap-2 border border-dashed border-border text-sm text-muted-foreground hover:bg-muted/80 sm:w-auto"
+        >
+          <Link href="/dashboard/novos-cursos" className="inline-flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para lista de novos cursos
+          </Link>
+        </Button>
+
         <HeaderEdicaoCursos
           title={course.title}
           category={course.categoryLabel ?? course.category ?? "Não informado"}

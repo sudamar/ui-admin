@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UI Admin - Next.js 16",
-  description: "Aplicação com Next.js 16, Tailwind CSS 4 e shadcn/ui",
+  title: "FAFIH Admin - Site Oficial",
+  description: "Aplicação para administrar Site da FAFIH",
 };
 
 export default function RootLayout({

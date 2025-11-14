@@ -112,6 +112,14 @@ export function NovosCursosTable() {
     }
   }
 
+  const handleClearFilters = () => {
+    setSearchTerm("")
+    setCategoryFilter("all")
+    setStatusFilter("all")
+    setSortField("title")
+    setSortDirection("asc")
+  }
+
   const sortedCourses = useMemo(() => {
     return [...filteredCourses].sort((a, b) => {
       let comparison = 0
@@ -158,7 +166,6 @@ export function NovosCursosTable() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Novos Cursos</CardTitle>
           <CardDescription>Carregando cursos cadastrados...</CardDescription>
         </CardHeader>
         <CardContent>
@@ -172,7 +179,6 @@ export function NovosCursosTable() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Novos Cursos</CardTitle>
           <CardDescription>Não foi possível carregar os cursos.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -191,7 +197,6 @@ export function NovosCursosTable() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Novos Cursos</CardTitle>
           <CardDescription>Nenhum curso encontrado.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -206,14 +211,13 @@ export function NovosCursosTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Novos Cursos</CardTitle>
         <CardDescription>
           Total de {courses.length} curso(s) cadastrado(s) • {sortedCourses.length} exibido(s)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-3">
-          <div className="w-full sm:w-[280px]">
+          <div className="w-full sm:w-[460px]">
             <label htmlFor="search" className="text-sm font-medium">
               Buscar por nome
             </label>
@@ -231,7 +235,7 @@ export function NovosCursosTable() {
               Categoria
             </label>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger id="category" className="mt-2 w-auto min-w-[120px]">
+              <SelectTrigger id="category" className="mt-2 w-auto min-w-[210px]">
                 <SelectValue placeholder="Todas" />
               </SelectTrigger>
               <SelectContent>
@@ -250,7 +254,7 @@ export function NovosCursosTable() {
               Status
             </label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger id="status" className="mt-2 w-auto min-w-[120px]">
+              <SelectTrigger id="status" className="mt-2 w-auto min-w-[130px]">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
@@ -259,6 +263,24 @@ export function NovosCursosTable() {
                 <SelectItem value="inactive">Inativos</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex w-full items-end sm:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={handleClearFilters}
+              disabled={
+                !searchTerm &&
+                categoryFilter === "all" &&
+                statusFilter === "all" &&
+                sortField === "title" &&
+                sortDirection === "asc"
+              }
+            >
+              Limpar filtros
+            </Button>
           </div>
         </div>
 

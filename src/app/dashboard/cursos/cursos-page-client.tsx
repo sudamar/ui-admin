@@ -214,7 +214,7 @@ export function CursosPageClient() {
                         <div className="font-semibold leading-none">{course.title}</div>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                        {capitalize(course.categoryLabel ?? course.category.replace(/-/g, " "))}
+                        {capitalize(course.categoryLabel ?? course.category )}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         <div className="flex flex-col text-sm">
