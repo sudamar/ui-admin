@@ -81,9 +81,9 @@ export default function EditarMidiasPage() {
       setSaving(true)
       const payload: Curso = {
         ...course,
-        image_folder: sanitizedState.imageFolder || null,
-        imageUrl: sanitizedState.imageUrl || null,
-        videoUrl: sanitizedState.videoUrl || null,
+        image_folder: sanitizedState.imageFolder ? sanitizedState.imageFolder : undefined,
+        imageUrl: sanitizedState.imageUrl ? sanitizedState.imageUrl : undefined,
+        videoUrl: sanitizedState.videoUrl ? sanitizedState.videoUrl : undefined,
       }
 
       const updated = await cursosService.update(course.id, payload)

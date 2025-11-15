@@ -125,7 +125,7 @@ export default function EditarDadosBasicosPage() {
       const payload: Curso = {
         ...course,
         ...sanitizedState,
-        coordenadorId: sanitizedState.coordenadorId || null,
+        coordenadorId: sanitizedState.coordenadorId ? sanitizedState.coordenadorId : undefined,
       }
       const updated = await cursosService.update(course.id, payload)
       const updatedStatus = parseBooleanFromUnknown((updated as any).is_ativo ?? true)
