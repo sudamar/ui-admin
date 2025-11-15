@@ -30,17 +30,15 @@ const EMPTY_OPTION_VALUE = "__none__"
 const BOOL_OPTION_TRUE = "true"
 const BOOL_OPTION_FALSE = "false"
 
-const parseBooleanFromUnknown = (value: unknown): boolean | null => {
+const parseBooleanFromUnknown = (value: unknown): boolean => {
   if (typeof value === "boolean") return value
   if (typeof value === "string") {
-    if (value.toLowerCase() === "true") return true
-    if (value.toLowerCase() === "false") return false
+    const n = value.trim().toLowerCase()
+    if (["true", "t", "1"].includes(n)) return true
+    if (["false", "f", "0"].includes(n)) return false
   }
-  if (typeof value === "number") {
-    if (value === 1) return true
-    if (value === 0) return false
-  }
-  return null
+  if (typeof value === "number") return value === 1
+  return true
 }
 
 export default function EditarDadosBasicosPage() {
@@ -56,12 +54,11 @@ export default function EditarDadosBasicosPage() {
   const [title, setTitle] = useState("")
   const [subtitle, setSubtitle] = useState("")
   const [category, setCategory] = useState("")
-  const [categoryLabel, setCategoryLabel] = useState("")
   const [modalidade, setModalidade] = useState("")
   const [maxStudents, setMaxStudents] = useState("")
   const [certificate, setCertificate] = useState("")
   const [coordenadorId, setCoordenadorId] = useState("")
-  const [isAtivo, setIsAtivo] = useState<boolean | null>(null)
+  const [isAtivo, setIsAtivo] = useState<boolean>(true)
 
   useEffect(() => {
     if (!courseId) return
@@ -71,17 +68,17 @@ export default function EditarDadosBasicosPage() {
         setLoading(true)
         const data = await cursosService.getById(courseId)
         if (data) {
-          setCourse(data)
+          const resolvedStatus = parseBooleanFromUnknown((data as any).is_ativo ?? (data as any).isAtivo ?? true)
+          setCourse({ ...data, is_ativo: resolvedStatus })
           setSlug(data.slug ?? "")
           setTitle(data.title ?? "")
           setSubtitle(data.subtitle ?? "")
           setCategory(data.category ?? "")
-          setCategoryLabel(data.categoryLabel ?? "")
           setModalidade(data.modalidade ?? "")
           setMaxStudents(data.maxStudents ?? "")
           setCertificate(data.certificate ?? "")
           setCoordenadorId(data.coordenadorId ?? "")
-          setIsAtivo(parseBooleanFromUnknown(data.is_ativo))
+          setIsAtivo(resolvedStatus)
         }
       } catch (error) {
         console.error("Erro ao carregar curso", error)
@@ -94,21 +91,17 @@ export default function EditarDadosBasicosPage() {
     void load()
   }, [courseId])
 
-  const sanitizedState = useMemo(() => {
-    const normalizedSlug = normalizeValue(slug)
-    return {
-      slug: normalizedSlug,
-      title: normalizeValue(title),
-      subtitle: subtitle.trim(),
-      category: category.trim(),
-      categoryLabel: categoryLabel.trim(),
-      modalidade: modalidade.trim(),
-      maxStudents: maxStudents.trim(),
-      certificate: certificate.trim(),
-      coordenadorId: coordenadorId.trim(),
-      isAtivo: isAtivo,
-    }
-  }, [slug, title, subtitle, category, categoryLabel, modalidade, maxStudents, certificate, coordenadorId, isAtivo])
+  const sanitizedState = useMemo(() => ({
+    slug: normalizeValue(slug),
+    title: normalizeValue(title),
+    subtitle: subtitle.trim(),
+    category: category.trim(),
+    modalidade: modalidade.trim(),
+    maxStudents: maxStudents.trim(),
+    certificate: certificate.trim(),
+    coordenadorId: coordenadorId.trim(),
+    isAtivo,
+  }), [slug, title, subtitle, category, modalidade, maxStudents, certificate, coordenadorId, isAtivo])
 
   const isDirty = useMemo(() => {
     if (!course) return false
@@ -117,53 +110,31 @@ export default function EditarDadosBasicosPage() {
       sanitizedState.title !== (course.title ?? "") ||
       sanitizedState.subtitle !== (course.subtitle ?? "") ||
       sanitizedState.category !== (course.category ?? "") ||
-      sanitizedState.categoryLabel !== (course.categoryLabel ?? "") ||
       sanitizedState.modalidade !== (course.modalidade ?? "") ||
       sanitizedState.maxStudents !== (course.maxStudents ?? "") ||
       sanitizedState.certificate !== (course.certificate ?? "") ||
       sanitizedState.coordenadorId !== (course.coordenadorId ?? "") ||
-      sanitizedState.isAtivo !== (course.is_ativo ?? null)
+      sanitizedState.isAtivo !== parseBooleanFromUnknown(course.is_ativo ?? true)
     )
   }, [course, sanitizedState])
 
-  useEffect(() => {
-    if (!isDirty) return
-
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault()
-      event.returnValue = ""
-    }
-
-    window.addEventListener("beforeunload", handleBeforeUnload)
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
-  }, [isDirty])
-
   const handleSave = useCallback(async () => {
     if (!course) return
-
     try {
       setSaving(true)
       const payload: Curso = {
         ...course,
-        slug: sanitizedState.slug,
-        title: sanitizedState.title,
-        subtitle: sanitizedState.subtitle,
-        category: sanitizedState.category,
-        categoryLabel: sanitizedState.categoryLabel,
-        modalidade: sanitizedState.modalidade,
-        maxStudents: sanitizedState.maxStudents,
-        certificate: sanitizedState.certificate,
-        is_ativo: sanitizedState.isAtivo ?? course.is_ativo ?? null,
+        ...sanitizedState,
         coordenadorId: sanitizedState.coordenadorId || null,
       }
-
       const updated = await cursosService.update(course.id, payload)
-      setCourse(updated)
+      const updatedStatus = parseBooleanFromUnknown((updated as any).is_ativo ?? true)
+      setCourse({ ...updated, is_ativo: updatedStatus })
+      setIsAtivo(updatedStatus)
       toast.success("Dados básicos atualizados com sucesso!")
     } catch (error) {
-      console.error("Erro ao salvar dados básicos", error)
-      const message = error instanceof Error ? error.message : "Não foi possível salvar."
-      toast.error(message)
+      console.error("Erro ao salvar dados", error)
+      toast.error("Não foi possível salvar.")
     } finally {
       setSaving(false)
     }
@@ -176,26 +147,6 @@ export default function EditarDadosBasicosPage() {
     }
     router.push("/dashboard/novos-cursos")
   }, [isDirty, router])
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
-        event.preventDefault()
-        event.stopPropagation()
-        void handleSave()
-        return
-      }
-
-      if (event.key === "Escape") {
-        event.preventDefault()
-        event.stopPropagation()
-        handleCancel()
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [handleSave, handleCancel])
 
   if (loading) {
     return (
@@ -215,14 +166,14 @@ export default function EditarDadosBasicosPage() {
 
   return (
     <>
-      {saving ? (
+      {saving && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/70 backdrop-blur-sm">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
           <p className="mt-3 text-sm font-medium text-muted-foreground">Salvando alterações...</p>
         </div>
-      ) : null}
+      )}
 
-      <div className="space-y-6">
+      <div className="mx-auto max-w-5xl space-y-6">
         <Button
           asChild
           variant="ghost"
@@ -236,12 +187,12 @@ export default function EditarDadosBasicosPage() {
 
         <HeaderEdicaoCursos
           title={course.title}
-          category={course.categoryLabel ?? course.category ?? "Não informado"}
+          category={course.category ?? "Não informado"}
           imageUrl={course.image_folder ?? course.imageUrl ?? null}
         />
 
         <Card>
-          <CardHeader className="space-y-2">
+          <CardHeader className="space-y-2 border-b bg-muted/30">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <SlidersHorizontal className="h-5 w-5" />
@@ -249,138 +200,97 @@ export default function EditarDadosBasicosPage() {
               <div>
                 <CardTitle className="text-lg">Dados básicos do curso</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Atualize identificadores, categorias e informações gerais utilizadas em toda a plataforma.
+                  Atualize as informações gerais do curso.
                 </p>
               </div>
             </div>
           </CardHeader>
+
           <CardContent className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
+            {/* Linha 1 */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+              <div className="md:col-span-6 space-y-1.5">
                 <Label htmlFor="title">Título</Label>
-                <Input
-                  id="title"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  placeholder="Nome oficial do curso"
-                  required
-                />
+                <Input id="title" className="h-9" value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
-
-              <div className="space-y-2">
+              <div className="md:col-span-6 space-y-1.5">
                 <Label htmlFor="subtitle">Subtítulo</Label>
-                <Input
-                  id="subtitle"
-                  value={subtitle}
-                  onChange={(event) => setSubtitle(event.target.value)}
-                  placeholder="Resumo curto visível nas listagens"
-                />
-              </div>
-
-              <div className="md:col-span-2 grid gap-4 md:grid-cols-[1fr,1fr]">
-                <div className="space-y-2">
-                  <div className="grid gap-2 md:grid-cols-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Categoria</Label>
-                      <Select
-                        value={category ? category : EMPTY_OPTION_VALUE}
-                        onValueChange={(value) => {
-                          if (value === EMPTY_OPTION_VALUE) {
-                            setCategory("")
-                            setCategoryLabel("")
-                            return
-                          }
-                          setCategory(value)
-                          setCategoryLabel(COURSE_CATEGORY_LABEL_MAP[value] ?? "")
-                        }}
-                      >
-                        <SelectTrigger id="category">
-                          <SelectValue placeholder="Selecione a categoria" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={EMPTY_OPTION_VALUE}>Sem categoria</SelectItem>
-                          {COURSE_CATEGORY_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="isAtivo">Status do curso</Label>
-                      <Select value={isAtivo ? BOOL_OPTION_TRUE : BOOL_OPTION_FALSE} onValueChange={(value) => setIsAtivo(value === BOOL_OPTION_TRUE)}>
-                        <SelectTrigger id="isAtivo">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={BOOL_OPTION_TRUE}>Ativo</SelectItem>
-                          <SelectItem value={BOOL_OPTION_FALSE}>Inativo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <Label htmlFor="coordenador">Coordenador responsável</Label>
-                    <SelectCoordenador
-                      value={coordenadorId || null}
-                      onChange={(value) => setCoordenadorId(value ?? "")}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="maxStudents">Máximo de alunos</Label>
-                  <Input
-                    id="maxStudents"
-                    value={maxStudents}
-                    onChange={(event) => setMaxStudents(event.target.value)}
-                    placeholder="Limite de vagas"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="modalidade">Modalidade</Label>
-                <Input
-                  id="modalidade"
-                  value={modalidade}
-                  onChange={(event) => setModalidade(event.target.value)}
-                  placeholder="ex: Presencial, Híbrido, EAD"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="certificate">Certificação</Label>
-                <Input
-                  id="certificate"
-                  value={certificate}
-                  onChange={(event) => setCertificate(event.target.value)}
-                  placeholder="ex: Certificado reconhecido pelo MEC"
-                />
+                <Input id="subtitle" className="h-9" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
               </div>
             </div>
 
-             <div className="space-y-2">
-                <Label htmlFor="slug">Slug</Label>
-                <Input
-                  id="slug"
-                  value={slug}
-                  readOnly
-                  disabled
-                  placeholder="ex: mba-gestao-estrategica"
-                />
-                <p className="text-xs text-muted-foreground">O slug é utilizado em URLs e não pode ser alterado por aqui.</p>
+            {/* Linha 2 */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+              <div className="md:col-span-6 space-y-1.5">
+                <Label htmlFor="category">Categoria</Label>
+                <Select
+                  value={category || EMPTY_OPTION_VALUE}
+                  onValueChange={(value) => {
+                    if (value === EMPTY_OPTION_VALUE) return setCategory("")
+                    setCategory(value)
+                  }}
+                >
+                  <SelectTrigger id="category" className="h-9">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={EMPTY_OPTION_VALUE}>Sem categoria</SelectItem>
+                    {COURSE_CATEGORY_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+              <div className="md:col-span-6 space-y-1.5">
+                <Label htmlFor="maxStudents">Máximo de alunos</Label>
+                <Input id="maxStudents" className="h-9" value={maxStudents} onChange={(e) => setMaxStudents(e.target.value)} placeholder="Ex: 25" />
+              </div>
+            </div>
 
+            {/* Linha 3 */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+              <div className="md:col-span-6 space-y-1.5">
+                <Label htmlFor="modalidade">Modalidade</Label>
+                <Input id="modalidade" className="h-9" value={modalidade} onChange={(e) => setModalidade(e.target.value)} placeholder="Presencial / EAD" />
+              </div>
+              <div className="md:col-span-6 space-y-1.5">
+                <Label htmlFor="certificate">Certificação</Label>
+                <Input id="certificate" className="h-9" value={certificate} onChange={(e) => setCertificate(e.target.value)} placeholder="Reconhecida MEC" />
+              </div>
+            </div>
+
+            {/* Linha 4 */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+              <div className="md:col-span-6 space-y-1.5">
+                <Label htmlFor="coordenador">Coordenador</Label>
+                <SelectCoordenador value={coordenadorId || null} onChange={(v) => setCoordenadorId(v ?? "")} />
+              </div>
+              <div className="md:col-span-3 space-y-1.5">
+                <Label htmlFor="isAtivo">Status</Label>
+                <Select value={isAtivo ? BOOL_OPTION_TRUE : BOOL_OPTION_FALSE} onValueChange={(v) => setIsAtivo(v === BOOL_OPTION_TRUE)}>
+                  <SelectTrigger id="isAtivo" className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={BOOL_OPTION_TRUE}>Ativo</SelectItem>
+                    <SelectItem value={BOOL_OPTION_FALSE}>Inativo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Linha 5 */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+              <div className="md:col-span-12 space-y-1.5">
+                <Label htmlFor="slug">Slug</Label>
+                <Input id="slug" className="h-9 opacity-80" value={slug} readOnly disabled />
+              </div>
+            </div>
           </CardContent>
-          <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <Button type="button" variant="outline" onClick={handleCancel}>
-              Cancelar
-            </Button>
-            <Button type="button" onClick={handleSave} disabled={saving || !isDirty}>
+
+          <CardFooter className="flex justify-end gap-2 border-t bg-background/60 p-4">
+            <Button variant="outline" onClick={handleCancel}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={saving || !isDirty}>
               {saving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...

@@ -268,6 +268,7 @@ const serializePayload = (input: Omit<Curso, "id" | "createdAt" | "updatedAt">) 
     imageUrl: input.imageUrl ?? "",
     highlights: input.highlights ?? [],
     professores: input.professores ?? [],
+    is_ativo: typeof input.is_ativo === "boolean" ? input.is_ativo : null,
   }
 
   console.log("[cursosService] serializePayload - OUTPUT:", JSON.stringify(serialized, null, 2))
