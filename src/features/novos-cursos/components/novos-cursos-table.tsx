@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useRef, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Folder, FileText, BookOpen, Image as ImageIcon, DollarSign, Star, ArrowUpDown } from "lucide-react"
@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Progress } from "@/components/ui/progress"
 import {
   Tooltip,
   TooltipContent,
@@ -57,11 +58,67 @@ export function NovosCursosTable() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortField, setSortField] = useState<SortField>("title")
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
+  const [progress, setProgress] = useState(0)
+  const [progressPhase, setProgressPhase] = useState<"idle" | "loading" | "fading">("idle")
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const finishTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const phaseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const clearTimers = useCallback(() => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current)
+      progressIntervalRef.current = null
+    }
+    if (finishTimeoutRef.current) {
+      clearTimeout(finishTimeoutRef.current)
+      finishTimeoutRef.current = null
+    }
+    if (phaseTimeoutRef.current) {
+      clearTimeout(phaseTimeoutRef.current)
+      phaseTimeoutRef.current = null
+    }
+  }, [])
+
+  const startProgress = useCallback(() => {
+    clearTimers()
+    setProgress(0)
+    setProgressPhase("loading")
+    progressIntervalRef.current = setInterval(() => {
+      setProgress((previous) => {
+        if (previous >= 92) return previous
+        const increment = Math.random() * 15 + 5
+        return Math.min(previous + increment, 92)
+      })
+    }, 120)
+  }, [clearTimers])
+
+  const finishProgress = useCallback(() => {
+    if (finishTimeoutRef.current) {
+      clearTimeout(finishTimeoutRef.current)
+    }
+    finishTimeoutRef.current = setTimeout(() => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+        progressIntervalRef.current = null
+      }
+      setProgress(100)
+      setProgressPhase("fading")
+      if (phaseTimeoutRef.current) {
+        clearTimeout(phaseTimeoutRef.current)
+      }
+      phaseTimeoutRef.current = setTimeout(() => {
+        setProgressPhase("idle")
+        phaseTimeoutRef.current = null
+      }, 350)
+      finishTimeoutRef.current = null
+    }, 400)
+  }, [])
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true)
+        startProgress()
         const data = await cursosService.getAll()
         setCourses(data)
       } catch (err) {
@@ -73,11 +130,14 @@ export function NovosCursosTable() {
         )
       } finally {
         setLoading(false)
+        finishProgress()
       }
     }
 
     void load()
-  }, [])
+  }, [finishProgress, startProgress])
+
+  useEffect(() => () => clearTimers(), [clearTimers])
 
   const categories = useMemo(() => {
     const uniqueCategories = new Set(courses.map((c) => c.category))
@@ -168,8 +228,12 @@ export function NovosCursosTable() {
         <CardHeader>
           <CardDescription>Carregando cursos cadastrados...</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">Buscando informações...</p>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <Progress value={progress} className="h-2 flex-1" />
+            <span className="w-12 text-right font-medium">{Math.round(progress)}%</span>
+          </div>
         </CardContent>
       </Card>
     )
@@ -210,7 +274,13 @@ export function NovosCursosTable() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="space-y-2">
+        {progressPhase !== "idle" ? (
+          <div className="flex items-center gap-3 rounded-full border border-border/60 bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
+            <Progress value={progress} className="h-1 flex-1" />
+            <span>{progressPhase === "loading" ? "Carregando cursos..." : "Concluído"}</span>
+          </div>
+        ) : null}
         <CardDescription>
           Total de {courses.length} curso(s) cadastrado(s) • {sortedCourses.length} exibido(s)
         </CardDescription>

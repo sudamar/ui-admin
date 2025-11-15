@@ -57,6 +57,7 @@ export interface Curso {
   availability?: CourseAvailability
   tags?: CourseTag[]
   is_ativo?: boolean
+  alertaVagas?: number
 }
 
 // Interface para preview (compatibilidade com código existente)
@@ -269,6 +270,7 @@ const serializePayload = (input: Omit<Curso, "id" | "createdAt" | "updatedAt">) 
     highlights: input.highlights ?? [],
     professores: input.professores ?? [],
     is_ativo: typeof input.is_ativo === "boolean" ? input.is_ativo : null,
+    alerta_vagas: typeof input.alertaVagas === "number" ? input.alertaVagas : null,
   }
 
   console.log("[cursosService] serializePayload - OUTPUT:", JSON.stringify(serialized, null, 2))

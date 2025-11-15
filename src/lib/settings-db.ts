@@ -24,11 +24,13 @@ function getSupabaseAdminClient(): SupabaseClient | null {
 }
 
 export interface Settings {
-  id: number;
-  nome_site: string;
-  manutencao: boolean;
-  drmsocial: boolean;
-  [key: string]: any;
+  id: number
+  nome_site: string
+  manutencao: boolean
+  drmsocial: boolean
+  log_ativo: boolean
+  email_ouvidoria?: string
+  [key: string]: any
 }
 
 export const getSettingsFromDB = async (): Promise<Settings | null> => {

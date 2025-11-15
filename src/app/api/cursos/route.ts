@@ -106,6 +106,7 @@ const cursoSchema = z.object({
   imageUrl: z.string().nullish(),
   highlights: z.array(highlightSchema).optional().default([]),
   professores: z.array(professorSchema).optional().default([]),
+  alerta_vagas: optionalNumber,
 })
 
 console.log("[API cursos] cursoSchema criado:", typeof cursoSchema, typeof cursoSchema?.safeParse)
@@ -142,6 +143,7 @@ type CursoRow = {
   updated_at?: string | null
   video_url: string | null
   image_url: string | null
+  alerta_vagas?: number | null
 }
 
 type HighlightRow = {
@@ -209,6 +211,7 @@ type CursoDto = {
     professorId: string
     papel?: string
   }>
+  alertaVagas?: number
 }
 
 function mapCurso(row: CursoRow): CursoDto {
@@ -242,6 +245,7 @@ function mapCurso(row: CursoRow): CursoDto {
     updatedAt: row.updated_at ?? undefined,
     videoUrl: row.video_url ?? undefined,
     imageUrl: row.image_url ?? undefined,
+    alertaVagas: row.alerta_vagas ?? undefined,
   }
 }
 
@@ -448,6 +452,7 @@ export async function POST(request: Request) {
     coordenador_id: parsed.data.coordenadorId ?? null,
     video_url: parsed.data.videoUrl ?? null,
     image_url: parsed.data.imageUrl ?? null,
+    alerta_vagas: parsed.data.alerta_vagas ?? null,
   }
 
   console.log("[POST /api/cursos] Inserindo curso na tabela principal")
@@ -636,6 +641,7 @@ export async function PATCH(request: Request) {
     coordenador_id: parsed.data.coordenadorId ?? null,
     video_url: parsed.data.videoUrl ?? null,
     image_url: parsed.data.imageUrl ?? null,
+    alerta_vagas: parsed.data.alerta_vagas ?? null,
   }
 
   console.log("[PATCH /api/cursos] Atualizando curso na tabela principal")

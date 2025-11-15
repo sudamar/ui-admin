@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ export function SettingsForm() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSetting, setSelectedSetting] = useState<{ key: string, value: any, description: string } | null>(null);
+  const [dynamicRevalidateOrigin, setDynamicRevalidateOrigin] = useState<string | null>(null);
 
   const canEdit = user?.perfil === PerfilUsuario.Admin || user?.perfil === PerfilUsuario.Secretaria;
 
@@ -38,6 +40,12 @@ export function SettingsForm() {
       setLoading(false);
     };
     fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setDynamicRevalidateOrigin(window.location.origin.replace(/\/$/, ""));
+    }
   }, []);
 
   const handleInputChange = (key: string, value: string) => {
@@ -72,6 +80,9 @@ export function SettingsForm() {
   const handleSave = async (key: string, value: any) => {
     try {
       await updateSetting(key, value);
+      if (settings) {
+        setSettings({ ...settings, [key]: value });
+      }
       toast.success("Configuração salva com sucesso!", { icon: <CheckCircle className="h-4 w-4 text-blue-500" /> });
     } catch (error) {
       toast.error("Erro ao salvar a configuração.", { icon: <XCircle className="h-4 w-4 text-red-500" /> });
@@ -117,9 +128,20 @@ export function SettingsForm() {
     }
   };
 
+  const revalidateEntries = dynamicRevalidateOrigin
+    ? [
+        {
+          name: `Servidor atual (${dynamicRevalidateOrigin})`,
+          url: `${dynamicRevalidateOrigin}/revalidate`,
+        },
+        ...revalidateData.filter((entry) => entry.url !== `${dynamicRevalidateOrigin}/revalidate`),
+      ]
+    : revalidateData;
+
   if (loading || !settings) {
     return <div>Carregando...</div>;
   }
+
 
   return (
     <>
@@ -141,6 +163,24 @@ export function SettingsForm() {
                 />
                 {canEdit && (
                   <Button onClick={() => handleSave("nome_site", settings.nome_site)}>
+                    Salvar
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email_ouvidoria">E-mail da Ouvidoria</Label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  id="email_ouvidoria"
+                  type="email"
+                  value={settings.email_ouvidoria ?? ""}
+                  onChange={(e) => handleInputChange("email_ouvidoria", e.target.value)}
+                  disabled={!canEdit}
+                  placeholder="ouvidoria@fafih.edu.br"
+                />
+                {canEdit && (
+                  <Button onClick={() => handleSave("email_ouvidoria", settings.email_ouvidoria)}>
                     Salvar
                   </Button>
                 )}
@@ -172,8 +212,21 @@ export function SettingsForm() {
                 />
               </div>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="log_ativo">Logs do sistema</Label>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="log_ativo"
+                  checked={Boolean(settings.log_ativo)}
+                  onCheckedChange={(checked) =>
+                    handleSwitchChange("log_ativo", checked, "Ativar coleta de logs")
+                  }
+                  disabled={!canEdit}
+                />
+              </div>
+            </div>
           <div className="border-t pt-6 space-y-4">
-            {revalidateData.map((revalidate) => (
+            {revalidateEntries.map((revalidate) => (
                 <div key={revalidate.name} className="flex items-center space-x-2 border-l-2 border-green-500 pl-2">
                     <Link className="h-4 w-4" />
                     <Label>{revalidate.name}</Label>
