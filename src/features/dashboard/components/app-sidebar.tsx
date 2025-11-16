@@ -81,12 +81,12 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href={sidebarData.brand.href} className="flex items-center gap-3">
-                <div className="relative h-10 w-10 overflow-hidden rounded-lg border border-border/60 bg-background shadow-sm">
+                <div className="relative h-15 w-15 overflow-hidden rounded-lg border border-border/60 bg-background shadow-sm">
                   <Image
                     src="/logo-fafih-quadrado-sem-fundo.png"
                     alt="Logotipo FAFIH"
                     fill
-                    sizes="40px"
+                    sizes="80px"
                     className="object-contain p-1.5"
                     priority
                   />

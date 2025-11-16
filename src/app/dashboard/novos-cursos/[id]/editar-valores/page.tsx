@@ -35,6 +35,7 @@ const parseCurrencyToNumber = (value: string): number | null => {
 const mapAlertValueToOption = (value: string) => {
   if (value === "14") return "poucas"
   if (value === "5") return "ultimas"
+  if (value === "0") return "esgotado"
   return "normal"
 }
 
@@ -320,6 +321,10 @@ export default function EditarValoresPage() {
                     setAlertaVagas("5")
                     return
                   }
+                  if (value === "esgotado") {
+                    setAlertaVagas("0")
+                    return
+                  }
                   setAlertaVagas("50")
                 }}
               >
@@ -330,6 +335,7 @@ export default function EditarValoresPage() {
                   <SelectItem value="normal">Normal</SelectItem>
                   <SelectItem value="poucas">Restam poucas vagas</SelectItem>
                   <SelectItem value="ultimas">Últimas vagas</SelectItem>
+                  <SelectItem value="esgotado">Vagas esgotadas</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">

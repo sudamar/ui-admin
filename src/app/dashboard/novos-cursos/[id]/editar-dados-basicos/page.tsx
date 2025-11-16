@@ -244,6 +244,9 @@ export default function EditarDadosBasicosPage() {
               <div className="md:col-span-6 space-y-1.5">
                 <Label htmlFor="maxStudents">Máximo de alunos</Label>
                 <Input id="maxStudents" className="h-9" value={maxStudents} onChange={(e) => setMaxStudents(e.target.value)} placeholder="Ex: 25" />
+                {maxStudents.trim() === "0" ? (
+                  <p className="text-xs font-semibold uppercase text-destructive">Vagas esgotadas</p>
+                ) : null}
               </div>
             </div>
 
