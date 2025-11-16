@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react"
 
+import { syncLoggerWithSettings } from "@/lib/logger"
 import { getSettings, updateSetting as serviceUpdateSetting, type Settings } from "@/services/settings/settings-service"
 
 type SettingsContextValue = {
@@ -22,6 +23,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = await getSettings()
       setSettings(data)
+      syncLoggerWithSettings(data)
     } finally {
       setLoading(false)
     }

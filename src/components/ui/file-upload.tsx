@@ -1,3 +1,4 @@
+import { imprimeLogs } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 import React, { useRef, useState } from "react";
 import { motion } from "framer-motion";
@@ -47,7 +48,7 @@ export const FileUpload = ({
     noClick: true,
     onDrop: handleFileChange,
     onDropRejected: (error) => {
-      console.log(error);
+      imprimeLogs(error);
     },
   });
 

@@ -3,6 +3,7 @@ import { cookies } from "next/headers"
 import { createClient } from "@supabase/supabase-js"
 import { z } from "zod"
 
+import { imprimeLogs } from "@/lib/logger"
 import { getProfileFromToken, PerfilUsuario } from "@/services/auth/auth-service"
 
 const AUTH_COOKIE = "ui-admin-token"
@@ -109,7 +110,7 @@ const cursoSchema = z.object({
   alerta_vagas: optionalNumber,
 })
 
-console.log("[API cursos] cursoSchema criado:", typeof cursoSchema, typeof cursoSchema?.safeParse)
+imprimeLogs("[API cursos] cursoSchema criado:", typeof cursoSchema, typeof cursoSchema?.safeParse)
 
 type CursoPayload = z.infer<typeof cursoSchema>
 
@@ -310,7 +311,7 @@ export async function GET(request: Request) {
   const id = searchParams.get("id")
   const slug = searchParams.get("slug")
 
-  console.log("[GET /api/cursos] Parâmetros:", { id, slug })
+  imprimeLogs("[GET /api/cursos] Parâmetros:", { id, slug })
 
   let query = supabaseAdmin
     .from(TABLE_NAME)
@@ -318,16 +319,16 @@ export async function GET(request: Request) {
     .order("title", { ascending: true })
 
   if (id) {
-    console.log("[GET /api/cursos] Buscando por ID:", id)
+    imprimeLogs("[GET /api/cursos] Buscando por ID:", id)
     query = query.eq("id", id).limit(1)
   } else if (slug) {
-    console.log("[GET /api/cursos] Buscando por slug:", slug)
+    imprimeLogs("[GET /api/cursos] Buscando por slug:", slug)
     query = query.eq("slug", slug).limit(1)
   } else {
-    console.log("[GET /api/cursos] Buscando todos os cursos")
+    imprimeLogs("[GET /api/cursos] Buscando todos os cursos")
   }
 
-  console.log("[GET /api/cursos] Executando query principal...")
+  imprimeLogs("[GET /api/cursos] Executando query principal...")
   const { data, error } = await query
 
   if (error) {
@@ -341,12 +342,12 @@ export async function GET(request: Request) {
     )
   }
 
-  console.log("[GET /api/cursos] Query principal retornou", data?.length ?? 0, "cursos")
+  imprimeLogs("[GET /api/cursos] Query principal retornou", data?.length ?? 0, "cursos")
 
   const cursos = (data ?? []).map(mapCurso)
 
   for (const curso of cursos) {
-    console.log(`[GET /api/cursos] Carregando dados relacionados do curso: ${curso.id} (${curso.title})`)
+    imprimeLogs(`[GET /api/cursos] Carregando dados relacionados do curso: ${curso.id} (${curso.title})`)
 
     const [highlightsRes, professoresRes] = await Promise.all([
       supabaseAdmin
@@ -363,13 +364,13 @@ export async function GET(request: Request) {
     if (highlightsRes.error) {
       console.error(`[GET /api/cursos] Erro ao buscar highlights do curso ${curso.id}:`, highlightsRes.error)
     } else {
-      console.log(`[GET /api/cursos] Curso ${curso.id}: ${highlightsRes.data?.length ?? 0} highlights`)
+      imprimeLogs(`[GET /api/cursos] Curso ${curso.id}: ${highlightsRes.data?.length ?? 0} highlights`)
     }
 
     if (professoresRes.error) {
       console.error(`[GET /api/cursos] Erro ao buscar professores do curso ${curso.id}:`, professoresRes.error)
     } else {
-      console.log(`[GET /api/cursos] Curso ${curso.id}: ${professoresRes.data?.length ?? 0} professores`)
+      imprimeLogs(`[GET /api/cursos] Curso ${curso.id}: ${professoresRes.data?.length ?? 0} professores`)
     }
 
     curso.highlights = (highlightsRes.data ?? []).map(mapHighlight)
@@ -391,16 +392,16 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  console.log("[POST /api/cursos] Iniciando criação de curso")
+  imprimeLogs("[POST /api/cursos] Iniciando criação de curso")
 
   const { authorized, response } = await ensureAuthorized()
   if (!authorized) {
-    console.log("[POST /api/cursos] Usuário não autorizado")
+    imprimeLogs("[POST /api/cursos] Usuário não autorizado")
     return response
   }
 
   const payload = await request.json().catch(() => null)
-  console.log("[POST /api/cursos] Payload recebido:", JSON.stringify(payload, null, 2))
+  imprimeLogs("[POST /api/cursos] Payload recebido:", JSON.stringify(payload, null, 2))
 
   const parsed = cursoSchema?.safeParse(payload) 
 
@@ -423,7 +424,7 @@ export async function POST(request: Request) {
     )
   }
 
-  console.log("[POST /api/cursos] Validação OK, preparando insert")
+  imprimeLogs("[POST /api/cursos] Validação OK, preparando insert")
 
   const insertPayload = {
     slug: parsed.data.slug,
@@ -455,7 +456,7 @@ export async function POST(request: Request) {
     alerta_vagas: parsed.data.alerta_vagas ?? null,
   }
 
-  console.log("[POST /api/cursos] Inserindo curso na tabela principal")
+  imprimeLogs("[POST /api/cursos] Inserindo curso na tabela principal")
   const { data, error } = await supabaseAdmin
     .from(TABLE_NAME)
     .insert(insertPayload)
@@ -475,11 +476,11 @@ export async function POST(request: Request) {
     )
   }
 
-  console.log("[POST /api/cursos] Curso criado com ID:", data.id)
+  imprimeLogs("[POST /api/cursos] Curso criado com ID:", data.id)
   const curso = mapCurso(data)
 
   if (parsed.data.highlights && parsed.data.highlights.length > 0) {
-    console.log(`[POST /api/cursos] Inserindo ${parsed.data.highlights.length} highlights`)
+    imprimeLogs(`[POST /api/cursos] Inserindo ${parsed.data.highlights.length} highlights`)
     const highlightsPayload = parsed.data.highlights.map((h, index) => ({
       curso_id: curso.id,
       icon: h.icon,
@@ -498,14 +499,14 @@ export async function POST(request: Request) {
     if (highlightsError) {
       console.error("[POST /api/cursos] Erro ao inserir highlights:", highlightsError)
     } else {
-      console.log(`[POST /api/cursos] ${highlightsData?.length ?? 0} highlights inseridos`)
+      imprimeLogs(`[POST /api/cursos] ${highlightsData?.length ?? 0} highlights inseridos`)
     }
 
     curso.highlights = (highlightsData ?? []).map(mapHighlight)
   }
 
   if (parsed.data.professores && parsed.data.professores.length > 0) {
-    console.log(`[POST /api/cursos] Inserindo ${parsed.data.professores.length} professores`)
+    imprimeLogs(`[POST /api/cursos] Inserindo ${parsed.data.professores.length} professores`)
     const professoresPayload = parsed.data.professores.map((p) => ({
       curso_id: curso.id,
       professor_id: p.professorId,
@@ -520,13 +521,13 @@ export async function POST(request: Request) {
     if (professoresError) {
       console.error("[POST /api/cursos] Erro ao inserir professores:", professoresError)
     } else {
-      console.log(`[POST /api/cursos] ${professoresData?.length ?? 0} professores inseridos`)
+      imprimeLogs(`[POST /api/cursos] ${professoresData?.length ?? 0} professores inseridos`)
     }
 
     curso.professores = (professoresData ?? []).map(mapProfessor)
   }
 
-  console.log("[POST /api/cursos] Curso criado com sucesso:", curso.id)
+  imprimeLogs("[POST /api/cursos] Curso criado com sucesso:", curso.id)
   return NextResponse.json({
     success: true,
     curso,
@@ -537,7 +538,7 @@ export async function PATCH(request: Request) {
   const { searchParams } = new URL(request.url)
   const id = searchParams.get("id")
 
-  console.log("[PATCH /api/cursos] Iniciando atualização do curso:", id)
+  imprimeLogs("[PATCH /api/cursos] Iniciando atualização do curso:", id)
 
   if (!id) {
     console.error("[PATCH /api/cursos] ID não fornecido")
@@ -552,15 +553,15 @@ export async function PATCH(request: Request) {
 
   const { authorized, response } = await ensureAuthorized()
   if (!authorized) {
-    console.log("[PATCH /api/cursos] Usuário não autorizado")
+    imprimeLogs("[PATCH /api/cursos] Usuário não autorizado")
     return response
   }
 
   const payload = await request.json().catch(() => null)
-  console.log("[PATCH /api/cursos] ========== PAYLOAD COMPLETO ==========")
-  console.log("[PATCH /api/cursos] Payload recebido para curso", id, ":")
-  console.log(JSON.stringify(payload, null, 2))
-  console.log("[PATCH /api/cursos] =======================================")
+  imprimeLogs("[PATCH /api/cursos] ========== PAYLOAD COMPLETO ==========")
+  imprimeLogs("[PATCH /api/cursos] Payload recebido para curso", id, ":")
+  imprimeLogs(JSON.stringify(payload, null, 2))
+  imprimeLogs("[PATCH /api/cursos] =======================================")
 
   if (!payload) {
     console.error("[PATCH /api/cursos] Payload é null ou inválido")
@@ -573,12 +574,12 @@ export async function PATCH(request: Request) {
     )
   }
 
-  console.log("[PATCH] Validando payload com Zod...")
+  imprimeLogs("[PATCH] Validando payload com Zod...")
 
   let parsed
   try {
     parsed = cursoSchema.safeParse(payload)
-    console.log("[PATCH] safeParse executado com sucesso:", parsed.success)
+    imprimeLogs("[PATCH] safeParse executado com sucesso:", parsed.success)
   } catch (error) {
     console.error("[PATCH] ❌ Erro ao executar safeParse:")
     console.error("[PATCH] Error:", error)
@@ -612,7 +613,7 @@ export async function PATCH(request: Request) {
     )
   }
 
-  console.log("[PATCH /api/cursos] Validação OK, preparando update")
+  imprimeLogs("[PATCH /api/cursos] Validação OK, preparando update")
 
   const updatePayload = {
     slug: parsed.data.slug,
@@ -644,9 +645,9 @@ export async function PATCH(request: Request) {
     alerta_vagas: parsed.data.alerta_vagas ?? null,
   }
 
-  console.log("[PATCH /api/cursos] Atualizando curso na tabela principal")
-  console.log("[PATCH /api/cursos] UPDATE payload:", JSON.stringify(updatePayload, null, 2))
-  console.log(`[PATCH /api/cursos] SQL: UPDATE ${TABLE_NAME} SET ... WHERE id = '${id}'`)
+  imprimeLogs("[PATCH /api/cursos] Atualizando curso na tabela principal")
+  imprimeLogs("[PATCH /api/cursos] UPDATE payload:", JSON.stringify(updatePayload, null, 2))
+  imprimeLogs(`[PATCH /api/cursos] SQL: UPDATE ${TABLE_NAME} SET ... WHERE id = '${id}'`)
 
   const { data, error } = await supabaseAdmin
     .from(TABLE_NAME)
@@ -676,11 +677,11 @@ export async function PATCH(request: Request) {
     )
   }
 
-  console.log("[PATCH /api/cursos] ✓ UPDATE executado com sucesso na tabela cursos")
-  console.log("[PATCH /api/cursos] Curso atualizado, processando relacionamentos")
+  imprimeLogs("[PATCH /api/cursos] ✓ UPDATE executado com sucesso na tabela cursos")
+  imprimeLogs("[PATCH /api/cursos] Curso atualizado, processando relacionamentos")
   const curso = mapCurso(data)
 
-  console.log("[PATCH /api/cursos] Removendo highlights antigos do curso", id)
+  imprimeLogs("[PATCH /api/cursos] Removendo highlights antigos do curso", id)
   const { error: deleteHighlightsError } = await supabaseAdmin.from(HIGHLIGHTS_TABLE).delete().eq("curso_id", id)
 
   if (deleteHighlightsError) {
@@ -688,7 +689,7 @@ export async function PATCH(request: Request) {
   }
 
   if (parsed.data.highlights && parsed.data.highlights.length > 0) {
-    console.log(`[PATCH /api/cursos] Inserindo ${parsed.data.highlights.length} novos highlights`)
+    imprimeLogs(`[PATCH /api/cursos] Inserindo ${parsed.data.highlights.length} novos highlights`)
     const highlightsPayload = parsed.data.highlights.map((h, index) => ({
       curso_id: id,
       icon: h.icon,
@@ -707,13 +708,13 @@ export async function PATCH(request: Request) {
     if (highlightsError) {
       console.error("[PATCH /api/cursos] Erro ao inserir highlights:", highlightsError)
     } else {
-      console.log(`[PATCH /api/cursos] ${highlightsData?.length ?? 0} highlights inseridos`)
+      imprimeLogs(`[PATCH /api/cursos] ${highlightsData?.length ?? 0} highlights inseridos`)
     }
 
     curso.highlights = (highlightsData ?? []).map(mapHighlight)
   }
 
-  console.log("[PATCH /api/cursos] Removendo professores antigos do curso", id)
+  imprimeLogs("[PATCH /api/cursos] Removendo professores antigos do curso", id)
   const { error: deleteProfessoresError } = await supabaseAdmin.from(PROFESSORES_TABLE).delete().eq("curso_id", id)
 
   if (deleteProfessoresError) {
@@ -721,7 +722,7 @@ export async function PATCH(request: Request) {
   }
 
   if (parsed.data.professores && parsed.data.professores.length > 0) {
-    console.log(`[PATCH /api/cursos] Inserindo ${parsed.data.professores.length} novos professores`)
+    imprimeLogs(`[PATCH /api/cursos] Inserindo ${parsed.data.professores.length} novos professores`)
     const professoresPayload = parsed.data.professores.map((p) => ({
       curso_id: id,
       professor_id: p.professorId,
@@ -736,23 +737,23 @@ export async function PATCH(request: Request) {
     if (professoresError) {
       console.error("[POST /api/cursos] Erro ao inserir professores:", professoresError)
     } else {
-      console.log(`[POST /api/cursos] ${professoresData?.length ?? 0} professores inseridos`)
+      imprimeLogs(`[POST /api/cursos] ${professoresData?.length ?? 0} professores inseridos`)
     }
 
     curso.professores = (professoresData ?? []).map(mapProfessor)
   }
 
-  console.log("[PATCH /api/cursos] Curso atualizado com sucesso:", id)
+  imprimeLogs("[PATCH /api/cursos] Curso atualizado com sucesso:", id)
 
   const finalResponse = {
     success: true,
     curso,
   }
 
-  console.log("[PATCH /api/cursos] ========== RESPOSTA FINAL ==========")
-  console.log("[PATCH /api/cursos] Response que será enviada:")
-  console.log(JSON.stringify(finalResponse, null, 2))
-  console.log("[PATCH /api/cursos] ====================================")
+  imprimeLogs("[PATCH /api/cursos] ========== RESPOSTA FINAL ==========")
+  imprimeLogs("[PATCH /api/cursos] Response que será enviada:")
+  imprimeLogs(JSON.stringify(finalResponse, null, 2))
+  imprimeLogs("[PATCH /api/cursos] ====================================")
 
   return NextResponse.json(finalResponse)
 }
@@ -761,7 +762,7 @@ export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url)
   const id = searchParams.get("id")
 
-  console.log("[DELETE /api/cursos] Iniciando remoção do curso:", id)
+  imprimeLogs("[DELETE /api/cursos] Iniciando remoção do curso:", id)
 
   if (!id) {
     console.error("[DELETE /api/cursos] ID não fornecido")
@@ -773,11 +774,11 @@ export async function DELETE(request: Request) {
 
   const { authorized, response } = await ensureAuthorized()
   if (!authorized) {
-    console.log("[DELETE /api/cursos] Usuário não autorizado")
+    imprimeLogs("[DELETE /api/cursos] Usuário não autorizado")
     return response
   }
 
-  console.log("[DELETE /api/cursos] Removendo curso da tabela principal (cascade para relacionamentos)")
+  imprimeLogs("[DELETE /api/cursos] Removendo curso da tabela principal (cascade para relacionamentos)")
   const { data, error } = await supabaseAdmin
     .from(TABLE_NAME)
     .delete()
@@ -804,6 +805,6 @@ export async function DELETE(request: Request) {
     )
   }
 
-  console.log("[DELETE /api/cursos] Curso removido com sucesso:", id)
+  imprimeLogs("[DELETE /api/cursos] Curso removido com sucesso:", id)
   return NextResponse.json({ success: true })
 }

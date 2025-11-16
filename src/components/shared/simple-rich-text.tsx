@@ -1,6 +1,8 @@
-'use client'
+"use client"
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from "react"
+
+import { imprimeLogs } from "@/lib/logger"
 
 interface SimpleRichTextProps {
   value?: string
@@ -27,8 +29,8 @@ export function SimpleRichText({
   const handleInput = () => {
     if (editorRef.current && onChange) {
       const html = editorRef.current.innerHTML
-      console.log('[SimpleRichText] HTML:', html)
-      console.log('[SimpleRichText] Text:', editorRef.current.textContent)
+      imprimeLogs("[SimpleRichText] HTML:", html)
+      imprimeLogs("[SimpleRichText] Text:", editorRef.current.textContent)
       onChange(html)
     }
   }

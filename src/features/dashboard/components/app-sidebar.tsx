@@ -34,12 +34,15 @@ import {
   FileText,
   FolderKanban,
   Home,
+  Newspaper,
   LogOut,
   Settings,
   Tag,
   User,
   Users,
   type LucideIcon,
+  UserStar,
+  UserRoundPen,
 } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
@@ -70,6 +73,11 @@ export function AppSidebar() {
     BookOpen,
     Building,
     Users,
+    Newspaper,
+    UserStar,
+    UserRoundPen,
+    User,
+    LogOut,
     Settings,
     Tag,
   }

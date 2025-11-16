@@ -1,3 +1,5 @@
+import { imprimeLogs } from "@/lib/logger"
+
 export interface Trabalho {
   id: string
   titulo: string
@@ -31,9 +33,9 @@ const API_URL = "/api/trabalhos"
 
 async function handleResponse(response: Response) {
   if (!response.ok) {
-    console.log("*******************")
-    console.log("Erro na resposta da API", await response.status)
-    console.log("Erro na resposta da API", await response.text())
+    imprimeLogs("*******************")
+    imprimeLogs("Erro na resposta da API", response.status)
+    imprimeLogs("Erro na resposta da API", await response.text())
     const errorBody = (await response.json().catch(() => null)) as
       | { message?: string }
       | null

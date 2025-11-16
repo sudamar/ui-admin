@@ -1,3 +1,5 @@
+import { imprimeLogs } from "@/lib/logger"
+
 export type CourseAvailability = "promotion" | "open" | "limited" | "sold-out"
 
 export interface CourseTag {
@@ -91,13 +93,13 @@ type CursosResponse =
 const API_URL = "/api/cursos"
 
 async function handleResponse(response: Response): Promise<CursosResponse> {
-  console.log("[cursosService] handleResponse - Status:", response.status)
-  console.log("[cursosService] handleResponse - Headers:", Object.fromEntries(response.headers.entries()))
+  imprimeLogs("[cursosService] handleResponse - Status:", response.status)
+  imprimeLogs("[cursosService] handleResponse - Headers:", Object.fromEntries(response.headers.entries()))
 
   // Clonar a resposta para ler o body sem consumí-lo
   const clonedResponse = response.clone()
   const rawText = await clonedResponse.text()
-  console.log("[cursosService] handleResponse - Raw Response Text (length:", rawText.length, "):", rawText)
+  imprimeLogs("[cursosService] handleResponse - Raw Response Text (length:", rawText.length, "):", rawText)
 
   // Verificar se a resposta está vazia
   if (!rawText || rawText.trim() === '') {
@@ -135,7 +137,7 @@ async function handleResponse(response: Response): Promise<CursosResponse> {
   let jsonResponse: CursosResponse
   try {
     jsonResponse = JSON.parse(rawText) as CursosResponse
-    console.log("[cursosService] handleResponse - ✅ Sucesso (parsed):", JSON.stringify(jsonResponse, null, 2))
+    imprimeLogs("[cursosService] handleResponse - ✅ Sucesso (parsed):", JSON.stringify(jsonResponse, null, 2))
   } catch (e) {
     console.error("[cursosService] handleResponse - ❌ Erro ao parsear JSON de sucesso:", e)
     console.error("[cursosService] handleResponse - Raw text:", rawText)
@@ -238,7 +240,7 @@ function toCoursePreview(curso: Curso): CoursePreview {
 }
 
 const serializePayload = (input: Omit<Curso, "id" | "createdAt" | "updatedAt">) => {
-  console.log("[cursosService] serializePayload - INPUT:", JSON.stringify(input, null, 2))
+  imprimeLogs("[cursosService] serializePayload - INPUT:", JSON.stringify(input, null, 2))
 
   const serialized = {
     slug: input.slug,
@@ -273,7 +275,7 @@ const serializePayload = (input: Omit<Curso, "id" | "createdAt" | "updatedAt">) 
     alerta_vagas: typeof input.alertaVagas === "number" ? input.alertaVagas : null,
   }
 
-  console.log("[cursosService] serializePayload - OUTPUT:", JSON.stringify(serialized, null, 2))
+  imprimeLogs("[cursosService] serializePayload - OUTPUT:", JSON.stringify(serialized, null, 2))
   return serialized
 }
 
@@ -353,14 +355,14 @@ export const cursosService = {
   },
 
   async update(id: string, data: Omit<Curso, "id" | "createdAt" | "updatedAt">): Promise<Curso> {
-    console.log(`[cursosService] update - ID: ${id}`)
-    console.log("[cursosService] update - Data recebida:", data)
+    imprimeLogs(`[cursosService] update - ID: ${id}`)
+    imprimeLogs("[cursosService] update - Data recebida:", data)
 
     const serializedData = serializePayload(data)
     const bodyString = JSON.stringify(serializedData)
 
-    console.log("[cursosService] update - Body que será enviado:", bodyString)
-    console.log("[cursosService] update - URL:", `${API_URL}?id=${encodeURIComponent(id)}`)
+    imprimeLogs("[cursosService] update - Body que será enviado:", bodyString)
+    imprimeLogs("[cursosService] update - URL:", `${API_URL}?id=${encodeURIComponent(id)}`)
 
     const response = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
       method: "PATCH",
@@ -371,8 +373,8 @@ export const cursosService = {
       body: bodyString,
     })
 
-    console.log("[cursosService] update - Response status:", response.status)
-    console.log("[cursosService] update - Response ok:", response.ok)
+    imprimeLogs("[cursosService] update - Response status:", response.status)
+    imprimeLogs("[cursosService] update - Response ok:", response.ok)
 
     const result = await handleResponse(response)
     if (!result.success) {

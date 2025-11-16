@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { NovosCursosTable } from "@/features/novos-cursos/components/novos-cursos-table"
 
 export const metadata: Metadata = {
-  title: "Novos cursos",
+  title: "Cursos FAFIH",
   description: "Gerencie cursos utilizando a nova experiência de edição.",
 }
 

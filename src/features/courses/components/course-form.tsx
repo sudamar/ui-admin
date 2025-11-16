@@ -47,6 +47,7 @@ import {
 import { RichTextEditorHybrid } from "@/components/shared/rich-text-editor-hybrid"
 import { FileUpload } from "@/components/ui/file-upload"
 import { CurrencyInput } from "@/components/ui/currency-input"
+import { imprimeLogs } from "@/lib/logger"
 import { cursosService, type CourseDetails, type CourseAvailability } from "@/services/cursos/cursos-service"
 import { professoresService } from "@/services/professores/professores-service"
 import type { Professor } from "@/features/professores/types"
@@ -248,9 +249,9 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
     const loadingToast = toast.loading(isEdit ? "Atualizando curso..." : "Criando curso...")
 
     try {
-      console.log("=== [CourseForm] INÍCIO DO SUBMIT ===")
-      console.log("[CourseForm] Modo:", mode)
-      console.log("[CourseForm] Values do formulário:", values)
+      imprimeLogs("=== [CourseForm] INÍCIO DO SUBMIT ===")
+      imprimeLogs("[CourseForm] Modo:", mode)
+      imprimeLogs("[CourseForm] Values do formulário:", values)
 
       const payload: CourseDetails = {
         id: initialData?.id ?? "",
@@ -281,15 +282,15 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
         tags: [],
       }
 
-      console.log("[CourseForm] 1. Payload inicial (CourseDetails):", JSON.stringify(payload, null, 2))
+      imprimeLogs("[CourseForm] 1. Payload inicial (CourseDetails):", JSON.stringify(payload, null, 2))
 
       const { id, tags, fullDescription, justificativa, objetivos, publico, ...rest } = payload
 
-      console.log("[CourseForm] 2. Arrays extraídos:")
-      console.log("  - fullDescription:", fullDescription)
-      console.log("  - justificativa:", justificativa)
-      console.log("  - objetivos:", objetivos)
-      console.log("  - publico:", publico)
+      imprimeLogs("[CourseForm] 2. Arrays extraídos:")
+      imprimeLogs("  - fullDescription:", fullDescription)
+      imprimeLogs("  - justificativa:", justificativa)
+      imprimeLogs("  - objetivos:", objetivos)
+      imprimeLogs("  - publico:", publico)
 
       // Converter arrays para Record para o backend
       const backendPayload = {
@@ -300,17 +301,17 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
         publico: arrayToRecord(publico || []),
       }
 
-      console.log("[CourseForm] 3. Backend payload (com Records):", JSON.stringify(backendPayload, null, 2))
-      console.log("[CourseForm] 4. Chamando cursosService.update/create...")
-      console.log("[CourseForm]    - isEdit:", isEdit)
-      console.log("[CourseForm]    - initialData?.id:", initialData?.id)
+      imprimeLogs("[CourseForm] 3. Backend payload (com Records):", JSON.stringify(backendPayload, null, 2))
+      imprimeLogs("[CourseForm] 4. Chamando cursosService.update/create...")
+      imprimeLogs("[CourseForm]    - isEdit:", isEdit)
+      imprimeLogs("[CourseForm]    - initialData?.id:", initialData?.id)
 
       const saved = isEdit
         ? await cursosService.update(initialData!.id, backendPayload)
         : await cursosService.create(backendPayload)
 
-      console.log("[CourseForm] 5. Resposta do cursosService:")
-      console.log(JSON.stringify(saved, null, 2))
+      imprimeLogs("[CourseForm] 5. Resposta do cursosService:")
+      imprimeLogs(JSON.stringify(saved, null, 2))
 
       if (!saved) {
         console.error("[CourseForm] ❌ Resposta é null ou undefined")
@@ -319,7 +320,7 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
         return
       }
 
-      console.log("[CourseForm] 6. Convertendo Curso para CourseDetails...")
+      imprimeLogs("[CourseForm] 6. Convertendo Curso para CourseDetails...")
 
       // Converter Curso para CourseDetails
       const courseDetails: CourseDetails = {
@@ -330,16 +331,16 @@ export function CourseForm({ mode, initialData, onSubmit, onDelete }: CourseForm
         publico: recordToArray(saved.publico),
       }
 
-      console.log("[CourseForm] 7. CourseDetails final:")
-      console.log(JSON.stringify(courseDetails, null, 2))
+      imprimeLogs("[CourseForm] 7. CourseDetails final:")
+      imprimeLogs(JSON.stringify(courseDetails, null, 2))
 
       toast.dismiss(loadingToast)
       toast.success(isEdit ? "Curso atualizado com sucesso!" : "Curso criado com sucesso!")
 
-      console.log("[CourseForm] 8. Chamando onSubmit callback...")
+      imprimeLogs("[CourseForm] 8. Chamando onSubmit callback...")
       await onSubmit?.(courseDetails)
 
-      console.log("[CourseForm] 9. Redirecionando para /dashboard/cursos")
+      imprimeLogs("[CourseForm] 9. Redirecionando para /dashboard/cursos")
       router.push("/dashboard/cursos")
     } catch (error) {
       console.error("[CourseForm] ========== ERRO CAPTURADO ==========")

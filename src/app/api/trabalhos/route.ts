@@ -3,6 +3,7 @@ import { cookies } from "next/headers"
 import { z } from "zod"
 import { createClient } from "@supabase/supabase-js"
 
+import { imprimeLogs } from "@/lib/logger"
 import {
   getProfileFromToken,
   PerfilUsuario,
@@ -268,7 +269,7 @@ export async function POST(request: Request) {
     )
   }
 
-  console.log("[API][Trabalhos][POST] Payload válido:", parsed.data)
+  imprimeLogs("[API][Trabalhos][POST] Payload válido:", parsed.data)
 
   // 1. Criar o trabalho
   const { data: trabalhoData, error: trabalhoError } = await supabaseAdmin
@@ -381,7 +382,7 @@ export async function PATCH(request: Request) {
     )
   }
 
-  console.log("[API][Trabalhos][PATCH] Atualizando trabalho:", { id, payload: parsed.data })
+  imprimeLogs("[API][Trabalhos][PATCH] Atualizando trabalho:", { id, payload: parsed.data })
 
   // 1. Atualizar o trabalho
   const { data: trabalhoData, error: trabalhoError } = await supabaseAdmin

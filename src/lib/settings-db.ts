@@ -1,6 +1,8 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
+import { syncLoggerWithSettings } from "@/lib/logger";
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
@@ -46,6 +48,7 @@ export const getSettingsFromDB = async (): Promise<Settings | null> => {
     console.error('Error fetching settings:', error);
     return null;
   }
+  syncLoggerWithSettings(data);
   return data as Settings | null;
 };
 
@@ -66,5 +69,7 @@ export const updateSettingInDB = async (key: string, value: any): Promise<Settin
         throw error;
     }
 
-    return data ? data[0] : null;
+    const updatedRecord = data ? data[0] : null;
+    syncLoggerWithSettings(updatedRecord);
+    return updatedRecord;
 };
