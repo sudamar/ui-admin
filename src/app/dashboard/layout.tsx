@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { SettingsProvider } from "@/contexts/settings-context"
 
 const AppSidebar = dynamic(
   async () => {
@@ -54,16 +55,16 @@ export default function DashboardLayout({
   const defaultOpen = !isMobile
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen} key={String(isMounted)}>
-      <div className="flex min-h-screen w-full" suppressHydrationWarning>
-        <AppSidebar />
-        <SidebarInset className="flex flex-1 flex-col">
-          <AppHeader />
-          <main className="flex-1 p-4 md:p-6">
-            {children}
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+    <SettingsProvider>
+      <SidebarProvider defaultOpen={defaultOpen} key={String(isMounted)}>
+        <div className="flex min-h-screen w-full" suppressHydrationWarning>
+          <AppSidebar />
+          <SidebarInset className="flex flex-1 flex-col">
+            <AppHeader />
+            <main className="flex-1 p-4 md:p-6">{children}</main>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    </SettingsProvider>
   )
 }

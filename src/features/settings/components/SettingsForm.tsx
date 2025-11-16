@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSettings, updateSetting, Settings } from "@/services/settings/settings-service";
+import type { Settings } from "@/services/settings/settings-service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,51 +21,46 @@ import revalidateData from "@/data/settings/revalidate.json";
 import { useAuth } from "@/contexts/auth-context";
 import { PerfilUsuario } from "@/services/auth/auth-service";
 import { Link, XCircle, CheckCircle, Info } from "lucide-react";
+import { useSettingsContext } from "@/contexts/settings-context";
 
 export function SettingsForm() {
-  const { user } = useAuth();
-  const [settings, setSettings] = useState<Settings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedSetting, setSelectedSetting] = useState<{ key: string, value: any, description: string } | null>(null);
-  const [dynamicRevalidateOrigin, setDynamicRevalidateOrigin] = useState<string | null>(null);
+  const { user } = useAuth()
+  const { settings, loading, updateSetting } = useSettingsContext()
+  const [editingSettings, setEditingSettings] = useState<Settings | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [selectedSetting, setSelectedSetting] = useState<{ key: string; value: any; description: string } | null>(null)
+  const [dynamicRevalidateOrigin, setDynamicRevalidateOrigin] = useState<string | null>(null)
 
-  const canEdit = user?.perfil === PerfilUsuario.Admin || user?.perfil === PerfilUsuario.Secretaria;
+  const canEdit = user?.perfil === PerfilUsuario.Admin || user?.perfil === PerfilUsuario.Secretaria
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      setLoading(true);
-      const fetchedSettings = await getSettings();
-      setSettings(fetchedSettings);
-      setLoading(false);
-    };
-    fetchSettings();
-  }, []);
+    setEditingSettings(settings)
+  }, [settings])
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setDynamicRevalidateOrigin(window.location.origin.replace(/\/$/, ""));
+      setDynamicRevalidateOrigin(window.location.origin.replace(/\/$/, ""))
     }
-  }, []);
+  }, [])
 
   const handleInputChange = (key: string, value: string) => {
-    if (settings) {
-        setSettings({ ...settings, [key]: value });
+    if (editingSettings) {
+      setEditingSettings({ ...editingSettings, [key]: value })
     }
-  };
+  }
 
   const handleSwitchChange = (key: string, checked: boolean, description: string) => {
-    setSelectedSetting({ key, value: checked, description });
-    setDialogOpen(true);
-  };
+    if (editingSettings) {
+      setEditingSettings({ ...editingSettings, [key]: checked })
+    }
+    setSelectedSetting({ key, value: checked, description })
+    setDialogOpen(true)
+  }
 
   const handleConfirmSave = async () => {
     if (selectedSetting) {
       try {
-        await updateSetting(selectedSetting.key, selectedSetting.value);
-        if (settings) {
-            setSettings({ ...settings, [selectedSetting.key]: selectedSetting.value });
-        }
+        await updateSetting(selectedSetting.key, selectedSetting.value)
         toast.success("Configuração salva com sucesso!", { icon: <CheckCircle className="h-4 w-4 text-blue-500" /> });
       } catch (error) {
         toast.error("Erro ao salvar a configuração.", { icon: <XCircle className="h-4 w-4 text-red-500" /> });
@@ -79,16 +74,13 @@ export function SettingsForm() {
 
   const handleSave = async (key: string, value: any) => {
     try {
-      await updateSetting(key, value);
-      if (settings) {
-        setSettings({ ...settings, [key]: value });
-      }
-      toast.success("Configuração salva com sucesso!", { icon: <CheckCircle className="h-4 w-4 text-blue-500" /> });
+      await updateSetting(key, value)
+      toast.success("Configuração salva com sucesso!", { icon: <CheckCircle className="h-4 w-4 text-blue-500" /> })
     } catch (error) {
-      toast.error("Erro ao salvar a configuração.", { icon: <XCircle className="h-4 w-4 text-red-500" /> });
-      console.error(error);
+      toast.error("Erro ao salvar a configuração.", { icon: <XCircle className="h-4 w-4 text-red-500" /> })
+      console.error(error)
     }
-  };
+  }
 
   const handleRevalidate = async (url: string) => {
     if (!url) {
@@ -128,6 +120,8 @@ export function SettingsForm() {
     }
   };
 
+  const siteUrlValue = editingSettings?.url_site ?? "https://site.fafih.com.br"
+
   const revalidateEntries = dynamicRevalidateOrigin
     ? [
         {
@@ -136,9 +130,9 @@ export function SettingsForm() {
         },
         ...revalidateData.filter((entry) => entry.url !== `${dynamicRevalidateOrigin}/revalidate`),
       ]
-    : revalidateData;
+    : revalidateData
 
-  if (loading || !settings) {
+  if (loading || !editingSettings) {
     return <div>Carregando...</div>;
   }
 
@@ -155,14 +149,31 @@ export function SettingsForm() {
               <div className="flex items-center space-x-2">
                 <Input
                   id="nome_site"
-                  value={settings.nome_site ?? ''}
+                  value={editingSettings.nome_site ?? ""}
                   onChange={(e) =>
                     handleInputChange("nome_site", e.target.value)
                   }
                   disabled={!canEdit}
                 />
                 {canEdit && (
-                  <Button onClick={() => handleSave("nome_site", settings.nome_site)}>
+                  <Button onClick={() => handleSave("nome_site", editingSettings.nome_site)}>
+                    Salvar
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="url_site">URL do site</Label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  id="url_site"
+                  value={siteUrlValue}
+                  onChange={(e) => handleInputChange("url_site", e.target.value)}
+                  disabled={!canEdit}
+                  placeholder="https://site.fafih.com.br"
+                />
+                {canEdit && (
+                  <Button onClick={() => handleSave("url_site", siteUrlValue)}>
                     Salvar
                   </Button>
                 )}
@@ -174,13 +185,13 @@ export function SettingsForm() {
                 <Input
                   id="email_ouvidoria"
                   type="email"
-                  value={settings.email_ouvidoria ?? ""}
+                  value={editingSettings.email_ouvidoria ?? ""}
                   onChange={(e) => handleInputChange("email_ouvidoria", e.target.value)}
                   disabled={!canEdit}
                   placeholder="ouvidoria@fafih.edu.br"
                 />
                 {canEdit && (
-                  <Button onClick={() => handleSave("email_ouvidoria", settings.email_ouvidoria)}>
+                  <Button onClick={() => handleSave("email_ouvidoria", editingSettings.email_ouvidoria)}>
                     Salvar
                   </Button>
                 )}
@@ -191,7 +202,7 @@ export function SettingsForm() {
               <div className="flex items-center space-x-2">
                 <Switch
                   id="manutencao"
-                  checked={settings.manutencao}
+                  checked={editingSettings.manutencao}
                   onCheckedChange={(checked) =>
                     handleSwitchChange("manutencao", checked, "Ativar modo de manutenção")
                   }
@@ -204,7 +215,7 @@ export function SettingsForm() {
               <div className="flex items-center space-x-2">
                 <Switch
                   id="drmsocial"
-                  checked={settings.drmsocial}
+                  checked={editingSettings.drmsocial}
                   onCheckedChange={(checked) =>
                     handleSwitchChange("drmsocial", checked, "Ativar DRM Social")
                   }
@@ -217,7 +228,7 @@ export function SettingsForm() {
               <div className="flex items-center space-x-2">
                 <Switch
                   id="log_ativo"
-                  checked={Boolean(settings.log_ativo)}
+                  checked={Boolean(editingSettings.log_ativo)}
                   onCheckedChange={(checked) =>
                     handleSwitchChange("log_ativo", checked, "Ativar coleta de logs")
                   }

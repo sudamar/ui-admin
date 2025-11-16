@@ -6,6 +6,7 @@ export interface Settings {
   drmsocial: boolean
   log_ativo: boolean
   email_ouvidoria?: string
+  url_site?: string
   [key: string]: any
 }
 
