@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, PlusCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { NovosCursosTable } from "@/features/novos-cursos/components/novos-cursos-table"
@@ -20,12 +20,20 @@ export default function NovosCursosPage() {
             Lista de cursos com ações focadas em conteúdo, mídia e valores.
           </p>
         </div>
-        <Button asChild variant="outline" className="w-full md:w-auto">
-          <Link href="/dashboard/cursos">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar para cursos
-          </Link>
-        </Button>
+        <div className="flex flex-col gap-2 w-full md:w-auto md:flex-row">
+          <Button asChild variant="outline" className="w-full md:w-auto">
+            <Link href="/dashboard/cursos">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para cursos
+            </Link>
+          </Button>
+          <Button asChild className="w-full md:w-auto">
+            <Link href="/dashboard/novos-cursos/novo" className="inline-flex items-center gap-2">
+              <PlusCircle className="h-4 w-4" />
+              Novo curso
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <NovosCursosTable />

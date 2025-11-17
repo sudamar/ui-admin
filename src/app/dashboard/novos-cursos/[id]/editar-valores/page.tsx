@@ -32,6 +32,17 @@ const parseCurrencyToNumber = (value: string): number | null => {
   return Number.isNaN(numeric) ? null : numeric
 }
 
+const formatCurrencyFromStored = (value: string | null | undefined) => {
+  if (!value) return ""
+  const numeric = parseCurrencyToNumber(value)
+  if (numeric === null) return ""
+  return numeric.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  })
+}
+
 const mapAlertValueToOption = (value: string) => {
   if (value === "14") return "poucas"
   if (value === "5") return "ultimas"
@@ -72,7 +83,7 @@ export default function EditarValoresPage() {
           setPrice(data.price != null ? normalizeCurrency(data.price.toFixed(2)) : "")
           setOriginalPrice(data.originalPrice != null ? normalizeCurrency(data.originalPrice.toFixed(2)) : "")
           setPrecoMatricula(data.precoMatricula != null ? normalizeCurrency(data.precoMatricula.toFixed(2)) : "")
-          setMonthlyPrice(data.monthlyPrice ?? "")
+          setMonthlyPrice(formatCurrencyFromStored(data.monthlyPrice))
           setStartDate(data.startDate ?? "")
           setDuration(data.duration ?? "")
           setWorkload(data.workload ?? "")
@@ -146,7 +157,7 @@ export default function EditarValoresPage() {
       setPrice(updated.price != null ? normalizeCurrency(updated.price.toFixed(2)) : "")
       setOriginalPrice(updated.originalPrice != null ? normalizeCurrency(updated.originalPrice.toFixed(2)) : "")
       setPrecoMatricula(updated.precoMatricula != null ? normalizeCurrency(updated.precoMatricula.toFixed(2)) : "")
-      setMonthlyPrice(updated.monthlyPrice ?? "")
+      setMonthlyPrice(formatCurrencyFromStored(updated.monthlyPrice))
       setStartDate(updated.startDate ?? "")
       setDuration(updated.duration ?? "")
       setWorkload(updated.workload ?? "")
@@ -277,7 +288,7 @@ export default function EditarValoresPage() {
               <Input
                 id="monthlyPrice"
                 value={monthlyPrice}
-                onChange={(event) => setMonthlyPrice(event.target.value)}
+                onChange={(event) => setMonthlyPrice(normalizeCurrency(event.target.value))}
                 placeholder="R$ 0,00"
               />
             </div>
