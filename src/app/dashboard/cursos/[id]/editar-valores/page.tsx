@@ -250,6 +250,7 @@ export default function EditarValoresPage() {
               <CardTitle className="text-lg">Valores e investimentos</CardTitle>
               <p className="text-sm text-muted-foreground">
                 Atualize preços, datas e informações financeiras do curso.
+                <i>(experimente usar ctrl+s para salvar também...)</i>
               </p>
             </div>
           </div>

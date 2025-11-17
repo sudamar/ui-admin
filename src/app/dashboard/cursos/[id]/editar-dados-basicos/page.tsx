@@ -101,6 +101,7 @@ export default function EditarDadosBasicosPage() {
     certificate: certificate.trim(),
     coordenadorId: coordenadorId.trim(),
     isAtivo,
+    is_ativo: isAtivo,
   }), [slug, title, subtitle, category, modalidade, maxStudents, certificate, coordenadorId, isAtivo])
 
   const isDirty = useMemo(() => {
@@ -127,8 +128,14 @@ export default function EditarDadosBasicosPage() {
         ...sanitizedState,
         coordenadorId: sanitizedState.coordenadorId ? sanitizedState.coordenadorId : undefined,
       }
+      console.log("[Cursos][DadosBasicos] Enviando status:", {
+        isAtivo: (payload as Curso & { isAtivo?: boolean }).isAtivo,
+        is_ativo: (payload as any).is_ativo,
+      })
       const updated = await cursosService.update(course.id, payload)
-      const updatedStatus = parseBooleanFromUnknown((updated as any).is_ativo ?? true)
+      const updatedStatus = parseBooleanFromUnknown(
+        (updated as any).is_ativo ?? sanitizedState.isAtivo,
+      )
       setCourse({ ...updated, is_ativo: updatedStatus })
       setIsAtivo(updatedStatus)
       toast.success("Dados básicos atualizados com sucesso!")
@@ -200,7 +207,8 @@ export default function EditarDadosBasicosPage() {
               <div>
                 <CardTitle className="text-lg">Dados básicos do curso</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Atualize as informações gerais do curso.
+                  Atualize as informações gerais do curso. 
+                  <i>(experimente usar ctrl+s para salvar também...)</i>
                 </p>
               </div>
             </div>

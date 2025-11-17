@@ -682,6 +682,7 @@ export const metadata: Metadata = {
 4. **NUNCA** modifique arquivos em `src/components/ui/` diretamente
 5. **SEMPRE** use sintaxe Tailwind v4 (`@import "tailwindcss"`)
 6. **SEMPRE** use aliases de import (`@/` em vez de `../../`)
+6. **NUNCA** use console-log em componentes server, sempre use a função criada imprimeLogs e abuse dos seus parametros de entrada.
 
 ### Ao Modificar Código
 

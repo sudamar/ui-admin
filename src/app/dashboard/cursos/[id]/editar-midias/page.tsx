@@ -178,6 +178,7 @@ export default function EditarMidiasPage() {
               <CardTitle className="text-lg">Mídias do curso</CardTitle>
               <p className="text-sm text-muted-foreground">
                 Atualize capa, thumbnail e link de vídeo relacionados ao curso.
+                <i>(experimente usar ctrl+s para salvar também...)</i>
               </p>
             </div>
           </div>

@@ -108,7 +108,15 @@ const cursoSchema = z.object({
   highlights: z.array(highlightSchema).optional().default([]),
   professores: z.array(professorSchema).optional().default([]),
   alerta_vagas: optionalNumber,
+  is_ativo: z.boolean().optional(),
+  isAtivo: z.boolean().optional(),
 })
+
+const resolveIsAtivo = (data: { is_ativo?: boolean; isAtivo?: boolean }) => {
+  if (typeof data.is_ativo === "boolean") return data.is_ativo
+  if (typeof data.isAtivo === "boolean") return data.isAtivo
+  return undefined
+}
 
 imprimeLogs("[API cursos] cursoSchema criado:", typeof cursoSchema, typeof cursoSchema?.safeParse)
 
@@ -145,6 +153,7 @@ type CursoRow = {
   video_url: string | null
   image_url: string | null
   alerta_vagas?: number | null
+  is_ativo?: boolean | null
 }
 
 type HighlightRow = {
@@ -213,6 +222,8 @@ type CursoDto = {
     papel?: string
   }>
   alertaVagas?: number
+  is_ativo?: boolean
+  isAtivo?: boolean
 }
 
 function mapCurso(row: CursoRow): CursoDto {
@@ -247,6 +258,8 @@ function mapCurso(row: CursoRow): CursoDto {
     videoUrl: row.video_url ?? undefined,
     imageUrl: row.image_url ?? undefined,
     alertaVagas: row.alerta_vagas ?? undefined,
+    is_ativo: typeof row.is_ativo === "boolean" ? row.is_ativo : undefined,
+    isAtivo: typeof row.is_ativo === "boolean" ? row.is_ativo : undefined,
   }
 }
 
@@ -453,8 +466,9 @@ export async function POST(request: Request) {
     coordenador_id: parsed.data.coordenadorId ?? null,
     video_url: parsed.data.videoUrl ?? null,
     image_url: parsed.data.imageUrl ?? null,
-    alerta_vagas: parsed.data.alerta_vagas ?? null,
-  }
+  alerta_vagas: parsed.data.alerta_vagas ?? null,
+  is_ativo: resolveIsAtivo(parsed.data) ?? true,
+}
 
   imprimeLogs("[POST /api/cursos] Inserindo curso na tabela principal")
   const { data, error } = await supabaseAdmin
@@ -615,7 +629,38 @@ export async function PATCH(request: Request) {
 
   imprimeLogs("[PATCH /api/cursos] Validação OK, preparando update")
 
-  const updatePayload = {
+type UpdatePayload = {
+  slug: string
+  title: string
+  subtitle: string | null
+  short_description: string | null
+  full_description: Record<string, unknown> | null
+  image_folder: string | null
+  category: string | null
+  category_label: string | null
+  price: number | null
+  original_price: number | null
+  preco_matricula: number | null
+  modalidade: string | null
+  duration: string | null
+  workload: string | null
+  start_date: string | null
+  max_students: string | null
+  certificate: string | null
+  monthly_price: string | null
+  justificativa: Record<string, unknown> | null
+  objetivos: Record<string, unknown> | null
+  publico: Record<string, unknown> | null
+  investment_details: Record<string, unknown> | null
+  additional_info: Record<string, unknown> | null
+  coordenador_id: string | null
+  video_url: string | null
+  image_url: string | null
+  alerta_vagas: number | null
+  is_ativo?: boolean
+}
+
+const updatePayload: UpdatePayload = {
     slug: parsed.data.slug,
     title: parsed.data.title,
     subtitle: parsed.data.subtitle ?? null,
@@ -643,6 +688,11 @@ export async function PATCH(request: Request) {
     video_url: parsed.data.videoUrl ?? null,
     image_url: parsed.data.imageUrl ?? null,
     alerta_vagas: parsed.data.alerta_vagas ?? null,
+  }
+
+  const statusBoolean = resolveIsAtivo(parsed.data)
+  if (typeof statusBoolean === "boolean") {
+    updatePayload.is_ativo = statusBoolean
   }
 
   imprimeLogs("[PATCH /api/cursos] Atualizando curso na tabela principal")
