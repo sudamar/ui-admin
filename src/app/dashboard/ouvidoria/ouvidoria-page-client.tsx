@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ouvidoriaService, type OuvidoriaEntry, OUVIDORIA_STATUS } from "@/services/ouvidoria/ouvidoria-service"
+import { IconPhoneCalling } from "@tabler/icons-react"
 
 const statusStyles: Record<string, string> = {
   Enviado: "bg-slate-100 text-slate-700 border-slate-200",
@@ -114,8 +115,7 @@ export function OuvidoriaPageClient() {
         <CardHeader className="space-y-2">
           <CardTitle className="text-2xl font-semibold">Chamados de ouvidoria</CardTitle>
           <CardDescription>
-            Cada solicitação chega com status <strong>Enviado</strong>. Assim que for aberta para atendimento, ela é
-            automaticamente marcada como <strong>Em atendimento</strong> e o usuário responsável é registrado.
+            Temos 48 horas para tratar solicitações
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -151,14 +151,6 @@ export function OuvidoriaPageClient() {
               </CardContent>
             </Card>
           </div>
-
-          <Alert className="border-amber-200 bg-amber-50">
-            <AlertTitle>Acompanhamento de status</AlertTitle>
-            <AlertDescription>
-              • <strong>Enviado</strong>: protocolo aguardando análise. • <strong>Em atendimento</strong>: alguém abriu o chamado
-              e assumiu o atendimento. • <strong>Finalizado</strong>: manifestação respondida ou encaminhada.
-            </AlertDescription>
-          </Alert>
 
           <div className="grid gap-4 md:grid-cols-3">
             <div>
@@ -263,7 +255,7 @@ export function OuvidoriaPageClient() {
                               <TooltipTrigger asChild>
                                 <Button asChild size="icon" variant="outline">
                                   <Link href={`/dashboard/ouvidoria/${entry.id}?acao=responder`}>
-                                    <Mail className="h-4 w-4" />
+                                    <IconPhoneCalling className="h-4 w-4" />
                                     <span className="sr-only">Responder chamado</span>
                                   </Link>
                                 </Button>

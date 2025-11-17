@@ -191,12 +191,12 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const id = searchParams.get("id")
 
-  let query = supabaseAdmin.from<OuvidoriaRow>(TABLE_NAME).select("*").order("created_at", { ascending: false })
+  let query = supabaseAdmin.from(TABLE_NAME).select("*").order("created_at", { ascending: false })
   if (id) {
     query = query.eq("id", id).limit(1)
   }
 
-  const { data, error }: PostgrestResponse<OuvidoriaRow> = await query
+  const { data, error }: PostgrestResponse<OuvidoriaRow> = (await query) as PostgrestResponse<OuvidoriaRow>
   if (error) {
     return NextResponse.json({ success: false, message: error.message ?? "Erro ao buscar chamados." }, { status: 500 })
   }
@@ -259,23 +259,28 @@ export async function PATCH(request: Request) {
     )
   }
 
+  const { status, idUsuarioRecebimento, reply } = parsed.data
+
   const updatePayload: Record<string, unknown> = {}
-  if (parsed.data.status) {
-    updatePayload.status = parsed.data.status
+  if (status) {
+    updatePayload.status = status
   }
-  if (parsed.data.idUsuarioRecebimento) {
-    updatePayload.id_usuario_recebimento = parsed.data.idUsuarioRecebimento
+  if (idUsuarioRecebimento) {
+    updatePayload.id_usuario_recebimento = idUsuarioRecebimento
   }
-  if (typeof parsed.data.reply === "string") {
-    updatePayload.reply = parsed.data.reply
+  if (typeof reply === "string") {
+    updatePayload.reply = reply
+    if (!status) {
+      updatePayload.status = "Finalizado"
+    }
   }
 
-  const { data, error }: PostgrestSingleResponse<OuvidoriaRow> = await supabaseAdmin
-    .from<OuvidoriaRow>(TABLE_NAME)
+  const { data, error }: PostgrestSingleResponse<OuvidoriaRow> = (await supabaseAdmin
+    .from(TABLE_NAME)
     .update(updatePayload)
     .eq("id", id)
     .select("*")
-    .maybeSingle()
+    .maybeSingle()) as PostgrestSingleResponse<OuvidoriaRow>
   if (error || !data) {
     return NextResponse.json(
       { success: false, message: error?.message ?? "Não foi possível atualizar o chamado." },
@@ -291,14 +296,9 @@ export async function PATCH(request: Request) {
         ? responsaveis.get(parsedRow.id_usuario_recebimento) ?? null
         : null
 
-    if (
-      typeof parsed.data.reply === "string" &&
-      parsed.data.reply.trim().length > 0 &&
-      parsedRow.identificacao_tipo === "identificado" &&
-      parsedRow.email
-    ) {
+    if (typeof reply === "string" && reply.trim().length > 0 && parsedRow.identificacao_tipo === "identificado" && parsedRow.email) {
       try {
-        await sendReplyEmail(parsedRow, parsed.data.reply)
+        await sendReplyEmail(parsedRow, reply)
       } catch (emailError) {
         console.error("[API][Ouvidoria] Falha ao enviar e-mail:", emailError)
       }

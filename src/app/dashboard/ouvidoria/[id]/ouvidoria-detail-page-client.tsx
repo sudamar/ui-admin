@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { format } from "date-fns"
+import { format, differenceInCalendarDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { ArrowLeft, Loader2, Mail, Share2 } from "lucide-react"
 import { toast } from "sonner"
@@ -11,7 +11,6 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { RichTextEditorHybrid } from "@/components/shared/rich-text-editor-hybrid"
 import { ouvidoriaService, type OuvidoriaEntry } from "@/services/ouvidoria/ouvidoria-service"
 import { useAuth } from "@/contexts/auth-context"
@@ -37,6 +36,10 @@ export function OuvidoriaDetailPageClient({ chamadoId, acao }: Props) {
   const [isAssigning, setIsAssigning] = useState(false)
   const [reply, setReply] = useState("")
   const [savingReply, setSavingReply] = useState(false)
+  const isIdentified = chamado?.identificacaoTipo !== "anonimo"
+  const pendencyDays = chamado?.createdAt
+    ? Math.max(0, differenceInCalendarDays(new Date(), new Date(chamado.createdAt)))
+    : 0
 
   useEffect(() => {
     const load = async () => {
@@ -196,29 +199,33 @@ export function OuvidoriaDetailPageClient({ chamadoId, acao }: Props) {
             <span className="font-medium text-foreground">Recebido por:</span>{" "}
             {chamado.responsavelNome ?? "Aguardando responsável"}
           </div>
-          {selectedActionLabel ? (
-            <p className="text-xs font-medium uppercase text-muted-foreground tracking-wide">
-              Modo selecionado: {selectedActionLabel}
-            </p>
-          ) : null}
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border bg-muted/40 p-4">
               <p className="text-xs font-medium text-muted-foreground uppercase">Identificação</p>
-              <p className="mt-1 text-sm text-foreground">
-                {chamado.nomeCompleto ?? (chamado.identificacaoTipo === "anonimo" ? "Solicitante anônimo" : "Não informado")}
-              </p>
-              <p className="text-xs text-muted-foreground">Tipo: {chamado.identificacaoTipo}</p>
-            </div>
-            <div className="rounded-lg border bg-muted/40 p-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase">Contato</p>
-              <p className="mt-1 text-sm text-foreground">{chamado.email ?? "Sem e-mail informado"}</p>
-              <p className="text-xs text-muted-foreground">{chamado.telefone ?? "Sem telefone"}</p>
+              {isIdentified ? (
+                <div className="mt-1 space-y-1 text-sm text-foreground">
+                  <p className="font-medium">{chamado.nomeCompleto ?? "Nome não informado"}</p>
+                  <p className="text-xs text-muted-foreground">{chamado.email ?? "Sem e-mail informado"}</p>
+                </div>
+              ) : (
+                <p className="mt-1 text-sm text-foreground">Solicitante anônimo</p>
+              )}
             </div>
             <div className="rounded-lg border bg-muted/40 p-4">
               <p className="text-xs font-medium text-muted-foreground uppercase">Vínculo</p>
               <p className="mt-1 text-sm text-foreground">{chamado.vinculo ?? "Não informado"}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/40 p-4">
+              <p className="text-xs font-medium text-muted-foreground uppercase">Abertura</p>
+              <p className="mt-1 text-sm text-foreground">
+                {chamado.createdAt ? format(new Date(chamado.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "-"}
+              </p>
+            </div>
+            <div className="rounded-lg border bg-muted/40 p-4">
+              <p className="text-xs font-medium text-muted-foreground uppercase">Dias pendentes</p>
+              <p className="mt-1 text-2xl font-semibold text-foreground">{pendencyDays}</p>
             </div>
           </div>
 
@@ -234,8 +241,13 @@ export function OuvidoriaDetailPageClient({ chamadoId, acao }: Props) {
           </div>
 
           <div className="rounded-lg border bg-card p-4">
-            <p className="text-sm font-medium text-muted-foreground">Mensagem enviada</p>
-            <p className="mt-2 text-base leading-relaxed text-foreground whitespace-pre-wrap">{chamado.mensagem}</p>
+            <p className="text-sm font-medium text-muted-foreground mb-2">Mensagem enviada</p>
+            <div
+              className="prose prose-sm max-w-none text-foreground"
+              dangerouslySetInnerHTML={{
+                __html: chamado.mensagem ? chamado.mensagem.replace(/\n/g, "<br />") : "",
+              }}
+            />
           </div>
 
           <Card>
