@@ -27,6 +27,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   BarChart3,
+  Bell,
   BookOpen,
   Building,
   ChevronDown,
@@ -35,6 +36,7 @@ import {
   FolderKanban,
   Home,
   Newspaper,
+  RefreshCcw,
   LogOut,
   Settings,
   Tag,
@@ -74,6 +76,8 @@ export function AppSidebar() {
     Building,
     Users,
     Newspaper,
+    RefreshCcw,
+    Bell,
     UserStar,
     UserRoundPen,
     User,

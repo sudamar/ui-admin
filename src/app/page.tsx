@@ -9,7 +9,7 @@ export default function HomePage() {
       <div className="max-w-2xl text-center">
         <span className="mb-3 inline-flex items-center gap-2 rounded-full border px-4 py-1 text-sm font-medium text-muted-foreground">
           <ArrowRight className="size-4" />
-          Plataforma Wow Fafih
+          Administração da FAFIH
         </span>
         <h1 className="text-balance text-4xl font-bold tracking-tight md:text-5xl">
           Organize a sua gestão acadêmica em um só lugar
