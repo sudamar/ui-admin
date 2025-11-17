@@ -10,7 +10,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ImageUpload } from "@/components/ui/image-upload"
-import { HeaderEdicaoCursos } from "@/features/novos-cursos/components/header-edicao-cursos"
+import { HeaderEdicaoCursos } from "@/features/cursos/components/header-edicao-cursos"
 import { cursosService, type Curso } from "@/services/cursos/cursos-service"
 import { toast } from "sonner"
 
@@ -105,7 +105,7 @@ export default function EditarMidiasPage() {
     if (isDirty && !window.confirm("Existem alterações não salvas. Deseja descartar e voltar?")) {
       return
     }
-    router.push("/dashboard/novos-cursos")
+    router.push("/dashboard/cursos")
   }, [isDirty, router])
 
   useEffect(() => {
@@ -156,9 +156,9 @@ export default function EditarMidiasPage() {
         variant="ghost"
         className="inline-flex w-full items-center justify-center gap-2 border border-dashed border-border text-sm text-muted-foreground hover:bg-muted/80 sm:w-auto"
       >
-        <Link href="/dashboard/novos-cursos">
+        <Link href="/dashboard/cursos">
           <ArrowLeft className="h-4 w-4" />
-          Voltar para lista de novos cursos
+          Voltar para lista de cursos
         </Link>
       </Button>
 

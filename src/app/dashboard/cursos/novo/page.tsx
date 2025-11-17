@@ -87,7 +87,7 @@ export default function NovoCursoBasicoPage() {
 
   const handleCancel = () => {
     if (saving) return
-    router.push("/dashboard/novos-cursos")
+    router.push("/dashboard/cursos")
   }
 
   const handleSave = async () => {
@@ -117,7 +117,7 @@ export default function NovoCursoBasicoPage() {
 
       const created = await cursosService.create(payload)
       toast.success("Curso criado com sucesso!")
-      router.push(`/dashboard/novos-cursos/${created.id}/editar-dados-basicos`)
+      router.push(`/dashboard/cursos/${created.id}/editar-dados-basicos`)
     } catch (error) {
       console.error("Erro ao criar curso", error)
       const message = error instanceof Error ? error.message : "Não foi possível salvar o curso."
@@ -143,9 +143,9 @@ export default function NovoCursoBasicoPage() {
         variant="ghost"
         className="inline-flex w-full items-center justify-center gap-2 border border-dashed border-border text-sm text-muted-foreground hover:bg-muted/80 sm:w-auto"
       >
-        <Link href="/dashboard/novos-cursos">
+        <Link href="/dashboard/cursos">
           <ArrowLeft className="h-4 w-4" />
-          Voltar para lista de novos cursos
+          Voltar para lista de cursos
         </Link>
       </Button>
 

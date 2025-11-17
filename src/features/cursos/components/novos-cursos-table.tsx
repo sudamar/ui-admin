@@ -432,7 +432,7 @@ export function NovosCursosTable() {
                                     className="h-8 w-8"
                                     asChild
                                   >
-                                    <Link href={`/dashboard/novos-cursos/${course.id}/${action.slug}`}>
+                                    <Link href={`/dashboard/cursos/${course.id}/${action.slug}`}>
                                       <Icon className={`h-4 w-4 ${colors[index]}`} />
                                       <span className="sr-only">{action.label}</span>
                                     </Link>
@@ -458,7 +458,7 @@ export function NovosCursosTable() {
                                     className="h-8 w-8"
                                     asChild
                                   >
-                                    <Link href={`/dashboard/novos-cursos/${course.id}/${action.slug}`}>
+                                    <Link href={`/dashboard/cursos/${course.id}/${action.slug}`}>
                                       <Icon className={`h-4 w-4 ${colors[index]}`} />
                                       <span className="sr-only">{action.label}</span>
                                     </Link>
@@ -516,7 +516,7 @@ export function NovosCursosTable() {
                                 className="h-10 w-10"
                                 asChild
                               >
-                                <Link href={`/dashboard/novos-cursos/${course.id}/${action.slug}`}>
+                                <Link href={`/dashboard/cursos/${course.id}/${action.slug}`}>
                                   <Icon className={`h-5 w-5 ${colors[index]}`} />
                                   <span className="sr-only">{action.label}</span>
                                 </Link>
@@ -542,7 +542,7 @@ export function NovosCursosTable() {
                                 className="h-10 w-10"
                                 asChild
                               >
-                                <Link href={`/dashboard/novos-cursos/${course.id}/${action.slug}`}>
+                                <Link href={`/dashboard/cursos/${course.id}/${action.slug}`}>
                                   <Icon className={`h-5 w-5 ${colors[index]}`} />
                                   <span className="sr-only">{action.label}</span>
                                 </Link>

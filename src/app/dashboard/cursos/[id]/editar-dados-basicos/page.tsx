@@ -16,11 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { HeaderEdicaoCursos } from "@/features/novos-cursos/components/header-edicao-cursos"
+import { HeaderEdicaoCursos } from "@/features/cursos/components/header-edicao-cursos"
 import {
   COURSE_CATEGORY_LABEL_MAP,
   COURSE_CATEGORY_OPTIONS,
-} from "@/features/novos-cursos/constants/course-categories"
+} from "@/features/cursos/constants/course-categories"
 import { cursosService, type Curso } from "@/services/cursos/cursos-service"
 import { SelectCoordenador } from "@/components/shared/select-coordenador"
 import { toast } from "sonner"
@@ -145,7 +145,7 @@ export default function EditarDadosBasicosPage() {
       const shouldLeave = window.confirm("Existem alterações não salvas. Deseja descartar e voltar?")
       if (!shouldLeave) return
     }
-    router.push("/dashboard/novos-cursos")
+    router.push("/dashboard/cursos")
   }, [isDirty, router])
 
   if (loading) {
@@ -179,9 +179,9 @@ export default function EditarDadosBasicosPage() {
           variant="ghost"
           className="inline-flex w-full items-center justify-center gap-2 border border-dashed border-border text-sm text-muted-foreground hover:bg-muted/80 sm:w-auto"
         >
-          <Link href="/dashboard/novos-cursos" className="inline-flex items-center gap-2">
+          <Link href="/dashboard/cursos" className="inline-flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
-            Voltar para lista de novos cursos
+            Voltar para lista de cursos
           </Link>
         </Button>
 

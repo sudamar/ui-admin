@@ -14,7 +14,7 @@
         { "label": "Polos", "icon": "Building", "iconColor": "text-sky-500", "href": "/dashboard/polos", "show": true },
         { "label": "Professores", "icon": "Users", "iconColor": "text-amber-500", "href": "/dashboard/professores", "show": true },
         { "label": "Membros analistas", "icon": "UserStar", "iconColor": "text-teal-500", "href": "/dashboard/membros-analistas", "show": true },
-        { "label": "Cursos FAFIH", "icon": "BookOpen", "iconColor": "text-emerald-600", "href": "/dashboard/novos-cursos", "show": true },
+        { "label": "Cursos FAFIH", "icon": "BookOpen", "iconColor": "text-emerald-600", "href": "/dashboard/cursos", "show": true },
         { "label": "Posts", "icon": "Newspaper", "iconColor": "text-rose-500", "href": "/dashboard/posts", "show": true },
         {
           "label": "Biblioteca",

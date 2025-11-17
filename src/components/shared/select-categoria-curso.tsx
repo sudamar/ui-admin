@@ -10,7 +10,7 @@ import {
 import {
   COURSE_CATEGORY_LABEL_MAP,
   COURSE_CATEGORY_OPTIONS,
-} from "@/features/novos-cursos/constants/course-categories"
+} from "@/features/cursos/constants/course-categories"
 
 export const EMPTY_CATEGORY_VALUE = "__none__"
 
