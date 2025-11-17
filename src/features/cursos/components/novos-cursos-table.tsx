@@ -540,8 +540,7 @@ export function NovosCursosTable() {
                                 size="icon"
                                 variant="outline"
                                 className="h-10 w-10"
-                                asChild
-                              >
+                                asChild>
                                 <Link href={`/dashboard/cursos/${course.id}/${action.slug}`}>
                                   <Icon className={`h-5 w-5 ${colors[index]}`} />
                                   <span className="sr-only">{action.label}</span>
