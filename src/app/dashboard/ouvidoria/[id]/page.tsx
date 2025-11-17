@@ -8,12 +8,9 @@ export const metadata: Metadata = {
 
 type PageProps = {
   params: { id: string } | Promise<{ id: string }>
-  searchParams: { acao?: string } | Promise<{ acao?: string }>
 }
 
-export default async function OuvidoriaDetailPage({ params, searchParams }: PageProps) {
+export default async function OuvidoriaDetailPage({ params }: PageProps) {
   const resolvedParams = await params
-  const resolvedSearch = await searchParams
-
-  return <OuvidoriaDetailPageClient chamadoId={resolvedParams.id} acao={resolvedSearch?.acao} />
+  return <OuvidoriaDetailPageClient chamadoId={resolvedParams.id} />
 }

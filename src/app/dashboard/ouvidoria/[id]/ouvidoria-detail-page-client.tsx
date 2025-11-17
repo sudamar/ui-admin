@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format, differenceInCalendarDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -17,7 +17,6 @@ import { useAuth } from "@/contexts/auth-context"
 
 type Props = {
   chamadoId: string
-  acao?: string
 }
 
 const statusStyles: Record<string, string> = {
@@ -26,7 +25,7 @@ const statusStyles: Record<string, string> = {
   Finalizado: "bg-emerald-100 text-emerald-800 border-emerald-200",
 }
 
-export function OuvidoriaDetailPageClient({ chamadoId, acao }: Props) {
+export function OuvidoriaDetailPageClient({ chamadoId }: Props) {
   const router = useRouter()
   const { user } = useAuth()
 
@@ -86,12 +85,6 @@ export function OuvidoriaDetailPageClient({ chamadoId, acao }: Props) {
       setReply(chamado.reply ?? "")
     }
   }, [chamado?.id])
-
-  const selectedActionLabel = useMemo(() => {
-    if (acao === "encaminhar") return "Encaminhar"
-    if (acao === "responder") return "Responder"
-    return null
-  }, [acao])
 
   const handleReply = () => {
     if (!chamado?.email) {

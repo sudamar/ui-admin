@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { format, differenceInCalendarDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { CalendarClock, Clock, Inbox, Loader2, Mail, Share2 } from "lucide-react"
+import { CalendarClock, Clock, Inbox, Loader2, Share2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ouvidoriaService, type OuvidoriaEntry, OUVIDORIA_STATUS } from "@/services/ouvidoria/ouvidoria-service"
 import { IconPhoneCalling } from "@tabler/icons-react"
 
@@ -122,7 +121,7 @@ export function OuvidoriaPageClient() {
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pedidos pendentes</CardTitle>
+               <CardTitle className="text-sm font-medium">Pedidos pendentes</CardTitle>
                 <Inbox className="h-4 w-4 text-blue-500" />
               </CardHeader>
               <CardContent>
