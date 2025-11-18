@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -39,6 +39,35 @@ export function LoginForm({
 }: React.ComponentPropsWithoutRef<"div">) {
   const router = useRouter()
   const { refresh } = useAuth()
+  const [turnstileToken, setTurnstileToken] = useState("")
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "1x00000000000000000000AA"
+  const callbackName = useMemo(
+    () => `turnstileCallback_${Math.random().toString(36).slice(2)}`,
+    [],
+  )
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    ;(window as typeof window & { [key: string]: (token: string) => void })[
+      callbackName
+    ] = (token: string) => {
+      setTurnstileToken(token)
+    }
+    return () => {
+      if (typeof window === "undefined") return
+      delete (window as typeof window & { [key: string]: unknown })[callbackName]
+    }
+  }, [callbackName])
+
+  const resetTurnstile = () => {
+    if (typeof window === "undefined") return
+    try {
+      ;(window as typeof window & { turnstile?: { reset: () => void } }).turnstile?.reset()
+    } catch {
+      // ignore reset errors
+    }
+    setTurnstileToken("")
+  }
 
   const {
     register,
@@ -59,13 +88,17 @@ export function LoginForm({
   const onSubmit = useCallback(
     async (values: LoginFormValues) => {
       try {
+        if (!turnstileToken) {
+          toast.error("Confirme que você não é um robô antes de continuar.")
+          return
+        }
         const response = await fetch("/api/auth/login", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           credentials: "include",
-          body: JSON.stringify(values),
+          body: JSON.stringify({ ...values, turnstileToken }),
         })
 
         const result = (await response.json()) as {
@@ -84,9 +117,11 @@ export function LoginForm({
       } catch (error) {
         console.error("Erro ao realizar login", error)
         toast.error("Ocorreu um erro inesperado. Tente novamente.")
+      } finally {
+        resetTurnstile()
       }
     },
-    [refresh, router]
+    [refresh, router, turnstileToken]
   )
 
   return (
@@ -160,6 +195,16 @@ export function LoginForm({
                   "Entrar"
                 )}
               </Button>
+              <div className="flex w-full justify-center">
+                <div
+                  className="cf-turnstile"
+                  data-sitekey={siteKey}
+                  data-callback={callbackName}
+                  data-action="login"
+                  data-reset="auto"
+                  data-theme="light"
+                />
+              </div>
               <Button
                 type="button"
                 variant="outline"

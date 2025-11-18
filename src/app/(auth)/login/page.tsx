@@ -1,4 +1,5 @@
 import Image from "next/image"
+import Script from "next/script"
 import type { Metadata } from "next"
 
 import { LoginForm } from "@/features/auth/components/login-form"
@@ -11,6 +12,11 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <div className="flex min-h-svh w-full items-center justify-center bg-muted/30 px-6 py-10 md:px-10">
+      <Script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+        async
+        defer
+      />
       <div className="flex w-full max-w-4xl flex-col items-center gap-10 text-center">
         <div className="flex flex-col items-center gap-4">
           <Image
