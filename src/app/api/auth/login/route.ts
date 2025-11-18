@@ -5,10 +5,14 @@ import { translateAuthErrorCode, translateAuthStatus } from "@/features/auth/lib
 import { signInWithEmailAndPassword } from "@/services/auth/auth-service"
 
 const verifyTurnstileToken = async (token: string | undefined | null) => {
+  if (process.env.NODE_ENV !== "production") {
+    return Boolean(token)
+  }
+
   const secret = process.env.NEXT_TURNSTILE_SECRET_KEY || process.env.TURNSTILE_SECRET_KEY
   if (!secret) {
     console.warn("[Auth][Turnstile] Secret key não configurada.")
-    return process.env.NODE_ENV !== "production"
+    return false
   }
 
   if (!token) {

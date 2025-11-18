@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useId, useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -41,10 +41,7 @@ export function LoginForm({
   const { refresh } = useAuth()
   const [turnstileToken, setTurnstileToken] = useState("")
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "1x00000000000000000000AA"
-  const callbackName = useMemo(
-    () => `turnstileCallback_${Math.random().toString(36).slice(2)}`,
-    [],
-  )
+  const callbackName = useId().replace(/:/g, "_")
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -80,10 +77,6 @@ export function LoginForm({
       password: "",
     },
   })
-
-  const handleGoogleLogin = useCallback(() => {
-    toast.info("Integração com Google ainda não está configurada.")
-  }, [])
 
   const onSubmit = useCallback(
     async (values: LoginFormValues) => {
@@ -205,7 +198,7 @@ export function LoginForm({
                   data-theme="light"
                 />
               </div>
-              <Button
+              {/* <Button
                 type="button"
                 variant="outline"
                 className="w-full"
@@ -213,14 +206,14 @@ export function LoginForm({
                 disabled={isSubmitting}
               >
                 Entrar com Google
-              </Button>
+              </Button> */}
             </div>
-            <div className="mt-4 text-center text-sm">
+            {/* <div className="mt-4 text-center text-sm">
               Não tem uma conta?{" "}
               <a href="#" className="underline underline-offset-4">
                 Cadastre-se
               </a>
-            </div>
+            </div> */}
           </form>
         </CardContent>
       </Card>
