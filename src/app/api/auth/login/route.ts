@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
+import { translateAuthErrorCode, translateAuthStatus } from "@/features/auth/lib/auth-error"
 import { signInWithEmailAndPassword } from "@/services/auth/auth-service"
 
 const credentialsSchema = z.object({
@@ -9,7 +10,7 @@ const credentialsSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
-  const payload = await request.json().catch(() => null)
+  const payload = (await request.json().catch(() => null)) as unknown
 
   const parseResult = credentialsSchema.safeParse(payload)
   if (!parseResult.success) {
@@ -34,9 +35,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message:
-          error?.message ??
-          "Não foi possível realizar o login. Verifique suas credenciais.",
+        message: translateAuthErrorCode(error?.code) ?? translateAuthStatus(error?.status) ?? "Não foi possível realizar o login. Verifique suas credenciais.",
       },
       { status: 401 }
     )

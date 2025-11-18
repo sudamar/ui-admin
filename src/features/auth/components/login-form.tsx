@@ -48,7 +48,7 @@ export function LoginForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "sudamar@me.com",
-      password: "123456",
+      password: "",
     },
   })
 
@@ -99,7 +99,13 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault()
+              void handleSubmit(onSubmit)(event)
+            }}
+            noValidate
+          >
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
@@ -145,7 +151,14 @@ export function LoginForm({
                 className="w-full"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Entrando..." : "Entrar"}
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Entrando...
+                  </span>
+                ) : (
+                  "Entrar"
+                )}
               </Button>
               <Button
                 type="button"
@@ -169,3 +182,4 @@ export function LoginForm({
     </div>
   )
 }
+import { Loader2 } from "lucide-react"
