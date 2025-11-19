@@ -11,6 +11,7 @@ export const CACHE_TAGS = [
   "professores:list",
   "settings",
   "dashboard:metrics",
+  "dashboardCards",
 ] as const
 
 export const CACHE_PATHS = [
