@@ -106,7 +106,15 @@ export function LoginForm({
 
         toast.success("Login realizado com sucesso!")
         await refresh()
-        router.push("/dashboard")
+
+        try {
+          router.replace("/dashboard")
+          router.refresh()
+        } catch {
+          if (typeof window !== "undefined") {
+            window.location.href = "/dashboard"
+          }
+        }
       } catch (error) {
         console.error("Erro ao realizar login", error)
         toast.error("Ocorreu um erro inesperado. Tente novamente.")
